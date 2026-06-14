@@ -65,6 +65,19 @@ Consistency check (locked as a build assertion): σ = N_b·c/(πR) = 4·0.527/(�
    known UH-60 ≈ 35 ft²) *as its own sourced number*, not tuned. Physics: parasite
    power ∝ ½ρV³ → 0 at hover.
 
+9. **CG longitudinal offset (`cg_offset`) — CORRECTED to the sourced 0.488 m.**
+   Initially locked at 0 (an under-use of the data). The hover-TRIM comparison (Table
+   4: nose-up Θ=+5.05°) needs it: the CG is 0.488 m aft of the hub (STA 360.4 − 341.2
+   = 19.2 in). This is SOURCED (stationline difference), not fitted, and is set BEFORE
+   the trim run is reported (the locked-0 result is recorded first, in the trim prereg).
+   Effect on the derivatives — MEASURED, not asserted (this corrected the assertion):
+   the **longitudinal** derivatives are **bit-for-bit identical** (they use neither
+   cg_offset nor trim); the **lateral** ones change by **≤1e-6 relative** because
+   `lateral_derivatives` re-trims for the tail collective, which has a vanishing
+   dependence on the longitudinal CG offset. Negligible vs the 3%/1.5% comparison, but
+   real — so "trim-only" holds in effect, not literally bit-for-bit. (Test:
+   `dynamics/tests/uh60_external_validation.rs::cg_offset_does_not_affect_the_derivatives`.)
+
 7. **TR pitch-flap coupling δ3 (FKITR=0.7002), TR precone (0.01309 rad).** Our TR is a
    simple thrust model and may not use δ3. Decision: if omitted, name it; it affects
    TR thrust phasing, a second-order anti-torque effect. Locked as named-if-omitted.
@@ -73,6 +86,54 @@ Consistency check (locked as a build assertion): σ = N_b·c/(πR) = 4·0.527/(�
    validation condition (confirm altitude in TM 85890 at build; default standard sea
    level 1.225 kg/m³ if unspecified). Lock: match the oracle's flight condition, not a
    density that improves the match.
+
+10. **Cyclic control rigging / crossfeed mixing (Table 1 + Table 2) — LOCKED from the
+    source, for the cyclic stick-position comparison.** Transcribed from NASA TM 85890
+    Table 1 (sensitivities/biases) and Table 2 (UH-60 Control System Characteristics);
+    no value tuned. Forward map pilot-stick → blade pitch (steady trim, feedback gains
+    zero because body rates = 0):
+    - collective: `θ0_main = C5 + C6·δc`, C5=0.2286 rad, C6=0.02792 rad/in.
+    - longitudinal cyclic blade pitch: `B = CBIS + CK1·(SK1·δe + SK4·δc + SKM2·δp)`,
+      CK1=0.04939 rad/in, SK1=1.0, SK4=−0.1640, SKM2=−0.5746.
+    - lateral cyclic blade pitch: `A = CAIS + CK2·(SK5·δa + SK8·δc)`, CK2=0.02792 rad/in,
+      SK5=1.0, SK8=−0.16.
+    - tail collective: `θ0_tail = C7 + C8·(SK10·δp + SK11·δc)`, C7=0.1743 rad,
+      C8=−0.07734 rad/in, SK10=1.0, SK11=−0.2889.
+    The map is **triangular** (collective is independent; pedal depends on collective;
+    long/lat cyclic depend on collective and pedal), so the inversion blade pitch → stick
+    is exact in order: δc, then δp, then δe and δa.
+    - **CAIS=CBIS=0 (named ASSUMPTION):** the swashplate-cyclic-pitch-at-zero-stick rows
+      are **blank in the UH-60 column** of Table 1 → taken as no built-in cyclic bias. If
+      a nonzero rig bias exists, it is a fixed offset on δe/δa, named here.
+    - **Feedback gains SKV(3,2), SKV(6,1) = 0 in trim (EXACT, not an assumption):** they
+      multiply body rates (pitch/roll rate → cyclic), which are zero at steady trim. The
+      SAS is off in the trim map by construction.
+    - **Axis/sign correspondence is NOT locked here — it is the reconciliation step.** My
+      model labels `cyclic_lat=θ1c` (cosine/A1), `cyclic_lon=θ1s` (sine/B1). Whether
+      GENHEL's "longitudinal cyclic" blade pitch equals my θ1s (and with what sign)
+      depends on azimuth-zero and spin-direction conventions that bit the project twice.
+      Per the cyclic prereg the **SCALE** check is done first and is convention-free
+      (magnitudes invert the same under either assignment); **DIRECTION** is compared
+      only after this correspondence is reconciled once, explicitly.
+
+11. **Pitch-bias actuator (PBA) → omitted (our model has none) — SURFACED during the
+    cyclic run, named here.** TM 85890 (p.6): the UH-60 has a PBA, a variable-length
+    control rod that **adds to the total longitudinal cyclic** as a function of pitch
+    attitude, pitch rate, and airspeed, "to improve apparent static longitudinal
+    stability"; **pitch-attitude feedback is active throughout the speed range** (so it
+    acts at hover), authority 15% of longitudinal-cyclic full throw. Our model has no PBA.
+    Consequence: the oracle's *pilot* longitudinal-cyclic stick δe (Table 4) is only the
+    residual after the PBA acts, while our θ1s carries the whole longitudinal trim ⇒ the
+    **longitudinal-cyclic comparison is not apples-to-apples**. The PBA gain/schedule is
+    in **reference 2, NOT in TM 85890**, so the oracle's *total* longitudinal cyclic
+    cannot be reconstructed from our single source. Decision: **omit the PBA, do NOT
+    estimate its gain** (that would be an unsourced number injected to improve a match —
+    the export-restricted-data rule's spirit). The longitudinal-cyclic axis is reported as
+    confounded; the **lateral-cyclic axis has no PBA and is the clean comparison.** This is
+    a UH-60-specific control-augmentation gap, sibling to the stabilator (#3) and canted TR
+    (#2). (Honesty note: this confound was NOT in the pre-run lock — it was read from the
+    source *during* the build. It is named the moment it surfaced and used only to
+    *disqualify* an axis from comparison, never to tune one toward the oracle.)
 
 ## Reporting structure for the comparison session (locked)
 

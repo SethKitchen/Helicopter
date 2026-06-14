@@ -221,8 +221,28 @@ Aero track:
     term touches only rate damping). Mq→−0.45 (residual vs −1.03 = the omitted
     stabilator). **Adoption: `gyro_rate` defaults to 0** so all prior milestones are
     unchanged (150 tests pass); `uh60()` uses −2. Universal default = a deliberate
-    5c–5m revalidation step (it changes the demo dynamics). NEXT: trim-position
-    comparison (needs control rigging); optionally adopt gyro_rate=−2 globally + revalidate.
+    5c–5m revalidation step (it changes the demo dynamics).
+    *Trim attitude comparison DONE* (rigging-free, `trim/tests/uh60_trim_validation.rs`,
+    pre-reg `MILESTONE6_TRIM_PREREG.md`): vs Table 4 hover, **roll Φ −2.03° vs −2.34°
+    (13%)** — the tail-side-force bank, a mechanism the model has; **pitch Θ** missed
+    with the locked cg_offset=0 (→0°) then recovered to **+5.94° vs +5.05° (18%)** with
+    the SOURCED cg_offset=0.488 m (CG aft of hub, STA difference, not fit; trim-only so
+    derivs unaffected) — the miss localized to one un-set parameter, CG→attitude
+    mechanism sound. cg_offset's effect on derivatives MEASURED (not asserted): long.
+    bit-for-bit identical, lateral ≤1e-6 (tail-trim coupling) — negligible.
+    *Stick-position (collective) comparison DONE* via the TM 85890 control rigging
+    (`trim/tests/uh60_trim_validation.rs`): root collective 19.29° vs oracle 22.25° (14%
+    lower) — BEMT over-predicts thrust, a **2nd external sighting of the milestone-1
+    over-prediction in DIRECTION** (triangulation, robust). **Characterizing the bias as
+    a number corrected the framing** (`MILESTONE6_RESULTS.md` "BEMT bias"): collective-
+    reduction ≠ C_T-over-prediction, and the trim aero `longitudinal_main_aero` **omits
+    Prandtl tip loss** the C&T hover BEMT had → over-predicts ~56% at fixed collective,
+    not C&T's ~20–27%. So the magnitude is path/config-dependent, NOT a clean scalar —
+    *account, don't correct*; clean figure stays C&T ~20–27%. (Tip-loss omission barely
+    affects the derivatives — perturbations, ~cancels — but biases the absolute trim
+    collective; a candidate fix that would ripple through 5c–5m, not done.) Pedal right
+    sign, magnitude torque/κ-derived. NEXT: cyclic stick (crossfeed, pre-register first);
+    Lp-3% 2nd-airframe discriminator; optional global gyro_rate=−2 + 5c–5m revalidation.
 
 Electric-powertrain track — **COMPLETE & trustworthy** (don't revisit before aero):
 - **Cell → pack → powertrain → thermal → mission.** Couples BEMT shaft power

@@ -80,9 +80,24 @@ approximations:
   flat-plate `f`; the UH-60 equivalent flat-plate area (~35 ft²) must itself be
   sourced/estimated for the parasite term.
 
+## Control rigging (Table 1 sensitivities + Table 2 mixing) — for the stick comparison
+Pilot stick → blade pitch. Table 1: CK1=0.04939 rad/in (long cyclic), CK2=0.02792 rad/in
+(lat cyclic), C5=0.2286 rad & C6=0.02792 rad/in (collective), C7=0.1743 rad &
+C8=−0.07734 rad/in (pedal); CAIS, CBIS (swashplate cyclic at zero stick) blank → 0.
+Table 2 feedforward (in/in): SK1=SK5=SK9=SK10=1.0 (stick→same-axis control). Table 2
+crossfeed (in/in): SK4=−0.1640 (collective→long cyclic), SKM2=−0.5746 (pedal→long
+cyclic), SK8=−0.16 (collective→lat cyclic), SK11=−0.2889 (collective→directional). Table 2
+feedback SKV(3,2), SKV(6,1) (rate→cyclic): SAS, zero in steady trim. **PBA (p.6):** the
+pitch-bias actuator adds to *total* longitudinal cyclic vs pitch attitude/rate/airspeed
+(pitch-attitude loop active at hover, 15% authority); gain is in **ref 2, NOT here** →
+longitudinal-cyclic comparison is confounded (see mapping #11).
+
+## Table 4 oracle (level-flight trim, 1.0-kt / hover column) — stick positions & attitude
+δe=0.1266 in, δa=0.2321 in, δc=5.719 in, δp=−1.279 in; vB=−0.0061 ft/s, wB=0.1485 ft/s;
+Euler Θ=+5.052°, Φ=−2.340°. (δe/δa/δc/δp are pilot stick inches; Δδ=0.1 in perturbation.)
+
 ## Status
 Dataset SOURCED and captured (parameters above; oracle = Table 4 trim positions and
-Tables 12+ derivatives, same report). NOT yet entered into the model. Next focused
-step: build `Aircraft::uh60()`, run hover trim + derivatives, and compare against the
-Table 4 / Table 12 oracle and the predictions in `MILESTONE6_PREDICTIONS.md`.
+Tables 12+ derivatives, same report). ENTERED into `Aircraft::uh60()`; hover derivatives,
+trim attitude, collective, and cyclic comparisons DONE (see MILESTONE6_RESULTS.md).
 No oracle numbers were fabricated; all are quoted from NASA TM 85890.

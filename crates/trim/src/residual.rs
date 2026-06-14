@@ -175,12 +175,20 @@ pub fn evaluate(ac: &Aircraft, cond: &TrimCondition, x: &[f64], kappa: f64) -> E
     let m = main_loads(ac, theta0, theta1c, theta1s, mu, disk_aoa, kappa);
     let (tail_thrust, tail_power) = tail_loads(ac, theta0_tr);
 
-    // Main-rotor thrust in body axes: ⟂ tip-path plane, tilted from the shaft
-    // (body −z) by the flapping. β1c>0 (blow-back) tilts thrust aft (−x).
+    // Main-rotor thrust in the SHAFT frame: ⟂ tip-path plane, tilted from the shaft
+    // (shaft −z) by the flapping. β1c>0 (blow-back) tilts thrust aft (−x).
     let t = m.thrust;
-    let tx = -t * m.beta1c.sin();
+    let tx_s = -t * m.beta1c.sin();
     let ty = t * m.beta1s.sin();
-    let tz = -t * m.beta1c.cos() * m.beta1s.cos();
+    let tz_s = -t * m.beta1c.cos() * m.beta1s.cos();
+    // Resolve into body axes through the forward shaft tilt γ_s (mast leans forward):
+    // a pitch rotation about +y that gives the up-the-mast thrust a forward (+x) component
+    // `T·sin γ_s`, so in hover the fuselage must pitch ~γ_s nose-up to keep thrust vertical
+    // (the fx balance). γ_s defaults to 0 (no change for prior aircraft). Hub moments are
+    // left in the shaft frame — a γ_s≈3° rotation of a moment vector is a ~0.1% mixing,
+    // negligible vs the thrust-vector effect that sets the attitude.
+    let gs = ac.shaft_tilt;
+    let (tx, tz) = (tx_s * gs.cos() - tz_s * gs.sin(), tx_s * gs.sin() + tz_s * gs.cos());
 
     // Weight resolved into body axes from the attitude.
     let w = ac.mass * G;
