@@ -78,7 +78,6 @@ impl VelocityHold {
 
 /// Closed-loop 15-state derivative about `eq`, holding velocity command `cmd =
 /// [u_cmd, v_cmd]` (perturbations from `eq`), under external moment `disturb`.
-#[allow(clippy::too_many_arguments)]
 pub fn deriv15(
     m: &Model11,
     vh: &VelocityHold,
@@ -120,7 +119,6 @@ pub fn deriv15(
 
 /// Integrate the 15-state hover/velocity-hold cascade about the equilibrium at
 /// body velocity `vel`, holding command `cmd`, under disturbance `disturb`.
-#[allow(clippy::too_many_arguments)]
 pub fn simulate15(
     ac: &Aircraft,
     j: Inertia,

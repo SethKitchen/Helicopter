@@ -63,7 +63,6 @@ pub struct FlareAssessment {
 /// * `rho`, `disk_area_m2`, `profile_power_w` feed the steady descent rate.
 /// * `reaction_delay_s` = pilot/sensor delay before the flare; `safe_touchdown_ms`
 ///   = acceptable touchdown descent rate.
-#[allow(clippy::too_many_arguments)]
 pub fn assess_vertical(
     weight_n: f64,
     mass_kg: f64,

@@ -125,7 +125,6 @@ fn equilibrium_residual(ac: &Aircraft, x: &[f64; 6]) -> [f64; 6] {
 }
 
 /// Gaussian elimination with partial pivoting for a dense system.
-#[allow(clippy::needless_range_loop)]
 pub(crate) fn solve_lin(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Vec<f64> {
     let n = b.len();
     for col in 0..n {
@@ -137,10 +136,11 @@ pub(crate) fn solve_lin(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Vec<f64> {
         }
         a.swap(col, piv);
         b.swap(col, piv);
+        let pivot = a[col].clone(); // fixed during the elimination below
         for r in (col + 1)..n {
-            let f = a[r][col] / a[col][col];
-            for c in col..n {
-                a[r][c] -= f * a[col][c];
+            let f = a[r][col] / pivot[col];
+            for (c, v) in a[r].iter_mut().enumerate().skip(col) {
+                *v -= f * pivot[c];
             }
             b[r] -= f * b[col];
         }

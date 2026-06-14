@@ -74,7 +74,6 @@ impl HeightVelocityDiagram {
 /// Build the low-speed H-V boundary for a rotor, anchored to its validated
 /// vertical critical height. `airspeeds` samples the curve (m/s). The remaining
 /// arguments mirror [`assess_vertical`].
-#[allow(clippy::too_many_arguments)]
 pub fn build_low_speed_hv(
     weight_n: f64,
     mass_kg: f64,

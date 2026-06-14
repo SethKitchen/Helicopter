@@ -34,7 +34,6 @@ pub struct Loads {
 /// Integrate the blade loads over azimuth and radius with flapping `(β0,β1c,β1s)`
 /// and cyclic pitch `controls`, at inflow `lambda`, advance ratio `mu`, tip Mach
 /// `tip_mach`. Reverse-flow elements (`u_T<0`) are nulled.
-#[allow(clippy::too_many_arguments)]
 pub fn integrate_with_flap(
     rotor: &Rotor,
     airfoil: &dyn Airfoil,

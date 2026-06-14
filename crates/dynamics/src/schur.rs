@@ -24,7 +24,6 @@ pub fn schur_eigenvalues(a: &[Vec<f64>]) -> Vec<Complex> {
 
 /// Reduce to upper Hessenberg form by Gaussian elimination with pivoting
 /// (EISPACK `elmhes`). Eigenvalues are preserved (similarity transform).
-#[allow(clippy::needless_range_loop)] // index arithmetic is intrinsic to the matrix sweep
 fn elmhes(a: &mut [Vec<f64>]) {
     let n = a.len();
     if n < 3 {
@@ -34,9 +33,9 @@ fn elmhes(a: &mut [Vec<f64>]) {
         // Pivot: largest subdiagonal entry in column m-1.
         let mut x = 0.0_f64;
         let mut i_piv = m;
-        for i in m..n {
-            if a[i][m - 1].abs() > x.abs() {
-                x = a[i][m - 1];
+        for (i, row) in a.iter().enumerate().skip(m) {
+            if row[m - 1].abs() > x.abs() {
+                x = row[m - 1];
                 i_piv = i;
             }
         }
@@ -54,19 +53,27 @@ fn elmhes(a: &mut [Vec<f64>]) {
                 if y != 0.0 {
                     y /= x;
                     a[i][m - 1] = y;
-                    for j in m..n {
-                        a[i][j] -= y * a[m][j];
+                    // Row op: row_i[j] -= y·row_m[j] for j ≥ m (i > m → disjoint rows).
+                    {
+                        let (left, right) = a.split_at_mut(i);
+                        let row_i = &mut right[0];
+                        let row_m = &left[m];
+                        for (ri, rm) in row_i.iter_mut().zip(row_m.iter()).skip(m) {
+                            *ri -= y * rm;
+                        }
                     }
-                    for k in 0..n {
-                        a[k][m] += y * a[k][i];
+                    // Column op: col_m += y·col_i across every row.
+                    for row in a.iter_mut() {
+                        let col_i = row[i];
+                        row[m] += y * col_i;
                     }
                 }
             }
         }
     }
-    for i in 2..n {
-        for j in 0..(i - 1) {
-            a[i][j] = 0.0;
+    for (i, row) in a.iter_mut().enumerate().skip(2) {
+        for v in row.iter_mut().take(i - 1) {
+            *v = 0.0;
         }
     }
 }
@@ -85,16 +92,15 @@ impl SwapRows for [Vec<f64>] {
 
 /// Francis double-shift QR on an upper-Hessenberg matrix (EISPACK `hqr`),
 /// returning all eigenvalues. Translated to 0-indexing.
-#[allow(clippy::needless_range_loop)] // index arithmetic is intrinsic to the QR sweep
 fn hqr(a: &mut [Vec<f64>]) -> Vec<Complex> {
     let n = a.len();
     let mut wr = vec![0.0; n];
     let mut wi = vec![0.0; n];
 
     let mut anorm = 0.0;
-    for i in 0..n {
-        for j in i.saturating_sub(1)..n {
-            anorm += a[i][j].abs();
+    for (i, row) in a.iter().enumerate() {
+        for v in row.iter().skip(i.saturating_sub(1)) {
+            anorm += v.abs();
         }
     }
     let eps = f64::EPSILON;
@@ -159,8 +165,8 @@ fn hqr(a: &mut [Vec<f64>]) -> Vec<Complex> {
             // Exceptional shift every 10 iterations.
             if its == 10 || its == 20 || its == 30 || its == 40 || its == 50 {
                 t += x;
-                for i in 0..=nu {
-                    a[i][i] -= x;
+                for (i, row) in a.iter_mut().enumerate().take(nu + 1) {
+                    row[i] -= x;
                 }
                 let s = a[nu][nu - 1].abs() + a[nu - 1][nu - 2].abs();
                 x = 0.75 * s;
@@ -233,26 +239,33 @@ fn hqr(a: &mut [Vec<f64>]) -> Vec<Complex> {
                 let rx = r / s;
                 let qq = q / p;
                 let rr = r / p;
-                // Row modifications.
+                // Row modifications: rows k, k+1 (and k+2 if present), column-wise.
+                // Split into disjoint row borrows so the sweep touches three rows.
+                let (left, right) = a.split_at_mut(k + 1);
+                let row_k = &mut left[k];
+                let (mid, tail) = right.split_at_mut(1);
+                let row_k1 = &mut mid[0];
+                let has_k2 = k + 2 <= nu;
                 for j in k..n {
-                    let mut pp = a[k][j] + qq * a[k + 1][j];
-                    if k + 2 <= nu {
-                        pp += rr * a[k + 2][j];
-                        a[k + 2][j] -= pp * rx;
+                    let mut pp = row_k[j] + qq * row_k1[j];
+                    if has_k2 {
+                        let row_k2 = &mut tail[0];
+                        pp += rr * row_k2[j];
+                        row_k2[j] -= pp * rx;
                     }
-                    a[k + 1][j] -= pp * qx;
-                    a[k][j] -= pp * px;
+                    row_k1[j] -= pp * qx;
+                    row_k[j] -= pp * px;
                 }
-                // Column modifications.
+                // Column modifications (each row touches only columns k..=k+2).
                 let imax = if nu < k + 3 { nu } else { k + 3 };
-                for i in 0..=imax {
-                    let mut pp = px * a[i][k] + qx * a[i][k + 1];
+                for row in a.iter_mut().take(imax + 1) {
+                    let mut pp = px * row[k] + qx * row[k + 1];
                     if k + 2 <= nu {
-                        pp += rx * a[i][k + 2];
-                        a[i][k + 2] -= pp * rr;
+                        pp += rx * row[k + 2];
+                        row[k + 2] -= pp * rr;
                     }
-                    a[i][k + 1] -= pp * qq;
-                    a[i][k] -= pp;
+                    row[k + 1] -= pp * qq;
+                    row[k] -= pp;
                 }
             }
         }

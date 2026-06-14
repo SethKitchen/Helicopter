@@ -9,7 +9,7 @@
 //! B-rep STEP is a named, larger effort).
 
 use crate::airfoil_coords::naca00xx_contour;
-use crate::blade::{blade_from_design, BladeSpec};
+use crate::blade::blade_from_design;
 use crate::fuselage::fuselage_for;
 use crate::mesh::{cylinder_z, ellipsoid, lofted_blade_tris, place, tris_to_stl, Tri, Vec3};
 use helisim_design::{DesignCandidate, DesignReport};

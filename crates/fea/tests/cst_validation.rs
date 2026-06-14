@@ -17,7 +17,7 @@ fn uniaxial_bar_gives_exact_stress_and_elongation() {
     let plate = rectangle_two_tris(l, h, T, E, NU);
     // Nodes: 0=(0,0),1=(L,0),2=(L,H),3=(0,H). Fix the left edge in x (0,3);
     // pin node 0 in y to remove rigid-body motion (the bar contracts freely).
-    let fixed = [2 * 0, 2 * 0 + 1, 2 * 3]; // u0,v0,u3
+    let fixed = [0, 1, 6]; // DOFs u0, v0, u3 (dof = 2·node, +1 for v)
     let sol = plate.solve(&[(1, f / 2.0, 0.0), (2, f / 2.0, 0.0)], &fixed).unwrap();
 
     let sigma_expected = f / (h * T);

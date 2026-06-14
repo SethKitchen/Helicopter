@@ -8,6 +8,7 @@
 //! Oracle (Robinson R22 POH / type literature):
 //!   * best glide (max distance): **75 KIAS**, glide ratio ≈ **4:1**
 //!   * minimum rate of descent:   **53 KIAS**
+//!
 //! Source: Robinson R22 Pilot's Operating Handbook normal procedures + widely
 //! republished R22 autorotation reference speeds
 //! (robinsonstrapistorprod.blob.core.windows.net/.../r22_poh_4_98ca296aca.pdf;

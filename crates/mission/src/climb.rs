@@ -44,7 +44,6 @@ pub struct ClimbReport {
 }
 
 /// Assess a sustained climb at `climb_rate_mps` held for `duration_s`.
-#[allow(clippy::too_many_arguments)]
 pub fn analyze_climb(
     rotor: &Rotor,
     op: &Operating,

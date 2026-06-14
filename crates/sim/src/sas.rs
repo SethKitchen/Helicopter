@@ -75,7 +75,6 @@ pub fn closed_loop_matrix(a: &[Vec<f64>], b: &[[f64; 4]; 11], sas: &RateSas) -> 
 
 /// Integrate the SAS-augmented 11-state EOM about the equilibrium at body velocity
 /// `vel`, with pilot feedforward `pilot` plus the state-feedback `sas`.
-#[allow(clippy::too_many_arguments)]
 pub fn simulate11_sas(
     ac: &Aircraft,
     j: Inertia,
@@ -94,7 +93,6 @@ pub fn simulate11_sas(
 /// must counter. The feedback never sees the disturbance directly (it feeds back
 /// state), so the standing attitude error this leaves is the regulation gate: a
 /// rate damper allows a standing offset (or diverges), attitude hold drives it small.
-#[allow(clippy::too_many_arguments)]
 pub fn simulate11_sas_dist(
     ac: &Aircraft,
     j: Inertia,

@@ -18,7 +18,6 @@ use helisim_rotor::{Operating, Rotor};
 /// **externally-supplied** linear inflow `[λ₀,λ₁s,λ₁c]` (the Pitt–Peters states),
 /// plus the aerodynamic forcing the inflow responds to. The inflow is NOT solved
 /// here — it is an integrated state of the dynamic-inflow model.
-#[allow(clippy::too_many_arguments)]
 pub fn main_rotor_with_inflow(
     rotor: &Rotor,
     op: &Operating,
@@ -50,7 +49,6 @@ fn flow_scales(op: &Operating, rotor: &Rotor, vel: [f64; 3], nu0: f64) -> (f64, 
 
 /// Quasi-static three-state inflow: the fixed point `ν = [L]·C(ν)`, plus the
 /// resulting body forces and the aerodynamic forcing at convergence.
-#[allow(clippy::too_many_arguments)]
 pub fn quasi_static_inflow(
     rotor: &Rotor,
     op: &Operating,
@@ -85,7 +83,6 @@ pub fn quasi_static_inflow(
 
 /// One Pitt–Peters inflow rate `ν̇` for the current state `nu`, given the flight
 /// condition. `lag` scales the apparent mass (1 = Pitt–Peters; →0 = quasi-static).
-#[allow(clippy::too_many_arguments)]
 pub fn inflow_rate(
     rotor: &Rotor,
     op: &Operating,
@@ -110,7 +107,6 @@ pub fn inflow_rate(
 /// March the dynamic inflow (forward Euler, fixed `dt` seconds) from `nu0` for
 /// `steps`, returning the final inflow and body forces. Used to show that as
 /// `lag → 0` the dynamic inflow collapses onto [`quasi_static_inflow`].
-#[allow(clippy::too_many_arguments)]
 pub fn march_inflow(
     rotor: &Rotor,
     op: &Operating,

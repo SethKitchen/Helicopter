@@ -53,7 +53,6 @@ pub struct HoverReport {
 /// (collective is overwritten by trim); `op` sets RPM/air; `airfoil` the section
 /// aero; `pack`/`powertrain` the electrical side; `gross_mass_kg` the weight to
 /// support.
-#[allow(clippy::too_many_arguments)]
 pub fn analyze_hover(
     rotor: &Rotor,
     op: &Operating,

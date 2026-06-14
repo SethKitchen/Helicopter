@@ -23,7 +23,6 @@ pub fn combine_rms(pressures: &[f64]) -> f64 {
 
 /// Build the Gutin rotational-noise spectrum (harmonics `1..=n_harmonics`) for a
 /// rotor and report each tone plus the overall level at the observer.
-#[allow(clippy::too_many_arguments)]
 pub fn rotational_spectrum(
     n_harmonics: usize,
     blades: usize,

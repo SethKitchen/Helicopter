@@ -131,7 +131,6 @@ fn flap_coeffs(
 
 /// Thrust coefficient and rearward in-plane force coefficient (H), with flapping
 /// and pitch rate in `u_P`.
-#[allow(clippy::too_many_arguments)]
 fn loads(
     rotor: &Rotor,
     airfoil: &dyn Airfoil,
@@ -179,7 +178,6 @@ fn loads(
 
 /// Main-rotor longitudinal forces/moments at body state (u, w, q) with controls
 /// held at trim. `hub_height` is the hub height above the CG.
-#[allow(clippy::too_many_arguments)]
 pub fn longitudinal_main_aero(
     rotor: &Rotor,
     op: &Operating,

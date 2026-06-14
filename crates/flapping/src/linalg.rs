@@ -4,9 +4,6 @@
 //! 3-coefficient linear system rather than a 1-D root find.
 
 /// Solve `A x = b` for a 3×3 system. Returns the solution vector.
-// Index-based Gaussian elimination: row/column arithmetic is clearer than
-// iterator gymnastics for the two-row elimination update.
-#[allow(clippy::needless_range_loop)]
 pub fn solve3(mut a: [[f64; 3]; 3], mut b: [f64; 3]) -> [f64; 3] {
     for col in 0..3 {
         // Partial pivot: largest magnitude in this column.
@@ -23,8 +20,9 @@ pub fn solve3(mut a: [[f64; 3]; 3], mut b: [f64; 3]) -> [f64; 3] {
         for r in 0..3 {
             if r != col {
                 let f = a[r][col] / d;
-                for c in 0..3 {
-                    a[r][c] -= f * a[col][c];
+                let pivot_row = a[col]; // [f64; 3] is Copy — disjoint from a[r]
+                for (c, v) in a[r].iter_mut().enumerate() {
+                    *v -= f * pivot_row[c];
                 }
                 b[r] -= f * b[col];
             }

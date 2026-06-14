@@ -77,7 +77,6 @@ pub fn simulate_decay(
 /// Time (s) for `simulate_decay` to reach `omega_min`, or `None` if it never does
 /// within `t_max` (the descent relieved the drain before the rotor decayed —
 /// recoverable). Linearly interpolates the crossing.
-#[allow(clippy::too_many_arguments)]
 pub fn time_to_min_rpm(
     inertia: f64,
     omega0: f64,
@@ -129,9 +128,10 @@ mod tests {
     #[test]
     fn descent_relief_buys_time() {
         let analytic = decay_time_constant_power(I, OM0, OM_MIN, PH);
-        match time_to_min_rpm(I, OM0, OM_MIN, PH, 3.0, 0.001, 100.0) {
-            Some(t) => assert!(t > analytic, "relieved decay {t} should exceed bound {analytic}"),
-            None => {} // never decayed — even safer
+        // If it reaches Ω_min at all, the relieved decay must take longer than the
+        // worst-case bound; if it never decays (None), that is even safer.
+        if let Some(t) = time_to_min_rpm(I, OM0, OM_MIN, PH, 3.0, 0.001, 100.0) {
+            assert!(t > analytic, "relieved decay {t} should exceed bound {analytic}");
         }
     }
 

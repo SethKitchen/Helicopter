@@ -28,7 +28,7 @@ fn key(p: Vec3) -> (i64, i64, i64) {
 /// for the Euler-characteristic check.
 pub fn mesh_topology(tris: &[Tri]) -> (usize, usize, usize) {
     let mut vmap: HashMap<(i64, i64, i64), usize> = HashMap::new();
-    let mut vid = |p: Vec3, m: &mut HashMap<(i64, i64, i64), usize>| {
+    let vid = |p: Vec3, m: &mut HashMap<(i64, i64, i64), usize>| {
         let n = m.len();
         *m.entry(key(p)).or_insert(n)
     };
@@ -48,7 +48,7 @@ pub fn mesh_topology(tris: &[Tri]) -> (usize, usize, usize) {
 /// True if the mesh is a closed 2-manifold: every edge used exactly twice.
 pub fn is_closed_manifold(tris: &[Tri]) -> bool {
     let mut vmap: HashMap<(i64, i64, i64), usize> = HashMap::new();
-    let mut vid = |p: Vec3, m: &mut HashMap<(i64, i64, i64), usize>| {
+    let vid = |p: Vec3, m: &mut HashMap<(i64, i64, i64), usize>| {
         let n = m.len();
         *m.entry(key(p)).or_insert(n)
     };
@@ -73,7 +73,6 @@ fn emit(id: &mut usize, lines: &mut Vec<String>, body: String) -> usize {
 
 /// Get (or create) the shared `EDGE_CURVE` for the undirected edge `{a,b}`,
 /// returning its id and whether `(a→b)` matches the canonical sense.
-#[allow(clippy::too_many_arguments)]
 fn get_edge(
     a: usize,
     b: usize,
@@ -108,7 +107,7 @@ fn write_solid(name: &str, tris: &[Tri], id: &mut usize, lines: &mut Vec<String>
     // De-duplicate vertices.
     let mut vmap: HashMap<(i64, i64, i64), usize> = HashMap::new();
     let mut verts: Vec<Vec3> = Vec::new();
-    let mut vidx = |p: Vec3, vm: &mut HashMap<(i64, i64, i64), usize>, vs: &mut Vec<Vec3>| -> usize {
+    let vidx = |p: Vec3, vm: &mut HashMap<(i64, i64, i64), usize>, vs: &mut Vec<Vec3>| -> usize {
         *vm.entry(key(p)).or_insert_with(|| {
             vs.push(p);
             vs.len() - 1

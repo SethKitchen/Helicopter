@@ -31,7 +31,6 @@ use crate::bessel::bessel_j;
 /// Signed rms acoustic pressure (Pa) of the `m`-th blade-passage harmonic from
 /// Gutin's formula. `omega` rad/s, `sound_speed` & all lengths SI, `theta`
 /// radians from the rotor axis, `r_eff` the effective loading radius.
-#[allow(clippy::too_many_arguments)]
 pub fn gutin_harmonic_pressure(
     m: usize,
     blades: usize,

@@ -75,7 +75,6 @@ pub type State13 = [f64; 13];
 /// Integrate the PI-attitude-hold 13-state EOM about the equilibrium at body
 /// velocity `vel`, with pilot feedforward, the PI controller, and an optional
 /// sustained external moment disturbance `[L,M,N]`. Integrators start at zero.
-#[allow(clippy::too_many_arguments)]
 pub fn simulate13(
     ac: &Aircraft,
     j: Inertia,

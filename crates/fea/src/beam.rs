@@ -136,7 +136,7 @@ impl Beam {
             f[2 * ld.node + 1] += ld.moment;
         }
         // Boundary conditions: zero the constrained DOF's row+col, unit diagonal.
-        let mut constrain = |g: usize, k: &mut [f64], f: &mut [f64]| {
+        let constrain = |g: usize, k: &mut [f64], f: &mut [f64]| {
             for c in 0..dof {
                 k[g * dof + c] = 0.0;
                 k[c * dof + g] = 0.0;
@@ -165,8 +165,9 @@ impl Beam {
             let l = self.nodes_x[e + 1] - self.nodes_x[e];
             let ke = Self::element_k(self.ei[e], l);
             let ue = [u[2 * e], u[2 * e + 1], u[2 * e + 2], u[2 * e + 3]];
-            let m_i = (0..4).map(|j| ke[1 * 4 + j] * ue[j]).sum::<f64>();
-            let m_j = (0..4).map(|j| ke[3 * 4 + j] * ue[j]).sum::<f64>();
+            // Element end moments are rows 1 and 3 of K_e·u_e (4-wide rows).
+            let m_i = (0..4).map(|j| ke[4 + j] * ue[j]).sum::<f64>();
+            let m_j = (0..4).map(|j| ke[12 + j] * ue[j]).sum::<f64>();
             let m_max = m_i.abs().max(m_j.abs());
             if m_max > max_m {
                 max_m = m_max;

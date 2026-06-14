@@ -30,7 +30,6 @@ impl Station {
     /// Assemble a station and its differential coefficients from converged
     /// section state. Centralises the `dCT/dx` and `dCP/dx` formulas so the
     /// solver and any future caller stay consistent.
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn assemble(
         x: f64,
         lambda: f64,

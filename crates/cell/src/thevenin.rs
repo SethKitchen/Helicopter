@@ -20,7 +20,6 @@ pub struct TheveninCell {
 impl TheveninCell {
     /// Construct from explicit parameters. `ocv_curve` rows are `(soc, ocv)` and
     /// are sorted internally.
-    #[allow(clippy::too_many_arguments)]
     pub fn new(
         ocv_curve: &[(f64, f64)],
         r_internal: f64,

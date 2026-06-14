@@ -12,7 +12,6 @@ use crate::full_aero::{N_AZ, N_R};
 
 /// First-harmonic flap coefficients `(β₀, β₁c, β₁s)` for the given flow, rates,
 /// and linear inflow `inflow = [λ₀, λ₁s, λ₁c]` → `λ(x,ψ)=λ₀+λ₁c x cosψ+λ₁s x sinψ`.
-#[allow(clippy::too_many_arguments)]
 pub(crate) fn flap_coeffs(
     rotor: &Rotor,
     controls: &Controls,

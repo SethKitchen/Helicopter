@@ -67,7 +67,6 @@ fn induced(ct: f64, mu: f64, lambda_c: f64) -> f64 {
 /// thrust, power, in-plane H-forces, and the *aerodynamic* roll/pitch moment
 /// coefficients (∫dC_T·x·sinψ and ∫dC_T·x·cosψ) — the latter two are the forcing
 /// the Pitt–Peters inflow states respond to.
-#[allow(clippy::too_many_arguments)]
 fn loads(
     rotor: &Rotor,
     airfoil: &dyn Airfoil,
@@ -125,7 +124,6 @@ fn loads(
 /// Full main-rotor body forces and moments at velocity `(u,v,w)` and rates
 /// `(p,q)`, with controls at trim. `hub_height` is the hub height above the CG.
 /// Yaw moment is the steady main-rotor torque reaction.
-#[allow(clippy::too_many_arguments)]
 pub fn main_rotor_full(
     rotor: &Rotor,
     op: &Operating,
@@ -162,7 +160,6 @@ pub fn main_rotor_full(
 /// baseline through 5g, with cyclic inflow forced to zero. Exposed so the
 /// Pitt–Peters layer can recover the validated baseline exactly by passing
 /// `[λ₀, 0, 0]` to `main_rotor_with_inflow`.
-#[allow(clippy::too_many_arguments)]
 pub fn uniform_inflow(
     rotor: &Rotor,
     op: &Operating,
@@ -229,7 +226,6 @@ pub struct InflowAero {
 /// Returns the body forces/moments and the inflow forcing. This is the shared
 /// core used both by the uniform-inflow [`main_rotor_full`] and the inflow-input
 /// `main_rotor_with_inflow` (in `inflow_coupling`).
-#[allow(clippy::too_many_arguments)]
 pub(crate) fn assemble_forces(
     rotor: &Rotor,
     op: &Operating,
