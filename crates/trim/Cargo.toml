@@ -1,0 +1,14 @@
+[package]
+name = "helisim-trim"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Steady-flight trim: multidimensional Newton solve over the force/moment balance."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }
+helisim-bemt = { path = "../bemt" }
+helisim-forward = { path = "../forward" }
+helisim-flapping = { path = "../flapping" }
+helisim-coupled = { path = "../coupled" }

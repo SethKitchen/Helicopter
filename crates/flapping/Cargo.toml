@@ -1,0 +1,11 @@
+[package]
+name = "helisim-flapping"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Rigid-blade first-harmonic flapping: harmonic-balance solve for coning + cyclic flap."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }
+helisim-forward = { path = "../forward" }

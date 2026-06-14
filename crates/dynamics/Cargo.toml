@@ -1,0 +1,14 @@
+[package]
+name = "helisim-dynamics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Linearized flight dynamics: stability/control derivatives + modal eigenvalues."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }
+helisim-bemt = { path = "../bemt" }
+helisim-forward = { path = "../forward" }
+helisim-flapping = { path = "../flapping" }
+helisim-trim = { path = "../trim" }

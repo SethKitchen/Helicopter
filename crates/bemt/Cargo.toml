@@ -1,0 +1,10 @@
+[package]
+name = "helisim-bemt"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Hover Blade-Element-Momentum-Theory solver for a single rotor."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }

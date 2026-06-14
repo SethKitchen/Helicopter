@@ -1,0 +1,8 @@
+[package]
+name = "helisim-rotor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Rotor geometry and operating point for the helisim BEMT solver."
+
+[dependencies]

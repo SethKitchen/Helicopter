@@ -1,0 +1,11 @@
+[package]
+name = "helisim-validation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Published-oracle validation cases (Caradonna & Tung, Harrington)."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }
+helisim-bemt = { path = "../bemt" }

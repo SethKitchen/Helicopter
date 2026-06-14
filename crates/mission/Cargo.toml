@@ -1,0 +1,15 @@
+[package]
+name = "helisim-mission"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "End-to-end coupling: BEMT power -> powertrain -> pack -> endurance."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }
+helisim-bemt = { path = "../bemt" }
+helisim-cell = { path = "../cell" }
+helisim-pack = { path = "../pack" }
+helisim-powertrain = { path = "../powertrain" }
+helisim-thermal = { path = "../thermal" }

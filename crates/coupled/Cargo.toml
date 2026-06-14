@@ -1,0 +1,12 @@
+[package]
+name = "helisim-coupled"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Two-way flap<->inflow coupling: flapping and inflow converged together."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }
+helisim-forward = { path = "../forward" }
+helisim-flapping = { path = "../flapping" }

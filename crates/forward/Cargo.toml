@@ -1,0 +1,10 @@
+[package]
+name = "helisim-forward"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Forward-flight BEMT: Glauert inflow + azimuthal blade-element integration."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }

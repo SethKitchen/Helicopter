@@ -1,0 +1,38 @@
+# Workspace root for the helisim helicopter simulator.
+#
+# Milestone 1 is a hover Blade-Element-Momentum-Theory (BEMT) solver validated
+# against the Caradonna & Tung (1981) and Harrington (1951) rotors. The project
+# is split into small, single-concept crates so later milestones (forward
+# flight, flapping dynamics, trim + rigid-body flight model) can be added as new
+# crates without disturbing the hover core.
+#
+# Zero external dependencies — std only, everywhere.
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/airfoil",
+    "crates/rotor",
+    "crates/bemt",
+    "crates/forward",
+    "crates/flapping",
+    "crates/coupled",
+    "crates/trim",
+    "crates/dynamics",
+    "crates/sim",
+    "crates/validation",
+    "crates/cell",
+    "crates/pack",
+    "crates/powertrain",
+    "crates/thermal",
+    "crates/mission",
+    "crates/cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[profile.release]
+opt-level = 3

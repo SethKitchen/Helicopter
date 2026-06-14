@@ -1,0 +1,8 @@
+[package]
+name = "helisim-airfoil"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Sectional airfoil aerodynamics (Cl, Cd) for the helisim BEMT solver."
+
+[dependencies]

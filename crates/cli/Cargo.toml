@@ -1,0 +1,26 @@
+[package]
+name = "helisim-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Command-line driver for the helisim hover BEMT solver and validation."
+
+[[bin]]
+name = "helisim"
+path = "src/main.rs"
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }
+helisim-bemt = { path = "../bemt" }
+helisim-forward = { path = "../forward" }
+helisim-flapping = { path = "../flapping" }
+helisim-trim = { path = "../trim" }
+helisim-dynamics = { path = "../dynamics" }
+helisim-sim = { path = "../sim" }
+helisim-validation = { path = "../validation" }
+helisim-cell = { path = "../cell" }
+helisim-pack = { path = "../pack" }
+helisim-powertrain = { path = "../powertrain" }
+helisim-thermal = { path = "../thermal" }
+helisim-mission = { path = "../mission" }

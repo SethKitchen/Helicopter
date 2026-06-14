@@ -1,0 +1,9 @@
+[package]
+name = "helisim-pack"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Series/parallel battery pack built from cells."
+
+[dependencies]
+helisim-cell = { path = "../cell" }

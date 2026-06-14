@@ -1,0 +1,13 @@
+[package]
+name = "helisim-sim"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Nonlinear longitudinal time-marching, validated against the linear eigenvalues."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-rotor = { path = "../rotor" }
+helisim-flapping = { path = "../flapping" }
+helisim-trim = { path = "../trim" }
+helisim-dynamics = { path = "../dynamics" }
