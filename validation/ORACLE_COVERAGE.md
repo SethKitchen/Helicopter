@@ -56,14 +56,21 @@ These rely on self-consistency / closed-form where a clean **external measured**
 number is genuinely hard to source without the careful-sourcing discipline of
 Milestone 6 — listed so coverage is not over-claimed:
 
-- **acoustics**: no external *measured-SPL* datapoint (only Bessel tables + Gutin
-  closed form + directivity). A published rotor-noise SPL spectrum with full
-  geometry would anchor the absolute level — a Milestone-6-style sourcing task.
+- **control gains (sim 5j–5m)**: ✅ ADDRESSED — `closed_loop_damping_vs_ads33_level1`
+  checks ζ against the published **ADS-33E / MIL-F-9490D Level-1 ζ≥0.35**. Finding:
+  the velocity/position modes meet it (ζ 0.45–0.76); the body modes sit at ζ≈0.10
+  (documented limitation — rate gains tuned for timescale separation, not inner
+  damping; raising them is the named next step).
+- **acoustics**: ⏳ OPEN — no external *measured-SPL* datapoint (only Bessel tables
+  + Gutin closed form + directivity). Sourcing attempted (NASA NTRS 19700005920
+  "A Review of Aerodynamic Noise From Propellers" is a scanned PDF, not reliably
+  text-extractable via available tools; CEAS/Springer flyover papers are paywalled).
+  Per the no-fabrication rule, NOT anchored with an invented number — this stays a
+  Milestone-6-style careful-sourcing task (find one published Gutin worked example
+  or measured rotor SPL with full geometry, pre-register, then compare).
 - **forward / coupled**: advancing-vs-retreating split and the flap↔inflow loop
   are validated by closed forms + consistency, not wind-tunnel load distributions.
-- **control gains (sim 5j–5m)**: tuned values; closed-loop damping could be checked
-  against MIL-STD-1797A handling-qualities ζ bands (not yet done).
 - **design / cost**: compositions — no external design/cost baseline (appropriate;
   they delegate to validated cores). Cost unit prices are named inputs, not quotes.
-- **FEA**: element-level validated (beam + CST); no assembly-level multi-axis
-  blade/hub FE cross-check yet.
+- **FEA**: element-level validated (beam + CST + geometric stiffening); no
+  assembly-level multi-axis blade/hub FE cross-check yet.

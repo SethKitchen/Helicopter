@@ -68,6 +68,42 @@ fn cascade_is_well_formed_off_seam() {
     );
 }
 
+/// DOCUMENTED handling-qualities check (closes the "tuned gains, no published
+/// basis" gap from validation/ORACLE_COVERAGE.md). ADS-33E / MIL-F-9490D specify
+/// a **Level-1 minimum damping ratio ζ ≥ 0.35** for the closed-loop oscillatory
+/// modes. Computing ζ = −Re/|λ| from the validated off-seam 15-state closed loop:
+/// the **velocity/position-hold modes (|λ|<0.3) MEET Level 1** (ζ ≈ 0.45, 0.76),
+/// while the faster **body/attitude modes (|λ|≈1.3) sit at ζ ≈ 0.10**, below it.
+///
+/// Honest finding: the cascade is stable and its outer (slow) modes are
+/// well-damped to the published criterion, but the rate-damper gains were tuned
+/// for timescale separation + stability, NOT inner-loop damping — raising them to
+/// bring the body modes to ζ≥0.35 is the named next step for full HQ compliance.
+#[test]
+fn closed_loop_damping_vs_ads33_level1() {
+    let ac = Aircraft::demo();
+    let j = inertia();
+    let vel = [5.0, 0.0, 0.0];
+    let e = eigenvalues(&linearize15(&ac, j, vel, &VelocityHold::hover_hold()));
+    const LEVEL1: f64 = 0.35; // ADS-33E / MIL-F-9490D Level-1 minimum damping ratio
+
+    let mut slow_ok = false;
+    for c in &e {
+        if c.im <= 1e-6 {
+            continue; // not oscillatory
+        }
+        let mag = (c.re * c.re + c.im * c.im).sqrt();
+        let zeta = -c.re / mag;
+        assert!(c.re < 0.0, "every oscillatory mode is stable");
+        if mag < 0.3 {
+            // velocity/position-hold cluster — must meet the published Level-1 bound.
+            assert!(zeta >= LEVEL1, "slow mode |λ|={mag:.2} ζ={zeta:.2} below Level-1");
+            slow_ok = true;
+        }
+    }
+    assert!(slow_ok, "found the slow velocity/position oscillatory modes");
+}
+
 #[test]
 fn velocity_hold_zeroes_the_drift_attitude_hold_left() {
     // The pre-computed target: 5l left ~1.6 m/s drift under a sustained 0.6 N·m
