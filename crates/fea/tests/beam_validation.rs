@@ -96,6 +96,47 @@ fn taut_string_limit_recovers_q_l2_over_8t() {
 }
 
 #[test]
+fn combined_loads_superpose_exactly() {
+    // Assembly-level check: a linear FE model must superpose. A cantilever under a
+    // tip point load P AND a uniform load q deflects exactly the sum of the two
+    // solved separately — and equals the closed-form PL³/3EI + qL⁴/8EI.
+    let (l, p, q) = (2.0, -100.0, -30.0);
+    let n = 16;
+    let tip = |dist, pt| -> f64 {
+        let b = uniform_beam(l, n, EI, Z);
+        let d: Option<Vec<f64>> = if dist { Some(b.uniform_load_vector(q)) } else { None };
+        let loads: Vec<NodalLoad> = if pt { vec![NodalLoad { node: n, force: p, moment: 0.0 }] } else { vec![] };
+        *b.solve(&loads, d.as_deref(), &[Bc::Clamped(0)]).unwrap().deflection.last().unwrap()
+    };
+    let combined = tip(true, true);
+    let separate = tip(false, true) + tip(true, false);
+    assert!((combined - separate).abs() < 1e-9, "superposition: {combined} vs {separate}");
+    let closed = p * l.powi(3) / (3.0 * EI) + q * l.powi(4) / (8.0 * EI);
+    assert!((combined - closed).abs() / closed.abs() < 1e-3);
+}
+
+#[test]
+fn a_soft_outboard_segment_adds_tip_compliance() {
+    // Per-element EI: a multi-segment beam with a soft outer half deflects MORE at
+    // the tip than a uniformly-stiff beam under the same tip load — the assembly
+    // correctly carries variable stiffness along the span.
+    let (l, p, n) = (2.0, -100.0, 8);
+    let stiff = uniform_beam(l, n, EI, Z)
+        .solve(&[NodalLoad { node: n, force: p, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .unwrap();
+    let mut soft_tip = uniform_beam(l, n, EI, Z);
+    for e in n / 2..n {
+        soft_tip.ei[e] = EI / 4.0; // outer half is 4× more flexible
+    }
+    let soft = soft_tip
+        .solve(&[NodalLoad { node: n, force: p, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .unwrap();
+    assert!(soft.max_deflection_m > stiff.max_deflection_m);
+    // Root bending moment is unchanged (statically determinate: M_root = |P|·L).
+    assert!((soft.max_moment_nm - p.abs() * l).abs() / (p.abs() * l) < 0.05);
+}
+
+#[test]
 fn refinement_does_not_change_the_exact_point_load_answer() {
     // The point-load cantilever is exact at any mesh density — 1 vs 8 elements agree.
     let (l, p) = (2.5, -120.0);

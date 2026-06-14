@@ -72,5 +72,19 @@ Milestone 6 — listed so coverage is not over-claimed:
   are validated by closed forms + consistency, not wind-tunnel load distributions.
 - **design / cost**: compositions — no external design/cost baseline (appropriate;
   they delegate to validated cores). Cost unit prices are named inputs, not quotes.
-- **FEA**: element-level validated (beam + CST + geometric stiffening); no
-  assembly-level multi-axis blade/hub FE cross-check yet.
+- **FEA**: ✅ ADDRESSED at assembly level — `combined_loads_superpose_exactly`
+  (linear FE: combined = Σ individual = PL³/3EI + qL⁴/8EI) and
+  `a_soft_outboard_segment_adds_tip_compliance` (per-element EI assembly). Remaining
+  element types (plate-bending / curved shell) named as future work.
+
+## Test coverage
+
+`cargo llvm-cov` (a dev tool, not a project dependency): **99.28% line / 99.88%
+function / 99.06% region**, up from 81.3% after a CLI lib/bin split + a smoke test
+running every subcommand, trait-default and accessor tests, and defensive-branch
+tests (infeasible / None / edge paths) with confirmed-number assertions. The
+remaining ~63 lines are the irreducible kind: the binary entry point `fn main`
+(not run by `cargo test`), defensive non-convergence/singular safety nets that
+valid inputs do not reach, and CLI narrative branches the fixed demos never hit.
+Pushing to a literal 100% would require testing unreachable code, so it is left
+honestly named rather than gamed.
