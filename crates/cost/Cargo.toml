@@ -1,0 +1,8 @@
+[package]
+name = "helisim-cost"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Parametric cost + buildability (vertical-integration) model: BOM by subsystem, self-build fraction, irreducible buy-items."
+
+[dependencies]

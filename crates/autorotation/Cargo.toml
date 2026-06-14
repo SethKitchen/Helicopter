@@ -1,0 +1,9 @@
+[package]
+name = "helisim-autorotation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Power-off autorotation: descent-regime inflow, steady autorotative descent rate, and rotor flare energy."
+
+[dependencies]
+helisim-rotor = { path = "../rotor" }

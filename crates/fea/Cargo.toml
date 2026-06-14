@@ -1,0 +1,8 @@
+[package]
+name = "helisim-fea"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Minimal std-only finite-element analysis: Euler-Bernoulli beam solver, validated against closed-form beam theory."
+
+[dependencies]

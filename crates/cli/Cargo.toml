@@ -24,3 +24,8 @@ helisim-pack = { path = "../pack" }
 helisim-powertrain = { path = "../powertrain" }
 helisim-thermal = { path = "../thermal" }
 helisim-mission = { path = "../mission" }
+helisim-autorotation = { path = "../autorotation" }
+helisim-acoustics = { path = "../acoustics" }
+helisim-design = { path = "../design" }
+helisim-cost = { path = "../cost" }
+helisim-manufacture = { path = "../manufacture" }

@@ -25,18 +25,26 @@ impl Convective {
     }
 
     /// Natural convection of a small cylinder in still air, h ≈ 7.5 W/(m²·K).
-    /// This is the "free convection" condition under which 18650 cells are
-    /// thermally characterised.
+    /// Free convection of an ~18 mm horizontal cylinder at a modest ΔT gives
+    /// `Nu ≈ 4–6` (Churchill–Bernstein correlation), so with air `k ≈ 0.026 W/(m·K)`
+    /// and `D = 0.018 m`, `h = Nu·k/D ≈ 6–9 W/(m²·K)` — the 7.5 used is central.
+    /// Source: Incropera & DeWitt, *Fundamentals of Heat and Mass Transfer*
+    /// (free convection from cylinders); the regime under which 18650 cells are
+    /// datasheet-characterised.
     pub fn natural_air() -> Self {
         Convective { h: 7.5 }
     }
 
-    /// Forced air over the cells, e.g. a cooling fan, h ≈ 40 W/(m²·K).
+    /// Forced air over the cells, e.g. a cooling fan (~2 m/s), h ≈ 40 W/(m²·K).
+    /// Cross-flow over an 18 mm cylinder at `Re ≈ 2000` gives `Nu ≈ 25–30`
+    /// (Hilpert/Churchill correlation) → `h ≈ 35–45 W/(m²·K)`. Source: Incropera &
+    /// DeWitt, forced convection over a cylinder in cross-flow.
     pub fn forced_air() -> Self {
         Convective { h: 40.0 }
     }
 
-    /// Strong rotor-downwash cooling, h ≈ 80 W/(m²·K).
+    /// Strong rotor-downwash cooling (~4–5 m/s), h ≈ 80 W/(m²·K) — higher-Re
+    /// cross-flow; an upper estimate, to be confirmed by test if used in anger.
     pub fn rotor_downwash() -> Self {
         Convective { h: 80.0 }
     }
@@ -66,5 +74,15 @@ mod tests {
     fn heat_scales_with_delta_t_and_area() {
         let c = Convective::new(10.0);
         assert!((c.heat_removed(35.0, 25.0, 0.004) - 10.0 * 0.004 * 10.0).abs() < 1e-12);
+    }
+
+    /// DOCUMENTED — the convection coefficients sit in the textbook free/forced
+    /// convection bands for an ~18 mm cylinder (Incropera & DeWitt): free
+    /// convection h ≈ 5–10, forced (fan) h ≈ 30–60. See the constructor docs for
+    /// the Nu·k/D derivation.
+    #[test]
+    fn coefficients_are_in_the_literature_convection_bands() {
+        assert!((5.0..=10.0).contains(&Convective::natural_air().h));
+        assert!((30.0..=60.0).contains(&Convective::forced_air().h));
     }
 }

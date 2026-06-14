@@ -3,8 +3,22 @@
 version = 4
 
 [[package]]
+name = "helisim-acoustics"
+version = "0.1.0"
+dependencies = [
+ "helisim-rotor",
+]
+
+[[package]]
 name = "helisim-airfoil"
 version = "0.1.0"
+
+[[package]]
+name = "helisim-autorotation"
+version = "0.1.0"
+dependencies = [
+ "helisim-rotor",
+]
 
 [[package]]
 name = "helisim-bemt"
@@ -22,12 +36,17 @@ version = "0.1.0"
 name = "helisim-cli"
 version = "0.1.0"
 dependencies = [
+ "helisim-acoustics",
  "helisim-airfoil",
+ "helisim-autorotation",
  "helisim-bemt",
  "helisim-cell",
+ "helisim-cost",
+ "helisim-design",
  "helisim-dynamics",
  "helisim-flapping",
  "helisim-forward",
+ "helisim-manufacture",
  "helisim-mission",
  "helisim-pack",
  "helisim-powertrain",
@@ -39,12 +58,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "helisim-cost"
+version = "0.1.0"
+
+[[package]]
 name = "helisim-coupled"
 version = "0.1.0"
 dependencies = [
  "helisim-airfoil",
  "helisim-flapping",
  "helisim-forward",
+ "helisim-rotor",
+]
+
+[[package]]
+name = "helisim-design"
+version = "0.1.0"
+dependencies = [
+ "helisim-acoustics",
+ "helisim-airfoil",
+ "helisim-autorotation",
+ "helisim-bemt",
+ "helisim-cost",
+ "helisim-mission",
  "helisim-rotor",
 ]
 
@@ -61,6 +97,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "helisim-fea"
+version = "0.1.0"
+
+[[package]]
 name = "helisim-flapping"
 version = "0.1.0"
 dependencies = [
@@ -75,6 +115,16 @@ version = "0.1.0"
 dependencies = [
  "helisim-airfoil",
  "helisim-rotor",
+]
+
+[[package]]
+name = "helisim-manufacture"
+version = "0.1.0"
+dependencies = [
+ "helisim-airfoil",
+ "helisim-bemt",
+ "helisim-design",
+ "helisim-fea",
 ]
 
 [[package]]

@@ -235,6 +235,192 @@ Electric-powertrain track — **COMPLETE & trustworthy** (don't revisit before a
   datasheet (capacity + voltage sag) and 18650 thermal characterization
   (specific heat, 75 °C protection behaviour).
 
+Safety & design track — **COMPLETE** (the power-off + noise + sizing layer the
+powered-flight stack omitted; built off the validated cores, never modifies them):
+- **Autorotation (power-off).** The whole aero/control stack assumes a *driven*
+  rotor; this adds the regime it never visits — air coming *up* through the disk.
+  Descent-regime inflow: exact momentum closed forms for the climb and
+  windmill-brake states (each validated to 1e-9 against its own momentum quadratic)
+  + the **measured** vortex-ring/turbulent-wake curve (cited Leishman quartic),
+  because momentum theory is *physically invalid* there and real autorotation sits
+  in that band. Steady **vertical** descent by energy balance `V_d = v_i + P₀/T`
+  (monotone bisection, adaptive bracket — a draggy rotor sits arbitrarily deep in
+  the windmill state, so a fixed ceiling would silently clamp it); validated
+  against the measured ideal band `V_d/v_h∈[1.7,2.0]` (Harrington-style band
+  oracle, not a closed form). **Forward** autorotation: the glide polar
+  `RoD(V)=P_req(V)/W` and the min-sink / best-glide speeds — the realistic,
+  survivable case (roughly halves the vertical rate at full scale). Flare energy
+  `½IΩ²` + autorotation index. **Findings:** vertical autorotation is fast
+  (~3300 fpm full-scale rep.); small model rotors are profile-drag-heavy, so they
+  autorotate ABOVE the ideal band and gain little from forward flight — flare
+  energy is their binding margin. **Flare survivability** (`survivability.rs`):
+  composes the steady descent rate and the flare energy into the go/no-go energy
+  bound — flare margin `M=E_flare/½m(V_d²−V_safe²)` must exceed 1 (necessary, NOT
+  sufficient; transient entry/flare dynamics deliberately omitted as the
+  "looks-right-quietly-wrong" integrator trap). Energy-bound only, all assumptions
+  named (Ω_min frac, reaction delay, safe touchdown). **Height-velocity envelope**
+  (`height_velocity.rs`): the low-speed "dead man's curve" by the ENERGY method
+  `h_crit(V)=h_crit_hover−V²/2g` (forward KE as a height equivalent) — NO free
+  parameter, anchored to the validated vertical critical height; the high-speed
+  lobe is deferred to a dynamic flare model, *not* faked (the transient has no
+  clean oracle — the integrator trap, avoided on purpose). `helisim` (feeds the
+  design study).
+- **Rotor-speed decay (dynamic entry, `rotor_decay.rs`).** The one transient
+  piece, made honest by an EXACT oracle: the rotor EOM `IΩΩ̇=−P` integrates in
+  closed form under constant power to `t_decay=½I(Ω₀²−Ω_min²)/P_h=E_flare/P_h` —
+  the worst-case seconds before RPM is unrecoverable after power loss. An RK4 march
+  (descent relief relaxing the drain) is **gated against that closed form in the
+  constant-power limit** (exact) + a step-size check — satisfying the "never trust
+  a time-integrator without a pre-computed oracle" rule precisely where the full
+  vortex-ring-coupled entry aero (deliberately omitted) would have none. **Finding
+  (in `helisim design`):** the 3.5 kg model has only **~0.5 s** of decay time vs
+  ~7–8 s full-scale — a small electric helicopter needs AUTOMATIC power-loss
+  detection + instant collective drop; no human reacts that fast.
+- **★ EXTERNAL validation (autorotation, R22).** The first *external* check of
+  this track (a category change, like Milestone 6 for the core aero) — predictions
+  + parameter mapping LOCKED in `validation/AUTOROTATION_EXTERNAL_PREREG.md` before
+  the oracle was sourced; results in `..._RESULTS.md`; test
+  `crates/autorotation/tests/r22_external_validation.rs`. Oracle: Robinson R22 POH
+  (best glide **75 KIAS**, ~**4:1** ratio; min-RoD **53 KIAS**), sourced + cited,
+  not fabricated. **Result:** the clean calibration-free claims PASS exactly
+  (best-glide speed > min-sink speed; forward < vertical), and the power-derived
+  magnitudes land within ~9–16% with the error in the **pre-registered direction**
+  (best-glide speed over-predicted by the assumed flat-plate area f; glide RATIO —
+  least calibration-sensitive — matches to 11%). Two inputs (C_d0, f) are stated
+  assumptions, so it's a "right order + right ordering + error attributable to
+  named inputs" validation, not a precision match — declared up front.
+- **Acoustics (rotor noise).** Electric removes engine/exhaust noise → the rotor
+  dominates, so quiet design lives in the rotor model already built. **Gutin**
+  rotational (loading) noise closed form on a std-only Bessel `J_n` (implemented
+  here, validated vs tabulated zeros/values/recurrence). Validated internally:
+  on-axis null, off-axis directivity peak (the torque term flips the bracket sign
+  near the disk plane — peak is off-axis, NOT in-plane, a corrected assumption),
+  harmonic decay, dB energy-sum, and the `∝M_tip³` tip-speed lever (10% V_tip cut
+  ≈2.7 dB). **Honest scope:** tonal loading noise only; broadband + full Farassat-1A
+  thickness + an external measured-SPL oracle are NAMED and deferred — never faked
+  (the external-SPL match is a Milestone-6-style sourcing task).
+- **Sizing study (`design`).** Composes the validated cores (BEMT hover trim ←
+  mission, autorotation, acoustics) into the priority vector — **no new physics**;
+  its tests are composition-consistency + trade-direction, not a new oracle.
+  `helisim design`. **Load-bearing finding (the sweep falsified the first
+  narrative; believed the disagreement per the ★ rule):** at fixed tip speed,
+  hover power/endurance and the autorotation descent rate are NOT monotone in
+  rotor radius — they have a **sweet spot ≈R 0.65–0.7 m** for the 3.5 kg model and
+  worsen as bigger blades grow draggy; FM *falls* with radius (wrong airtime metric
+  here); only noise is monotone (bigger/slower = quieter). **Sharper safety
+  constraint:** the flare-margin column does the OPPOSITE of the others — at fixed
+  V_tip a bigger disk spins slower (Ω=V_tip/R) so stored flare energy ½IΩ² falls,
+  and the energy bound FAILS at R≳0.7 (a hard 'NO' cliff right where airtime is
+  best). Safety's two metrics (descent rate ↓, flare margin ↓) pull opposite ways
+  on radius, so the disk can't just grow — recommendation comes from the priority
+  ORDER, not a single fabricated objective.
+  **Recommender (`recommend.rs`) — the project's purpose: SUGGEST targets, don't
+  consume them.** Searches the rotor geometry grid (blades × radius × tip speed ×
+  solidity; chord derived from σ, rotor inertia *estimated from blade geometry* so
+  the safety constraint responds physically), rejects anything that can't hover or
+  fails the **safety floor** (flare margin ≥ threshold — a hard constraint, priority
+  1), then ranks survivors by rank-weighted, min-max-normalised priority metrics
+  (vert-integ → cost → airtime → efficiency → noise). Returns the winner + full
+  ranked list + rationale, and **flags grid-edge optima** (honest: the true optimum
+  may lie outside the searched range). **It beats the hand-picked `model()`:**
+  recommends 3 blades, R=0.70, V_tip=90 → flare margin 2.36 (vs 1.30), endurance
+  27.5 min (vs 18.9), 23.5 dB (vs 47) — safer, longer, quieter at once. Cost +
+  vertical-integration are now IN the design report (so the recommender honours
+  priorities #2/#3). `helisim design` leads with the recommendation. **Next: emit
+  manufacturing geometry + build steps from the recommended spec (the stated end
+  goal — "3D-print this shape / cut this block into this shape").**
+- **Manufacture (`manufacture`) — design → buildable geometry (the end goal, started).**
+  Turns the recommended [`DesignCandidate`] into real dimensioned part geometry,
+  beginning with the blade: exact **NACA 4-digit section coordinates** (validated
+  against published 0012 ordinates — y_t(0.30)=0.0600, TE(1.0)=0.00126), a
+  dimensioned **BladeSpec** (span/chord/max-thickness), the **raw stock block** to
+  start from (with machining allowance), and **step-by-step shaping instructions**.
+  Geometry is exact math → geometric oracles, not fabricated numbers. `helisim
+  design` now ends with the recommended blade's build steps (e.g. "Obtain stock
+  654×44×5 mm balsa; shape NACA 0012, chord 36.7 mm, max thickness 4.40 mm @ 30%").
+  **COMPLETE part system + assembly + export.** Every part is its own
+  [`BuildPart`] (trait = polymorphism boundary) **physically sized from the
+  design**, not guessed: blade (NACA section), **mast** (torsion `d=(16Q/πτ)^⅓`
+  from the actual hover torque), **hub/grips** (from blade root + mast bore),
+  **swashplate** (∝ rotor), **tail boom** (bending — root moment = main torque
+  exactly, `M=Q`), **powertrain tray** (pack footprint). [`build_package`]
+  assembles all six + a 10-step assembly sequence (ending with the power-loss
+  safety check). [`export`] writes **STL** (printable extruded blade solid) and
+  **DXF** (cuttable closed NACA-section polyline) — hand-written, zero deps, tests
+  check well-formedness (facet/vertex counts, headers). `helisim build` runs the
+  whole chain (recommend → size every part → assembly → write `build_output/*.stl
+  + *.dxf`). Tests are geometric/engineering oracles (published NACA ordinates,
+  the torsion/bending stress limits), never fabricated. Sizing is a first cut —
+  the build output says so (confirm critical parts before flight).
+  **Fidelity round (all 4 refinements):** (1) **lofted blade** — taper + twist
+  interpolated over spanwise stations into a true tapered/twisted STL solid, plus
+  a **root fitting** part (tang + retention bolt); (2) **structural proof**
+  (`structural.rs`) — real flight-load margins of safety, the dominant load being
+  **blade centrifugal tension** `F_cf=ω²m_blade·r_cg`, plus mast torsion + boom
+  bending margins (finding: the tail BOOM is the most marginal first-cut part,
+  MS≈+0.3); (3) **fuselage pod** + a **whole-aircraft assembly STL** (a `mesh.rs`
+  triangle toolkit — cylinder/ellipsoid/loft + rotate/translate — positions
+  fuselage+mast+blades+boom into one solid) + a valid **STEP wireframe** export
+  (ISO-10303-21 section polylines; B-rep solid named/deferred); (4) **tail rotor**
+  sub-assembly sized for anti-torque (`T_tr=Q/L_boom`), a miniature of the main
+  rotor reusing the blade spec. `build_package` now emits 9 parts; `helisim build`
+  prints the structural margins and writes blade.stl (lofted) + aircraft.stl
+  (assembly) + blade.step + blade_section.dxf.
+  **Heavy round (3 standalone efforts, each with a real oracle):**
+  (1) **B-rep STEP solid** (`step_brep.rs`) — the blade mesh as a true
+  `MANIFOLD_SOLID_BREP` (shared VERTEX_POINTs/EDGE_CURVEs, one ADVANCED_FACE per
+  triangle, CLOSED_SHELL), NOT a wireframe. Validated **topologically**: closed
+  genus-0 ⇒ Euler `V−E+F=2`, every edge used exactly twice (manifold), all #id refs
+  resolve. (Full AP203 product conformance + CAD round-trip = named, not claimed.)
+  (2) **FEA** (new crate `fea` + `fea_structural.rs`) — std-only Euler-Bernoulli
+  beam FEM (assemble K, Gaussian solve, recover M & σ), validated against
+  closed-form beam theory (cantilever `PL³/3EI` EXACT for cubic elements;
+  simply-supported `PL³/48EI`; distributed `qL⁴/8EI` converges). Upgrades the
+  section check: solves the tail boom (cantilever, tail-thrust tip load) and blade
+  flap (distributed lift), reports the **deflection** the `M/Z` check couldn't and
+  cross-checks FE vs closed-form stress (independent routes agree to 0.1 MPa).
+  **Finding:** model boom tip deflects 62 mm, blade tip 82 mm — both pass on
+  STRESS but are flexible, so **stiffness, not strength, may govern** (the FE adds
+  exactly what the first-cut missed). (3) **Fastener/bearing selection**
+  (`fasteners.rs`) — metric bolt (class 8.8) + deep-groove bearing catalogues;
+  selects the **smallest standard part whose rated capacity ≥ load×SF** (validation:
+  chosen passes, next size down fails). Hardware schedule: blade-retention M2
+  (363 N centrifugal, double shear), 626 mast bearings, 623 grip bearings.
+  `helisim build` now also prints the FEA + hardware schedule and writes the B-rep
+  blade.step.
+  **Deep round (4 more standalone efforts, each oracle-backed):**
+  (1) **Whole-assembly B-rep** — `aircraft_to_step_ap203` emits every main solid
+  (fuselage/mast/blades/boom), positioned, as separate MANIFOLD_SOLID_BREPs;
+  required fixing the primitive meshes (ellipsoid pole fans) to be clean closed
+  manifolds — each validated V−E+F=2. (2) **Full AP203 conformance**
+  (`assembly_to_step_ap203`) — proper product structure (APPLICATION_CONTEXT →
+  PRODUCT → PRODUCT_DEFINITION → SHAPE_DEFINITION_REPRESENTATION) +
+  ADVANCED_BREP_SHAPE_REPRESENTATION with a mm-unit GEOMETRIC_REPRESENTATION_CONTEXT;
+  validated by required-entity presence + all #refs resolve. (3) **Geometric
+  (tension) stiffening** in the beam FEA — element geometric stiffness `Kg` with
+  per-element axial tension; validated by the **taut-string limit** (`EI→0 ⇒
+  qL²/8T`) and `T→0` recovering the beam. Applied to the blade with centrifugal
+  tension `T(r)=ω²μ(R²−r²)/2`: **the floppy 82 mm static flap deflection becomes
+  ~11 mm spun-up** (the real rotating-blade stiffness; static FEA over-predicts 7×).
+  (4) **True 2-D continuum FE** — a plane-stress CST (`fea/cst.rs`), validated by
+  the FE **patch test** (uniform stress reproduced exactly) + a uniaxial bar
+  (`σ=F/A`, `δ=FL/AE` to machine precision) + Poisson sign. `helisim build` writes
+  aircraft.step (whole-aircraft AP203 B-rep). Deferred: plate-bending/curved-shell
+  elements; NEXT_ASSEMBLY_USAGE_OCCURRENCE component tree; CAD round-trip check.
+- **Cost + buildability (`cost`).** Priorities #2 (vertical integration) and #3
+  (cost), the two the aero/safety stack didn't touch. A bill of materials from a
+  coarse mass/power/energy spec, every line tagged with a **buildability** taxonomy
+  (raw-stock / fabricated / assembled / purchased) → a **vertical-integration
+  index** (cost-weighted self-build fraction) + the irreducible buy-list.
+  **Provenance honesty applied to money:** costs are a PARAMETRIC model with named,
+  overridable [`UnitCosts`] inputs (representative defaults flagged as assumptions,
+  NOT sourced facts); only the relative breakdown + buildability split are findings.
+  Tests are accounting consistency/monotonicity, not a cost oracle. **Finding:** at
+  model scale the COTS flight-controller + sensors ($-flat) dominate and are
+  unbuildable, pinning the self-build index ~25%; vertical integration improves
+  with scale as self-made structure/rotor grow against ~flat avionics. `helisim
+  design` (cost section).
+
 Each milestone is added as new crate(s); never break the existing cores.
 
 ## Hard rules (always follow)
@@ -260,6 +446,23 @@ Each milestone is added as new crate(s); never break the existing cores.
   (e.g. BEMT over-predicts thrust vs. a contracted wake), document the size and
   cause in code, and encode the *expected* behaviour in the test — do not
   silently fudge a parameter to force a match.
+
+## Oracle coverage (documented example numbers for every module)
+
+`validation/ORACLE_COVERAGE.md` is the **coverage map**: every validated quantity,
+the documented example number it matches, the source, and the oracle type
+(A external / B closed-form / C self-consistency / D structural). After an audit
+that found several modules validating only by self-consistency where a documented
+number was readily sourceable, documented-number tests were added so a reader can
+hand-check each: **pack** (6S2P 25R → 21.6 V / 5 Ah / 108 Wh / 63 mΩ / 540 g / 40 A,
+Samsung datasheet), **powertrain** (0.85×0.95=0.80; 1000 W→1250 W), **thermal**
+(convection h in the Incropera Nu·k/D bands), **airfoil** (NACA0012 a₀=5.73/rad,
+C_lmax 1.4, C_d0 0.0065 — Abbott & von Doenhoff / Prouty), **manufacture**
+(bolt areas = ISO 724, working shear = ISO 898-1 0.6·800/2.4; boom Z≈0.058D³ =
+Roark; Al allowables MMPDS/ASM). Honest gaps that remain (no clean external number
+without Milestone-6-style sourcing) are listed at the bottom of that file — chiefly
+the **acoustics external-SPL** anchor. The rule still holds: a "match" is a passing
+`#[test]`, and a number with no source is never fabricated — it is named as a gap.
 
 ## Validation lessons (hard-won; violate at your peril)
 
@@ -430,7 +633,67 @@ crates/
     hover_mission.rs  analyze_hover -> HoverReport (incl. hover peak temp)
     climb.rs          analyze_climb -> ClimbReport (sustained-climb thermal check)
     tests/end_to_end.rs  chain + design-tension + thermal-safety tests
-  cli/          command-line driver (report/study/mission_cli formatting)
+  autorotation/ power-off descent (safety; std + helisim-rotor only)
+    inflow.rs     descent-regime v_i/v_h: climb + windmill closed forms + measured VRS curve
+    descent.rs    steady vertical autorotation V_d=v_i+P₀/T (bisection, adaptive bracket)
+    forward.rs    forward glide polar RoD(V)=P_req/W → min-sink + best-glide
+    index.rs      rotor KE ½IΩ² + flare-height equiv + autorotation index
+    survivability.rs flare energy bound: flare margin + critical hover height (go/no-go)
+    height_velocity.rs low-speed dead-man's curve h_crit(V)=h_crit_hover−V²/2g (energy method)
+    rotor_decay.rs dynamic entry RPM decay t=E_flare/P_h + RK4 gated vs analytic
+    solution.rs   AutorotationSolution
+    tests/autorotation_validation.rs  momentum-quadratic anchors + measured ideal band [1.7,2.0] + forward glide
+    tests/r22_external_validation.rs  EXTERNAL: R22 POH glide speeds (locked prereg, cited oracle)
+  acoustics/    rotor harmonic noise (priority: minimal sound)
+    bessel.rs     integer-order J_n(x), std-only (validated vs tabulated zeros/values)
+    rotational.rs Gutin rotational (loading) noise harmonic pressure
+    thickness.rs  ∝M_tip³ tip-speed noise lever (relative indicator)
+    spl.rs        dB re 20µPa + energy-sum spectrum assembly
+    solution.rs   NoiseSpectrum / Harmonic
+    tests/acoustics_validation.rs  directivity + tip-speed master knob
+  design/       model-scale sizing study (composes the validated cores; NO new physics)
+    candidate.rs  DesignCandidate (builder knobs: geometry, tip speed, pack, parasite)
+    report.rs     DesignReport (consequences by priority: safety/airtime/efficiency/noise)
+    metrics.rs    evaluate — BEMT trim + autorotation + acoustics + cost → report
+    sweep.rs      sweep_radius — the disk-loading trade at fixed tip speed
+    recommend.rs  recommend — search + safety-constrained priority-ranked suggestion
+    tests/design_validation.rs  composition-consistency + trade-direction + recommender
+  manufacture/  recommended design → buildable geometry + step-by-step (the end goal)
+    part.rs       trait BuildPart (polymorphism boundary) + Source taxonomy
+    materials.rs  allowable-stress constants (Al shear/bending, conservative)
+    airfoil_coords.rs NACA 4-digit section coords (validated vs published 0012 ordinates)
+    blade.rs      BladeSpec from a design: dimensions, raw stock, shaping instructions
+    hub.rs        HubSpec — teetering/articulated head + grips from blade root
+    mast.rs       MastSpec — drive shaft, torsion-sized from hover torque
+    swashplate.rs SwashplateSpec — control plates, ∝ rotor + mast bore
+    boom.rs       BoomSpec — tail boom, bending-sized (root moment = main torque)
+    mount.rs      MountSpec — powertrain tray from pack footprint
+    root_fitting.rs RootFitting — blade root tang + retention bolt
+    fuselage.rs   FuselageSpec — ellipsoidal pod + canopy
+    tail_rotor.rs TailRotorSpec — anti-torque sub-rotor (T_tr=Q/L_boom), reuses BladeSpec
+    structural.rs check_structure — flight-load margins (centrifugal + torsion + bending)
+    mesh.rs       triangle toolkit (cylinder/ellipsoid/lofted-blade + transforms)
+    structural.rs check_structure — section margins (centrifugal/torsion/bending)
+    fea_structural.rs run_fea — beam-FEM boom+blade (deflection + FE-vs-closed-form)
+    fasteners.rs  bolt/bearing catalogues + select-smallest-adequate + hardware_schedule
+    assembly.rs   BuildPackage — all 9 parts + the assembly sequence
+    export.rs     blade_to_stl/lofted_blade_to_stl (printable) + airfoil_to_dxf (cuttable)
+    assembly_export.rs aircraft_to_stl (whole-aircraft) + aircraft_to_step (STEP wireframe)
+    step_brep.rs  mesh_to_step_brep/blade_to_step_brep — real MANIFOLD_SOLID_BREP solid
+    (tests inline) geometric oracles (NACA ordinates) + stress limits + Euler V-E+F=2 + STL/DXF/STEP
+  fea/          minimal std-only finite-element analysis (validated vs theory)
+    linsolve.rs   dense Ax=b (Gaussian elimination, partial pivoting)
+    beam.rs       Euler-Bernoulli beam FEM + geometric (tension) stiffening Kg
+    cst.rs        plane-stress constant-strain triangle (2-D continuum FE)
+    tests/beam_validation.rs  cantilever PL³/3EI (exact) + string limit qL²/8T + distributed
+    tests/cst_validation.rs   FE patch test + uniaxial bar (σ=F/A, δ=FL/AE exact)
+  cost/         parametric cost + buildability (priorities #2 vert-integ, #3 cost)
+    component.rs  Component + Buildability taxonomy (raw-stock/fabricated/assembled/purchased)
+    costs.rs      UnitCosts — named, overridable cost inputs (representative defaults)
+    bom.rs        AircraftSpec → Bom (bill of materials)
+    report.rs     summarize → CostReport (vertical-integration index + buy-list)
+    tests/cost_validation.rs  accounting consistency + monotonicity + taxonomy order
+  cli/          command-line driver (report/study/mission_cli/design_cli formatting)
 ```
 
 ## Physics conventions (BEMT core)
@@ -750,3 +1013,11 @@ r nose-right +.
   drift→0, and the hands-off hover position-hold capstone.
 - `cargo run -- mission` — end-to-end electric hover: power → C-rate → endurance,
   plus a disk-loading design-tension sweep.
+- `cargo run -- design` — model-scale sizing study: the priority vector (safety →
+  airtime → efficiency → noise) at a starter point + a radius/disk-loading sweep
+  showing the sweet spot (not a monotone "bigger is better"). Composes the
+  autorotation, acoustics and BEMT-trim cores.
+- `cargo run -- build` — the end goal: recommend a design, then emit the COMPLETE
+  build package — every part sized from the design (mast by torsion, boom by
+  bending, etc.), the assembly sequence, and exported STL (printable blade) + DXF
+  (cuttable section) files to `build_output/`.

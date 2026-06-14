@@ -153,4 +153,24 @@ mod tests {
         // 20 A per cell / 2.5 Ah = 8 C
         assert!((p.cell_c_rate(40.0) - 8.0).abs() < 1e-9);
     }
+
+    /// DOCUMENTED EXAMPLE — a 6S2P Samsung INR18650-25R pack. The cell numbers are
+    /// the published datasheet values (3.6 V nominal, 2.5 Ah, 20 A continuous,
+    /// 45 g, ~21 mΩ); the pack numbers follow from the S/P scaling and a reader can
+    /// check every one by hand:
+    ///   V_nom = 6 × 3.6 = 21.6 V   |   Ah = 2 × 2.5 = 5.0 Ah
+    ///   Wh = 21.6 × 5.0 = 108 Wh   |   R = (6/2) × 21 mΩ = 63 mΩ
+    ///   mass = 12 × 45 g = 540 g   |   I_cont = 2 × 20 A = 40 A (8C)
+    /// Source: Samsung SDI INR18650-25R datasheet.
+    #[test]
+    fn documented_6s2p_samsung_25r_pack() {
+        let p = pack_6s2p();
+        assert_eq!(p.cell_count(), 12);
+        assert!((p.nominal_voltage() - 21.6).abs() < 1e-6, "V {}", p.nominal_voltage());
+        assert!((p.capacity_ah() - 5.0).abs() < 1e-6);
+        assert!((p.energy_wh() - 108.0).abs() < 1e-3, "Wh {}", p.energy_wh());
+        assert!((p.internal_resistance(0.5) - 0.063).abs() < 1e-6, "R {}", p.internal_resistance(0.5));
+        assert!((p.mass_kg() - 0.540).abs() < 1e-6);
+        assert!((p.max_continuous_current() - 40.0).abs() < 1e-6);
+    }
 }

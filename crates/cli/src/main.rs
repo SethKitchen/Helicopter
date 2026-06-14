@@ -22,8 +22,13 @@
 //!   helisim attitude        attitude hold: phugoid→LHP, off-seam regulation, hover seam-residual
 //!   helisim hover           velocity/position hold: timescale separation + hands-off hover capstone
 //!   helisim mission         end-to-end electric hover: power → C-rate → endurance
+//!   helisim design          model-scale sizing study: priority vector + disk-loading trade
+//!   helisim build           recommend a design → full part list, assembly, STL/DXF export
+//!   (safety track) autorotation power-off + acoustics noise feed the design study
 
 mod attitude_cli;
+mod build_cli;
+mod design_cli;
 mod dynamics_cli;
 mod flapping_cli;
 mod fly_cli;
@@ -61,6 +66,8 @@ fn main() {
         "attitude" => attitude_cli::run(),
         "hover" => hover_cli::run(),
         "mission" => mission_cli::run(),
+        "design" => design_cli::run(),
+        "build" => build_cli::run(),
         "harrington" => harrington_sweep(&cfg),
         "spanwise" => {
             validation_report(&cfg);

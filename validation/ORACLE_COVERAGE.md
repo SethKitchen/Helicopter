@@ -1,0 +1,69 @@
+# Oracle coverage map
+
+Every validated quantity, the **documented example number** it is checked against,
+and the source. Oracle types:
+**A** = external published number · **B** = closed-form / analytic identity ·
+**C** = self-consistency (route-vs-route, monotonicity, composition) ·
+**D** = structural.
+
+A claim of "it matches" is a passing `#[test]`; run `cargo test`.
+
+## Aerodynamics & dynamics core
+
+| Module | Type | Documented number(s) matched | Source |
+|--------|------|------------------------------|--------|
+| bemt / validation | A | C&T hover C_T: 0.00213 (5°), 0.00474 (8°), 0.00796 (12°) @ M_tip 0.439; BEMT over-predicts (documented) | Caradonna & Tung 1981, NASA TM-81232 |
+| bemt / validation | A | Harrington Rotor-1 peak figure of merit ∈ [0.62, 0.75] | Harrington 1951, NACA TN-2318 |
+| validation | B | per-station inflow vs analytic BEMT closed form, <2% | Leishman |
+| airfoil | A | NACA0012: a₀ = 5.73/rad (0.10/deg), C_lmax ≈ 1.4, C_d0 ≈ 0.0065 | Abbott & von Doenhoff; Prouty |
+| forward | A/B | Glauert inflow closed form λ_i=√((−μ²+√(μ⁴+C_T²))/2), <1e-6; power bucket | Glauert |
+| flapping | A/B | Lock-number closed form (β₀,β₁c,β₁s); 90° phase lag | Leishman/Johnson/Prouty |
+| trim | B/C | hover trim = standalone BEMT (two routes, ~0.3% power); force/moment balance | internal cross-check |
+| dynamics | A | UH-60A hover derivs vs GENHEL: Zw 12%, Nr 1.5%, Lp 3% (post gyro-fix), Mu sign+order | NASA TM 85890 (GENHEL) |
+| dynamics | B | eigenvalues vs analytic hovering cubic; known 15×15 spectrum (QR) | analytic |
+| sim | C | nonlinear march reproduces 5c eigenvalue (period 7.1 vs 6.97 s, σ 0.503 vs 0.505) | route-vs-route |
+
+## Electric powertrain
+
+| Module | Type | Documented number(s) matched | Source |
+|--------|------|------------------------------|--------|
+| cell | A | Samsung 25R: 7.83 Wh @ 20 A; predicts 2500/2480/2460 mAh @ 0.5/5/10 A; R≈21 mΩ | Samsung INR18650-25R datasheet |
+| pack | A/B | 6S2P 25R: 21.6 V, 5.0 Ah, **108 Wh**, 63 mΩ, 540 g, 40 A (8C) | datasheet + S/P scaling |
+| powertrain | A/B | η = 0.85 motor × 0.95 ESC = 0.80; 1000 W mech → 1250 W elec | T-Motor / ESC benchmarks |
+| thermal | A | specific heat 900 J/(kg·K) ∈ [800,1100]; 20 A hits 75 °C limit, 10 A doesn't | 18650 characterization; Batemo |
+| thermal | A/B | convection h: natural 7.5 ∈ [5,10], forced 40 ∈ [30,60] (Nu·k/D) | Incropera & DeWitt |
+| mission | A/B | hover cool / sustained climb over-temps; endurance = Wh/P | composition of above |
+
+## Safety, FEA & manufacturing
+
+| Module | Type | Documented number(s) matched | Source |
+|--------|------|------------------------------|--------|
+| autorotation | A | R22: best-glide 75 KIAS (model 87, +16%), min-sink 53 KIAS (48, −9%), glide ratio 4:1 (3.6, −11%) | Robinson R22 POH (pre-registered) |
+| autorotation | A/B | ideal vertical autorotation V_d/v_h ∈ [1.7,2.0]; windmill momentum quadratic 1e-9 | Leishman / Prouty |
+| acoustics | A | Bessel J_n vs tabulated: J₀(1)=0.7652, J₁ max 0.5819, zeros 2.4048/3.8317; J₅(5)=0.2611 | Abramowitz & Stegun |
+| acoustics | B | Gutin on-axis null, off-axis directivity peak, ∝M_tip³ tip-speed lever | Gutin 1936 |
+| fea (beam) | B | cantilever PL³/3EI (exact); simply-supp PL³/48EI; distributed qL⁴/8EI; string qL²/8T | Euler-Bernoulli theory |
+| fea (cst) | B | patch test (uniform σ exact); uniaxial bar σ=F/A, δ=FL/AE | CST theory |
+| manufacture (mast) | B | torsion d=(16Q/πτ)^⅓; τ=16Q/πd³ at allowable | Shigley |
+| manufacture (boom) | B | thin-tube Z = π·0.5904·D³/32 ≈ 0.058 D³ (wall 0.1D) | Roark |
+| manufacture (fasteners) | A | bolt stress areas = ISO 724 (M3 5.03 mm²…); working shear = 0.6·800/2.4 MPa | ISO 724 / ISO 898-1 |
+| manufacture (struct) | B | blade centrifugal F_cf=ω²·m·r_cg; margins; Al allowables (MMPDS/ASM) | mechanics + materials data |
+| step B-rep | B | closed genus-0 solid Euler V−E+F=2; every edge used 2× (manifold) | topology |
+
+## Honest remaining gaps (named, not faked)
+
+These rely on self-consistency / closed-form where a clean **external measured**
+number is genuinely hard to source without the careful-sourcing discipline of
+Milestone 6 — listed so coverage is not over-claimed:
+
+- **acoustics**: no external *measured-SPL* datapoint (only Bessel tables + Gutin
+  closed form + directivity). A published rotor-noise SPL spectrum with full
+  geometry would anchor the absolute level — a Milestone-6-style sourcing task.
+- **forward / coupled**: advancing-vs-retreating split and the flap↔inflow loop
+  are validated by closed forms + consistency, not wind-tunnel load distributions.
+- **control gains (sim 5j–5m)**: tuned values; closed-loop damping could be checked
+  against MIL-STD-1797A handling-qualities ζ bands (not yet done).
+- **design / cost**: compositions — no external design/cost baseline (appropriate;
+  they delegate to validated cores). Cost unit prices are named inputs, not quotes.
+- **FEA**: element-level validated (beam + CST); no assembly-level multi-axis
+  blade/hub FE cross-check yet.

@@ -103,4 +103,26 @@ mod tests {
         let af = LinearAirfoil::naca0012_incompressible();
         assert!((af.cl(1.0, 0.0) - af.cl_max).abs() < 1e-9);
     }
+
+    /// DOCUMENTED NACA 0012 — the model's section coefficients are the standard
+    /// published/rotor-analysis values, checkable by a reader:
+    ///   * lift-curve slope a₀ = 5.73 /rad ≈ 0.100 /deg (the rotor-analysis value,
+    ///     below the thin-airfoil 2π ≈ 6.28 due to thickness/viscosity — Prouty,
+    ///     *Helicopter Performance, Stability and Control*; Leishman uses a≈5.7).
+    ///   * C_lmax ≈ 1.4 near 14° (Abbott & von Doenhoff, *Theory of Wing Sections*,
+    ///     NACA 0012 at Re ≈ 3–6 M).
+    ///   * C_d0 ≈ 0.0065 at zero lift, rising with α² (low-Re NACA 0012 drag).
+    #[test]
+    fn documented_naca0012_coefficients() {
+        let af = LinearAirfoil::naca0012_incompressible();
+        // Lift slope: 0.10 rad of AoA → ΔCl = 0.573 → a₀ = 5.73 /rad = 0.100 /deg.
+        assert!((af.cl(0.10, 0.0) / 0.10 - 5.73).abs() < 1e-6);
+        assert!(((af.cl(0.10, 0.0) / 0.10).to_radians() - 0.10).abs() < 2e-3);
+        // C_lmax near 14° (0.244 rad) is the documented 1.4 (clamped).
+        assert!((af.cl(0.244, 0.0) - 1.4).abs() < 0.05);
+        // Drag: C_d0 = 0.0065; at 6° (0.1047 rad) C_d = 0.0065 + 0.28·0.1047² ≈ 0.0096
+        // — inside the published low-Re NACA 0012 band (~0.008–0.011 at 6°).
+        let (_, cd6) = af.cl_cd(0.1047, 0.0);
+        assert!((0.008..=0.011).contains(&cd6), "Cd(6°) = {cd6}");
+    }
 }

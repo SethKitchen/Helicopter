@@ -1,0 +1,14 @@
+[package]
+name = "helisim-manufacture"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "From a recommended design to buildable geometry: NACA airfoil coordinates + dimensioned blade spec (toward step-by-step build instructions)."
+
+[dependencies]
+helisim-design = { path = "../design" }
+helisim-fea = { path = "../fea" }
+
+[dev-dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-bemt = { path = "../bemt" }

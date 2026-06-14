@@ -1,0 +1,9 @@
+[package]
+name = "helisim-acoustics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Rotor harmonic noise: Gutin rotational (loading) noise + tip-Mach thickness-noise lever, on a std-only Bessel J_n."
+
+[dependencies]
+helisim-rotor = { path = "../rotor" }
