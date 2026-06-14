@@ -182,8 +182,12 @@ fn spanwise_loading_shape() {
 /// trait's default (returns `None`) and the rest of the trait surface.
 struct MinimalCase;
 impl ValidationCase for MinimalCase {
-    fn name(&self) -> &str { "minimal" }
-    fn description(&self) -> &str { "a bare validation case" }
+    fn name(&self) -> &str {
+        "minimal"
+    }
+    fn description(&self) -> &str {
+        "a bare validation case"
+    }
     fn build_rotor(&self, collective_rad: f64) -> Rotor {
         Rotor::rectangular(2, 1.0, 0.1, collective_rad, 0.2)
     }

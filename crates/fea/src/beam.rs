@@ -90,10 +90,22 @@ impl Beam {
         let c = ei / (l * l * l);
         let l2 = l * l;
         [
-            12.0 * c, 6.0 * l * c, -12.0 * c, 6.0 * l * c,
-            6.0 * l * c, 4.0 * l2 * c, -6.0 * l * c, 2.0 * l2 * c,
-            -12.0 * c, -6.0 * l * c, 12.0 * c, -6.0 * l * c,
-            6.0 * l * c, 2.0 * l2 * c, -6.0 * l * c, 4.0 * l2 * c,
+            12.0 * c,
+            6.0 * l * c,
+            -12.0 * c,
+            6.0 * l * c,
+            6.0 * l * c,
+            4.0 * l2 * c,
+            -6.0 * l * c,
+            2.0 * l2 * c,
+            -12.0 * c,
+            -6.0 * l * c,
+            12.0 * c,
+            -6.0 * l * c,
+            6.0 * l * c,
+            2.0 * l2 * c,
+            -6.0 * l * c,
+            4.0 * l2 * c,
         ]
     }
 
@@ -103,16 +115,33 @@ impl Beam {
         let c = t / (30.0 * l);
         let l2 = l * l;
         [
-            36.0 * c, 3.0 * l * c, -36.0 * c, 3.0 * l * c,
-            3.0 * l * c, 4.0 * l2 * c, -3.0 * l * c, -l2 * c,
-            -36.0 * c, -3.0 * l * c, 36.0 * c, -3.0 * l * c,
-            3.0 * l * c, -l2 * c, -3.0 * l * c, 4.0 * l2 * c,
+            36.0 * c,
+            3.0 * l * c,
+            -36.0 * c,
+            3.0 * l * c,
+            3.0 * l * c,
+            4.0 * l2 * c,
+            -3.0 * l * c,
+            -l2 * c,
+            -36.0 * c,
+            -3.0 * l * c,
+            36.0 * c,
+            -3.0 * l * c,
+            3.0 * l * c,
+            -l2 * c,
+            -3.0 * l * c,
+            4.0 * l2 * c,
         ]
     }
 
     /// Solve for the response under point loads, optional distributed-load vector
     /// (from [`Self::uniform_load_vector`]), and boundary conditions.
-    pub fn solve(&self, loads: &[NodalLoad], dist: Option<&[f64]>, bcs: &[Bc]) -> Option<BeamSolution> {
+    pub fn solve(
+        &self,
+        loads: &[NodalLoad],
+        dist: Option<&[f64]>,
+        bcs: &[Bc],
+    ) -> Option<BeamSolution> {
         let n = self.n_nodes();
         let dof = 2 * n;
         let mut k = vec![0.0; dof * dof];
@@ -177,7 +206,10 @@ impl Beam {
                 max_stress = s;
             }
         }
-        let max_def = deflection.iter().cloned().fold(0.0_f64, |a, b| a.max(b.abs()));
+        let max_def = deflection
+            .iter()
+            .cloned()
+            .fold(0.0_f64, |a, b| a.max(b.abs()));
 
         Some(BeamSolution {
             deflection,

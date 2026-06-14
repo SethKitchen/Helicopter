@@ -12,9 +12,26 @@ use helisim_cli::dispatch;
 fn every_subcommand_runs() {
     // All documented modes plus the default (empty → validation report).
     let modes = [
-        "", "spanwise", "harrington", "study", "forward", "flapping", "trim", "dynamics", "sim",
-        "lateral", "coupled", "inflow", "fly", "sas", "attitude", "hover", "mission", "design",
-        "build", "unknown-mode-falls-through-to-default",
+        "",
+        "spanwise",
+        "harrington",
+        "study",
+        "forward",
+        "flapping",
+        "trim",
+        "dynamics",
+        "sim",
+        "lateral",
+        "coupled",
+        "inflow",
+        "fly",
+        "sas",
+        "attitude",
+        "hover",
+        "mission",
+        "design",
+        "build",
+        "unknown-mode-falls-through-to-default",
     ];
     for m in modes {
         dispatch(m);

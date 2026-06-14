@@ -39,7 +39,15 @@ pub fn rotational_spectrum(
     let f1 = blades as f64 * omega / (2.0 * std::f64::consts::PI);
     for m in 1..=n_harmonics {
         let p = gutin_harmonic_pressure(
-            m, blades, omega, sound_speed, distance, thrust, torque, r_eff, theta,
+            m,
+            blades,
+            omega,
+            sound_speed,
+            distance,
+            thrust,
+            torque,
+            r_eff,
+            theta,
         );
         pressures.push(p);
         harmonics.push(Harmonic {

@@ -97,11 +97,17 @@ fn closed_loop_damping_vs_ads33_level1() {
         assert!(c.re < 0.0, "every oscillatory mode is stable");
         if mag < 0.3 {
             // velocity/position-hold cluster — must meet the published Level-1 bound.
-            assert!(zeta >= LEVEL1, "slow mode |λ|={mag:.2} ζ={zeta:.2} below Level-1");
+            assert!(
+                zeta >= LEVEL1,
+                "slow mode |λ|={mag:.2} ζ={zeta:.2} below Level-1"
+            );
             slow_ok = true;
         }
     }
-    assert!(slow_ok, "found the slow velocity/position oscillatory modes");
+    assert!(
+        slow_ok,
+        "found the slow velocity/position oscillatory modes"
+    );
 }
 
 #[test]

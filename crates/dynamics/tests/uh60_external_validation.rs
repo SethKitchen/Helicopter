@@ -166,14 +166,26 @@ fn cg_offset_does_not_affect_the_derivatives() {
     let a_set = Aircraft::uh60(); // cg_offset = 0.488
     let mut a_zero = Aircraft::uh60();
     a_zero.cg_offset = 0.0;
-    let ds = longitudinal_derivatives(&a_set, hover_collective_for_weight(&a_set), Controls::none());
-    let dz = longitudinal_derivatives(&a_zero, hover_collective_for_weight(&a_zero), Controls::none());
+    let ds = longitudinal_derivatives(
+        &a_set,
+        hover_collective_for_weight(&a_set),
+        Controls::none(),
+    );
+    let dz = longitudinal_derivatives(
+        &a_zero,
+        hover_collective_for_weight(&a_zero),
+        Controls::none(),
+    );
     let ls = lateral_derivatives(&a_set);
     let lz = lateral_derivatives(&a_zero);
 
     // Longitudinal: BIT-FOR-BIT identical — longitudinal_main_aero/hover_collective use
     // neither cg_offset nor trim, so there is exactly nothing for cg_offset to touch.
-    assert_eq!((ds.xu, ds.zw, ds.mu, ds.mq), (dz.xu, dz.zw, dz.mu, dz.mq), "longitudinal exact");
+    assert_eq!(
+        (ds.xu, ds.zw, ds.mu, ds.mq),
+        (dz.xu, dz.zw, dz.mu, dz.mq),
+        "longitudinal exact"
+    );
 
     // Lateral: NOT bit-for-bit — `lateral_derivatives` re-trims for the tail collective,
     // which has a vanishing dependence on the longitudinal CG offset (2nd-order coupling
@@ -181,8 +193,13 @@ fn cg_offset_does_not_affect_the_derivatives() {
     // the validated comparison (Lp 3%, Nr 1.5%), but REAL — so a tolerance, not equality.
     // (The honest, measured version of "cg_offset is trim-only".)
     let rel = |a: f64, b: f64| (a - b).abs() / b.abs().max(1e-12);
-    let lat_max = rel(ls.lp, lz.lp).max(rel(ls.nr, lz.nr)).max(rel(ls.yv, lz.yv));
-    assert!(lat_max < 1e-4, "lateral changes only at ~1e-5 via the tail-trim coupling");
+    let lat_max = rel(ls.lp, lz.lp)
+        .max(rel(ls.nr, lz.nr))
+        .max(rel(ls.yv, lz.yv));
+    assert!(
+        lat_max < 1e-4,
+        "lateral changes only at ~1e-5 via the tail-trim coupling"
+    );
     println!(
         "cg_offset 0.488 vs 0: longitudinal bit-for-bit identical; lateral Δ ≤ {lat_max:.0e} rel \
          (tail-trim coupling, negligible vs the 3% / 1.5% comparison)"

@@ -130,7 +130,10 @@ pub fn recommend(
     }
 
     // 3. Min–max normalise each priority metric across the survivors.
-    let vii: Vec<f64> = feasible.iter().map(|(_, r)| r.vertical_integration_index).collect();
+    let vii: Vec<f64> = feasible
+        .iter()
+        .map(|(_, r)| r.vertical_integration_index)
+        .collect();
     let cost: Vec<f64> = feasible.iter().map(|(_, r)| r.total_cost).collect();
     let endur: Vec<f64> = feasible.iter().map(|(_, r)| r.endurance_min).collect();
     let fm: Vec<f64> = feasible.iter().map(|(_, r)| r.figure_of_merit).collect();
@@ -144,14 +147,24 @@ pub fn recommend(
                 + W_ENDURANCE * norm_up(rep.endurance_min, &endur)
                 + W_FM * norm_up(rep.figure_of_merit, &fm)
                 + W_NOISE * norm_down(rep.oaspl_db, &noise);
-            ScoredCandidate { candidate: *cand, report: *rep, score }
+            ScoredCandidate {
+                candidate: *cand,
+                report: *rep,
+                score,
+            }
         })
         .collect();
     ranked.sort_by(|a, b| b.score.total_cmp(&a.score));
 
     let best = ranked[0].clone();
     let rationale = build_rationale(space, &best, n_evaluated, n_feasible);
-    Some(Recommendation { best, ranked, n_evaluated, n_feasible, rationale })
+    Some(Recommendation {
+        best,
+        ranked,
+        n_evaluated,
+        n_feasible,
+        rationale,
+    })
 }
 
 /// Normalise `x` to [0,1] where higher is better.
@@ -208,7 +221,11 @@ fn build_rationale(
         ),
         format!(
             "Recommended: {} blades, R={:.2} m, chord={:.3} m, V_tip={:.0} m/s (σ={:.3}).",
-            c.n_blades, c.radius_m, c.chord_m, c.tip_speed_ms, c.solidity()
+            c.n_blades,
+            c.radius_m,
+            c.chord_m,
+            c.tip_speed_ms,
+            c.solidity()
         ),
         format!(
             "Safety (priority 1, constraint): flare margin {:.2}, rotor-decay reaction {:.2} s, \

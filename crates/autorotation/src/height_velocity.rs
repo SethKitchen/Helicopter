@@ -28,8 +28,8 @@
 //! transient flare model — it is *not* approximated here, because a credible value
 //! needs the entry/flare dynamics this crate intentionally omits.
 
-use crate::survivability::assess_vertical;
 use crate::G;
+use crate::survivability::assess_vertical;
 
 /// Low-speed critical height at airspeed `V`: the minimum height for a survivable
 /// power-loss recovery, `max(0, h_crit_hover − V²/2g)`.
@@ -130,7 +130,17 @@ mod tests {
         let p0 = profile_power(rho, area, vt, sigma, cd0);
         let speeds: Vec<f64> = (0..=40).map(|i| i as f64).collect();
         build_low_speed_hv(
-            mass * G, mass, 1500.0, omega0, 0.7, rho, area, p0, 1.0, 2.0, &speeds,
+            mass * G,
+            mass,
+            1500.0,
+            omega0,
+            0.7,
+            rho,
+            area,
+            p0,
+            1.0,
+            2.0,
+            &speeds,
         )
     }
 

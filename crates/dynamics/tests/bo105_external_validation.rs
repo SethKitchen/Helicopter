@@ -10,7 +10,9 @@
 //! alone? Tested as an A/B (gyro 0 vs −2) — ungameable by the single-source glimpse, since
 //! params and the −2 coefficient are both locked.
 
-use helisim_dynamics::{hover_collective_for_weight, lateral_derivatives, longitudinal_derivatives};
+use helisim_dynamics::{
+    hover_collective_for_weight, lateral_derivatives, longitudinal_derivatives,
+};
 use helisim_flapping::Controls;
 use helisim_trim::Aircraft;
 
@@ -51,10 +53,16 @@ fn bo105_hover_gyro_generalization_ab() {
     let (mq_b, lp_b) = mq_lp(&b);
 
     println!("BO-105 hover GYRO A/B (SI, normalized):");
-    println!("  Lp: gyro0 {lp_a:+.3} | gyro-2 {lp_b:+.3} | oracle {LP_O:+.3}  (ratios {:.2}× / {:.2}×)",
-        lp_a / LP_O, lp_b / LP_O);
-    println!("  Mq: gyro0 {mq_a:+.3} | gyro-2 {mq_b:+.3} | oracle {MQ_O:+.3}  (ratios {:.2}× / {:.2}×)",
-        mq_a / MQ_O, mq_b / MQ_O);
+    println!(
+        "  Lp: gyro0 {lp_a:+.3} | gyro-2 {lp_b:+.3} | oracle {LP_O:+.3}  (ratios {:.2}× / {:.2}×)",
+        lp_a / LP_O,
+        lp_b / LP_O
+    );
+    println!(
+        "  Mq: gyro0 {mq_a:+.3} | gyro-2 {mq_b:+.3} | oracle {MQ_O:+.3}  (ratios {:.2}× / {:.2}×)",
+        mq_a / MQ_O,
+        mq_b / MQ_O
+    );
 
     // TWO HONESTY NOTES baked in:
     // (1) TOO-GOOD FLAG (locked hygiene): 0.99× on an analysis-program oracle, with a
@@ -67,16 +75,31 @@ fn bo105_hover_gyro_generalization_ab() {
     //     rate-damping moment seen through two inertias.
     let lp_mq_oracle = LP_O / MQ_O; // 2.72
     let lp_mq_inertia = IYY / IXX; // 2.71
-    assert!((lp_mq_oracle - lp_mq_inertia).abs() < 0.1, "Lp/Mq tracks Iyy/Ixx — one rate-damping moment");
+    assert!(
+        (lp_mq_oracle - lp_mq_inertia).abs() < 0.1,
+        "Lp/Mq tracks Iyy/Ixx — one rate-damping moment"
+    );
 
     // Arm A: the deficit reappears (far short on the clean roll axis).
-    assert!(lp_a.abs() < 0.5 * LP_O.abs(), "gyro-off Lp far short (deficit reappears on hingeless)");
+    assert!(
+        lp_a.abs() < 0.5 * LP_O.abs(),
+        "gyro-off Lp far short (deficit reappears on hingeless)"
+    );
     // Arm B: gyro term lifts damping substantially toward the oracle, and on the CLEAN
     // roll axis lands order-consistent (WIDE band — not tightened to the 0.99× too-good).
-    assert!(lp_b.abs() > 1.5 * lp_a.abs(), "gyro term substantially increases roll damping");
+    assert!(
+        lp_b.abs() > 1.5 * lp_a.abs(),
+        "gyro term substantially increases roll damping"
+    );
     let lp_ratio = lp_b / LP_O;
-    assert!((0.5..2.0).contains(&lp_ratio), "Lp order-consistent w/ oracle after gyro (got {lp_ratio:.2}×)");
-    assert!(mq_b.abs() > mq_a.abs(), "gyro term increases pitch damping too");
+    assert!(
+        (0.5..2.0).contains(&lp_ratio),
+        "Lp order-consistent w/ oracle after gyro (got {lp_ratio:.2}×)"
+    );
+    assert!(
+        mq_b.abs() > mq_a.abs(),
+        "gyro term increases pitch damping too"
+    );
 }
 
 #[test]
@@ -93,9 +116,16 @@ fn bo105_hover_collective_bemt_third_sighting() {
     println!(
         "BO-105 hover collective: mine {coll:.2}° vs oracle θMR {oracle:.2}° ({:.0}% {})",
         ((oracle - coll) / oracle * 100.0).abs(),
-        if lower { "lower → BEMT over-predicts thrust (3rd sighting)" } else { "HIGHER — breaks the pattern" }
+        if lower {
+            "lower → BEMT over-predicts thrust (3rd sighting)"
+        } else {
+            "HIGHER — breaks the pattern"
+        }
     );
-    assert!(lower, "collective lower than oracle (BEMT over-prediction direction, 3rd sighting)");
+    assert!(
+        lower,
+        "collective lower than oracle (BEMT over-prediction direction, 3rd sighting)"
+    );
 }
 
 #[test]
@@ -112,7 +142,10 @@ fn bo105_gyro_conclusion_holds_across_the_nu_beta_bracket_and_hub_height() {
         let (_, lp) = mq_lp(&ac);
         println!("  e={e:.4} (ν_β={nu:.3}): Lp {lp:+.3}  ({:.2}×)", lp / LP_O);
         let r = lp / LP_O;
-        assert!((0.4..2.5).contains(&r), "Lp order-consistent across the bracket (e={e}, got {r:.2}×)");
+        assert!(
+            (0.4..2.5).contains(&r),
+            "Lp order-consistent across the bracket (e={e}, got {r:.2}×)"
+        );
     }
     println!("BO-105 Lp(gyro=−2) across hub_height (oracle {LP_O:+.3}):");
     let mut lps = vec![];
@@ -120,12 +153,17 @@ fn bo105_gyro_conclusion_holds_across_the_nu_beta_bracket_and_hub_height() {
         let mut ac = Aircraft::bo105();
         ac.hub_height = h;
         let (_, lp) = mq_lp(&ac);
-        println!("  hub_height={h:.2} m: Lp {lp:+.3}", );
+        println!("  hub_height={h:.2} m: Lp {lp:+.3}",);
         lps.push(lp);
     }
-    let spread = (lps.iter().cloned().fold(f64::MIN, f64::max) - lps.iter().cloned().fold(f64::MAX, f64::min)).abs()
+    let spread = (lps.iter().cloned().fold(f64::MIN, f64::max)
+        - lps.iter().cloned().fold(f64::MAX, f64::min))
+    .abs()
         / lps[1].abs();
-    assert!(spread < 0.15, "Lp insensitive to the un-sourced hub_height (spread {spread:.0e})");
+    assert!(
+        spread < 0.15,
+        "Lp insensitive to the un-sourced hub_height (spread {spread:.0e})"
+    );
 }
 
 #[test]
@@ -139,13 +177,18 @@ fn bo105_hover_velocity_derivatives_vs_cr3144() {
     let (zw, xu, mu) = (dl.zw / MASS, dl.xu / MASS, dl.mu / IYY);
     let (yv, nv, nr) = (dt.yv / MASS, dt.nv / IZZ, dt.nr / IZZ);
 
-    println!("BO-105 hover velocity derivs (SI): Zw {zw:+.4} (o {ZW_O}) | Xu {xu:+.4} (o {XU_O}) | \
-        Mu {mu:+.4} (o {MU_O}) | Yv {yv:+.4} (o {YV_O}) | Nv {nv:+.4} (o {NV_O}) | Nr {nr:+.4} (o {NR_O})");
+    println!(
+        "BO-105 hover velocity derivs (SI): Zw {zw:+.4} (o {ZW_O}) | Xu {xu:+.4} (o {XU_O}) | \
+        Mu {mu:+.4} (o {MU_O}) | Yv {yv:+.4} (o {YV_O}) | Nv {nv:+.4} (o {NV_O}) | Nr {nr:+.4} (o {NR_O})"
+    );
 
     // Signs (the robust external check).
     assert!(zw < 0.0 && xu < 0.0, "Zw, Xu < 0 (heave / drag damping)");
     assert!(mu > 0.0, "Mu > 0 (destabilizing speed stability)");
-    assert!(yv < 0.0 && nr < 0.0, "Yv, Nr < 0 (side-force / yaw damping)");
+    assert!(
+        yv < 0.0 && nr < 0.0,
+        "Yv, Nr < 0 (side-force / yaw damping)"
+    );
     assert!(nv > 0.0, "Nv > 0 (weathercock)");
 
     // Order-consistency (within ~2×) on the clean ones, like the UH-60.

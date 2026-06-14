@@ -80,7 +80,14 @@ pub fn forward_descent_rate(
     flat_plate_area: f64,
     airspeed: f64,
 ) -> f64 {
-    power_required(weight_n, rho, disk_area_m2, profile_power_w, flat_plate_area, airspeed) / weight_n
+    power_required(
+        weight_n,
+        rho,
+        disk_area_m2,
+        profile_power_w,
+        flat_plate_area,
+        airspeed,
+    ) / weight_n
 }
 
 /// A point on the autorotation glide polar.
@@ -129,14 +136,32 @@ pub fn glide_polar(
         if v <= 0.0 {
             continue;
         }
-        let rod = forward_descent_rate(weight_n, rho, disk_area_m2, profile_power_w, flat_plate_area, v);
+        let rod = forward_descent_rate(
+            weight_n,
+            rho,
+            disk_area_m2,
+            profile_power_w,
+            flat_plate_area,
+            v,
+        );
         let angle = (rod / v).atan().to_degrees();
         if rod < min_sink.descent_rate_ms {
-            min_sink = GlidePoint { airspeed_ms: v, descent_rate_ms: rod, glide_angle_deg: angle };
+            min_sink = GlidePoint {
+                airspeed_ms: v,
+                descent_rate_ms: rod,
+                glide_angle_deg: angle,
+            };
         }
         if angle < best_glide.glide_angle_deg {
-            best_glide = GlidePoint { airspeed_ms: v, descent_rate_ms: rod, glide_angle_deg: angle };
+            best_glide = GlidePoint {
+                airspeed_ms: v,
+                descent_rate_ms: rod,
+                glide_angle_deg: angle,
+            };
         }
     }
-    GlidePolar { min_sink, best_glide }
+    GlidePolar {
+        min_sink,
+        best_glide,
+    }
 }

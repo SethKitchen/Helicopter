@@ -15,7 +15,7 @@
 //! verified in a real package — named, not claimed.)
 
 use crate::blade::BladeSpec;
-use crate::mesh::{lofted_blade_tris, Tri, Vec3};
+use crate::mesh::{Tri, Vec3, lofted_blade_tris};
 use std::collections::HashMap;
 
 /// Quantise a coordinate (mm) to an integer key for vertex de-duplication.
@@ -91,11 +91,28 @@ fn get_edge(
     let (ps, pe) = (verts[s], verts[e]);
     let (dx, dy, dz) = (pe.x - ps.x, pe.y - ps.y, pe.z - ps.z);
     let len = (dx * dx + dy * dy + dz * dz).sqrt().max(1e-9);
-    let dir = emit(id, lines, format!("DIRECTION('',({:.6},{:.6},{:.6}));", dx / len, dy / len, dz / len));
+    let dir = emit(
+        id,
+        lines,
+        format!(
+            "DIRECTION('',({:.6},{:.6},{:.6}));",
+            dx / len,
+            dy / len,
+            dz / len
+        ),
+    );
     let vec = emit(id, lines, format!("VECTOR('',#{dir},{len:.4});"));
-    let cp = emit(id, lines, format!("CARTESIAN_POINT('',({:.4},{:.4},{:.4}));", ps.x, ps.y, ps.z));
+    let cp = emit(
+        id,
+        lines,
+        format!("CARTESIAN_POINT('',({:.4},{:.4},{:.4}));", ps.x, ps.y, ps.z),
+    );
     let line = emit(id, lines, format!("LINE('',#{cp},#{vec});"));
-    let ec = emit(id, lines, format!("EDGE_CURVE('',#{},#{},#{line},.T.);", vpoint[s], vpoint[e]));
+    let ec = emit(
+        id,
+        lines,
+        format!("EDGE_CURVE('',#{},#{},#{line},.T.);", vpoint[s], vpoint[e]),
+    );
     edge_curve.insert(k, ec);
     (ec, same)
 }
@@ -127,7 +144,11 @@ fn write_solid(name: &str, tris: &[Tri], id: &mut usize, lines: &mut Vec<String>
     // CARTESIAN_POINT + VERTEX_POINT per unique vertex.
     let mut vpoint = vec![0usize; verts.len()];
     for (i, v) in verts.iter().enumerate() {
-        let cp = emit(id, lines, format!("CARTESIAN_POINT('',({:.4},{:.4},{:.4}));", v.x, v.y, v.z));
+        let cp = emit(
+            id,
+            lines,
+            format!("CARTESIAN_POINT('',({:.4},{:.4},{:.4}));", v.x, v.y, v.z),
+        );
         vpoint[i] = emit(id, lines, format!("VERTEX_POINT('',#{cp});"));
     }
 
@@ -141,9 +162,20 @@ fn write_solid(name: &str, tris: &[Tri], id: &mut usize, lines: &mut Vec<String>
         let mut oe = [0usize; 3];
         for (k, &(u, v)) in [(a, b), (b, c), (c, a)].iter().enumerate() {
             let (ec, same) = get_edge(u, v, lines, id, &verts, &vpoint, &mut edge_curve);
-            oe[k] = emit(id, lines, format!("ORIENTED_EDGE('',*,*,#{ec},{});", if same { ".T." } else { ".F." }));
+            oe[k] = emit(
+                id,
+                lines,
+                format!(
+                    "ORIENTED_EDGE('',*,*,#{ec},{});",
+                    if same { ".T." } else { ".F." }
+                ),
+            );
         }
-        let loop_id = emit(id, lines, format!("EDGE_LOOP('',(#{},#{},#{}));", oe[0], oe[1], oe[2]));
+        let loop_id = emit(
+            id,
+            lines,
+            format!("EDGE_LOOP('',(#{},#{},#{}));", oe[0], oe[1], oe[2]),
+        );
         let bound = emit(id, lines, format!("FACE_OUTER_BOUND('',#{loop_id},.T.);"));
         // Plane: placement at v0 with the triangle normal.
         let (p0, p1, p2) = (verts[a], verts[b], verts[c]);
@@ -151,20 +183,55 @@ fn write_solid(name: &str, tris: &[Tri], id: &mut usize, lines: &mut Vec<String>
         let (vx, vy, vz) = (p2.x - p0.x, p2.y - p0.y, p2.z - p0.z);
         let (mut nx, mut ny, mut nz) = (uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
         let nl = (nx * nx + ny * ny + nz * nz).sqrt().max(1e-9);
-        nx /= nl; ny /= nl; nz /= nl;
+        nx /= nl;
+        ny /= nl;
+        nz /= nl;
         let ul = (ux * ux + uy * uy + uz * uz).sqrt().max(1e-9);
-        let loc = emit(id, lines, format!("CARTESIAN_POINT('',({:.4},{:.4},{:.4}));", p0.x, p0.y, p0.z));
-        let axis = emit(id, lines, format!("DIRECTION('',({nx:.6},{ny:.6},{nz:.6}));"));
-        let refd = emit(id, lines, format!("DIRECTION('',({:.6},{:.6},{:.6}));", ux / ul, uy / ul, uz / ul));
-        let plc = emit(id, lines, format!("AXIS2_PLACEMENT_3D('',#{loc},#{axis},#{refd});"));
+        let loc = emit(
+            id,
+            lines,
+            format!("CARTESIAN_POINT('',({:.4},{:.4},{:.4}));", p0.x, p0.y, p0.z),
+        );
+        let axis = emit(
+            id,
+            lines,
+            format!("DIRECTION('',({nx:.6},{ny:.6},{nz:.6}));"),
+        );
+        let refd = emit(
+            id,
+            lines,
+            format!(
+                "DIRECTION('',({:.6},{:.6},{:.6}));",
+                ux / ul,
+                uy / ul,
+                uz / ul
+            ),
+        );
+        let plc = emit(
+            id,
+            lines,
+            format!("AXIS2_PLACEMENT_3D('',#{loc},#{axis},#{refd});"),
+        );
         let plane = emit(id, lines, format!("PLANE('',#{plc});"));
-        let face = emit(id, lines, format!("ADVANCED_FACE('',(#{bound}),#{plane},.T.);"));
+        let face = emit(
+            id,
+            lines,
+            format!("ADVANCED_FACE('',(#{bound}),#{plane},.T.);"),
+        );
         face_ids.push(face);
     }
 
-    let shell_refs = face_ids.iter().map(|f| format!("#{f}")).collect::<Vec<_>>().join(",");
+    let shell_refs = face_ids
+        .iter()
+        .map(|f| format!("#{f}"))
+        .collect::<Vec<_>>()
+        .join(",");
     let shell = emit(id, lines, format!("CLOSED_SHELL('',({shell_refs}));"));
-    emit(id, lines, format!("MANIFOLD_SOLID_BREP('{name}',#{shell});"))
+    emit(
+        id,
+        lines,
+        format!("MANIFOLD_SOLID_BREP('{name}',#{shell});"),
+    )
 }
 
 /// Write a triangle mesh as a single-solid STEP `MANIFOLD_SOLID_BREP` file (simple
@@ -195,10 +262,26 @@ pub fn assembly_to_step_ap203(assembly_name: &str, parts: &[(&str, Vec<Tri>)]) -
     let mut id = 0usize;
 
     // --- units: mm length, radian/steradian angle, with uncertainty ---
-    let len_unit = emit(&mut id, &mut lines, "(LENGTH_UNIT()NAMED_UNIT(*)SI_UNIT(.MILLI.,.METRE.));".into());
-    let ang_unit = emit(&mut id, &mut lines, "(NAMED_UNIT(*)PLANE_ANGLE_UNIT()SI_UNIT($,.RADIAN.));".into());
-    let sol_unit = emit(&mut id, &mut lines, "(NAMED_UNIT(*)SI_UNIT($,.STERADIAN.)SOLID_ANGLE_UNIT());".into());
-    let unc = emit(&mut id, &mut lines, format!("UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(0.01),#{len_unit},'closure','');"));
+    let len_unit = emit(
+        &mut id,
+        &mut lines,
+        "(LENGTH_UNIT()NAMED_UNIT(*)SI_UNIT(.MILLI.,.METRE.));".into(),
+    );
+    let ang_unit = emit(
+        &mut id,
+        &mut lines,
+        "(NAMED_UNIT(*)PLANE_ANGLE_UNIT()SI_UNIT($,.RADIAN.));".into(),
+    );
+    let sol_unit = emit(
+        &mut id,
+        &mut lines,
+        "(NAMED_UNIT(*)SI_UNIT($,.STERADIAN.)SOLID_ANGLE_UNIT());".into(),
+    );
+    let unc = emit(
+        &mut id,
+        &mut lines,
+        format!("UNCERTAINTY_MEASURE_WITH_UNIT(LENGTH_MEASURE(0.01),#{len_unit},'closure','');"),
+    );
     let ctx = emit(
         &mut id,
         &mut lines,
@@ -212,7 +295,11 @@ pub fn assembly_to_step_ap203(assembly_name: &str, parts: &[(&str, Vec<Tri>)]) -
     for (name, tris) in parts {
         solids.push(write_solid(name, tris, &mut id, &mut lines));
     }
-    let solid_refs = solids.iter().map(|s| format!("#{s}")).collect::<Vec<_>>().join(",");
+    let solid_refs = solids
+        .iter()
+        .map(|s| format!("#{s}"))
+        .collect::<Vec<_>>()
+        .join(",");
     let shape_rep = emit(
         &mut id,
         &mut lines,
@@ -220,15 +307,53 @@ pub fn assembly_to_step_ap203(assembly_name: &str, parts: &[(&str, Vec<Tri>)]) -
     );
 
     // --- product structure (AP203) ---
-    let app_ctx = emit(&mut id, &mut lines, "APPLICATION_CONTEXT('core data for automotive mechanical design processes');".into());
-    emit(&mut id, &mut lines, format!("APPLICATION_PROTOCOL_DEFINITION('international standard','automotive_design',1994,#{app_ctx});"));
-    let prod_ctx = emit(&mut id, &mut lines, format!("PRODUCT_CONTEXT('',#{app_ctx},'mechanical');"));
-    let pd_ctx = emit(&mut id, &mut lines, format!("PRODUCT_DEFINITION_CONTEXT('part definition',#{app_ctx},'design');"));
-    let product = emit(&mut id, &mut lines, format!("PRODUCT('{assembly_name}','{assembly_name}','',(#{prod_ctx}));"));
-    let pdf = emit(&mut id, &mut lines, format!("PRODUCT_DEFINITION_FORMATION('','',#{product});"));
-    let pd = emit(&mut id, &mut lines, format!("PRODUCT_DEFINITION('design','',#{pdf},#{pd_ctx});"));
-    let pds = emit(&mut id, &mut lines, format!("PRODUCT_DEFINITION_SHAPE('','',#{pd});"));
-    emit(&mut id, &mut lines, format!("SHAPE_DEFINITION_REPRESENTATION(#{pds},#{shape_rep});"));
+    let app_ctx = emit(
+        &mut id,
+        &mut lines,
+        "APPLICATION_CONTEXT('core data for automotive mechanical design processes');".into(),
+    );
+    emit(
+        &mut id,
+        &mut lines,
+        format!(
+            "APPLICATION_PROTOCOL_DEFINITION('international standard','automotive_design',1994,#{app_ctx});"
+        ),
+    );
+    let prod_ctx = emit(
+        &mut id,
+        &mut lines,
+        format!("PRODUCT_CONTEXT('',#{app_ctx},'mechanical');"),
+    );
+    let pd_ctx = emit(
+        &mut id,
+        &mut lines,
+        format!("PRODUCT_DEFINITION_CONTEXT('part definition',#{app_ctx},'design');"),
+    );
+    let product = emit(
+        &mut id,
+        &mut lines,
+        format!("PRODUCT('{assembly_name}','{assembly_name}','',(#{prod_ctx}));"),
+    );
+    let pdf = emit(
+        &mut id,
+        &mut lines,
+        format!("PRODUCT_DEFINITION_FORMATION('','',#{product});"),
+    );
+    let pd = emit(
+        &mut id,
+        &mut lines,
+        format!("PRODUCT_DEFINITION('design','',#{pdf},#{pd_ctx});"),
+    );
+    let pds = emit(
+        &mut id,
+        &mut lines,
+        format!("PRODUCT_DEFINITION_SHAPE('','',#{pd});"),
+    );
+    emit(
+        &mut id,
+        &mut lines,
+        format!("SHAPE_DEFINITION_REPRESENTATION(#{pds},#{shape_rep});"),
+    );
 
     let body = lines.join("\n");
     format!(
@@ -252,7 +377,11 @@ mod tests {
     use helisim_design::DesignCandidate;
 
     fn blade_tris() -> Vec<Tri> {
-        lofted_blade_tris(&blade_from_design_tapered(&DesignCandidate::model(), 6.0, 0.7), 16, 40)
+        lofted_blade_tris(
+            &blade_from_design_tapered(&DesignCandidate::model(), 6.0, 0.7),
+            16,
+            40,
+        )
     }
 
     #[test]
@@ -260,8 +389,16 @@ mod tests {
         let tris = blade_tris();
         let (v, e, f) = mesh_topology(&tris);
         // Euler characteristic of a closed genus-0 solid.
-        assert_eq!(v as i64 - e as i64 + f as i64, 2, "V-E+F = {}", v as i64 - e as i64 + f as i64);
-        assert!(is_closed_manifold(&tris), "every edge must be used exactly twice");
+        assert_eq!(
+            v as i64 - e as i64 + f as i64,
+            2,
+            "V-E+F = {}",
+            v as i64 - e as i64 + f as i64
+        );
+        assert!(
+            is_closed_manifold(&tris),
+            "every edge must be used exactly twice"
+        );
     }
 
     #[test]

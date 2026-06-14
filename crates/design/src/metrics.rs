@@ -10,14 +10,14 @@
 
 use crate::candidate::DesignCandidate;
 use crate::report::DesignReport;
-use helisim_acoustics::{rotational_spectrum, P_REF};
+use helisim_acoustics::{P_REF, rotational_spectrum};
 use helisim_airfoil::Airfoil;
 use helisim_autorotation::{
-    assess_vertical, autorotation_index, decay_time_constant_power, flare_height_equivalent,
-    glide_polar, profile_power, steady_autorotation, G,
+    G, assess_vertical, autorotation_index, decay_time_constant_power, flare_height_equivalent,
+    glide_polar, profile_power, steady_autorotation,
 };
 use helisim_bemt::Config;
-use helisim_cost::{build_bom, summarize, AircraftSpec, UnitCosts};
+use helisim_cost::{AircraftSpec, UnitCosts, build_bom, summarize};
 use helisim_mission::trim_hover_collective;
 
 /// Effective loading radius for Gutin noise, as a fraction of rotor radius.

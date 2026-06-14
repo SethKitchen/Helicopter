@@ -46,7 +46,9 @@ pub fn place(tris: &[Tri], rot_z: f64, rot_y: f64, t: Vec3) -> Vec<Tri> {
         let p = rotate_y(p, rot_y);
         Vec3::new(p.x + t.x, p.y + t.y, p.z + t.z)
     };
-    tris.iter().map(|tri| Tri(xf(tri.0), xf(tri.1), xf(tri.2))).collect()
+    tris.iter()
+        .map(|tri| Tri(xf(tri.0), xf(tri.1), xf(tri.2)))
+        .collect()
 }
 
 /// A closed cylinder along +z, radius `r`, length `len` (mm), `n` facets around.
@@ -81,7 +83,11 @@ pub fn ellipsoid(a: f64, b: f64, c: f64, n_lat: usize, n_long: usize) -> Vec<Tri
     let p = |i: usize, j: usize| -> Vec3 {
         let theta = PI * i as f64 / n_lat as f64; // 0..π
         let phi = 2.0 * PI * (j % n_long) as f64 / n_long as f64;
-        Vec3::new(a * theta.sin() * phi.cos(), b * theta.sin() * phi.sin(), c * theta.cos())
+        Vec3::new(
+            a * theta.sin() * phi.cos(),
+            b * theta.sin() * phi.sin(),
+            c * theta.cos(),
+        )
     };
     let top = Vec3::new(0.0, 0.0, c);
     let bot = Vec3::new(0.0, 0.0, -c);
@@ -115,7 +121,11 @@ pub fn lofted_blade_tris(blade: &BladeSpec, n_span: usize, n_section: usize) -> 
         base.iter()
             .map(|pt| {
                 let (x, y) = (pt.x * c, pt.y * c);
-                Vec3::new(xp + (x - xp) * th.cos() - y * th.sin(), (x - xp) * th.sin() + y * th.cos(), z)
+                Vec3::new(
+                    xp + (x - xp) * th.cos() - y * th.sin(),
+                    (x - xp) * th.sin() + y * th.cos(),
+                    z,
+                )
             })
             .collect()
     };
@@ -147,17 +157,25 @@ pub fn tris_to_stl(name: &str, tris: &[Tri]) -> String {
             Vec3::new(t.1.x - t.0.x, t.1.y - t.0.y, t.1.z - t.0.z),
             Vec3::new(t.2.x - t.0.x, t.2.y - t.0.y, t.2.z - t.0.z),
         );
-        let (mut nx, mut ny, mut nz) =
-            (u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z, u.x * v.y - u.y * v.x);
+        let (mut nx, mut ny, mut nz) = (
+            u.y * v.z - u.z * v.y,
+            u.z * v.x - u.x * v.z,
+            u.x * v.y - u.y * v.x,
+        );
         let len = (nx * nx + ny * ny + nz * nz).sqrt();
         if len > 0.0 {
             nx /= len;
             ny /= len;
             nz /= len;
         }
-        s.push_str(&format!("  facet normal {nx:.6e} {ny:.6e} {nz:.6e}\n    outer loop\n"));
+        s.push_str(&format!(
+            "  facet normal {nx:.6e} {ny:.6e} {nz:.6e}\n    outer loop\n"
+        ));
         for p in [t.0, t.1, t.2] {
-            s.push_str(&format!("      vertex {:.6e} {:.6e} {:.6e}\n", p.x, p.y, p.z));
+            s.push_str(&format!(
+                "      vertex {:.6e} {:.6e} {:.6e}\n",
+                p.x, p.y, p.z
+            ));
         }
         s.push_str("    endloop\n  endfacet\n");
     }

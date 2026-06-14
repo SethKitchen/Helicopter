@@ -86,7 +86,15 @@ pub fn time_to_min_rpm(
     dt: f64,
     t_max: f64,
 ) -> Option<f64> {
-    let hist = simulate_decay(inertia, omega0, omega_min, hover_power_w, establish_tau, dt, t_max);
+    let hist = simulate_decay(
+        inertia,
+        omega0,
+        omega_min,
+        hover_power_w,
+        establish_tau,
+        dt,
+        t_max,
+    );
     let last = *hist.last().unwrap();
     if last.1 > omega_min {
         return None; // never decayed to the limit — recoverable
@@ -120,7 +128,10 @@ mod tests {
     fn rk4_matches_analytic_in_constant_power_limit() {
         let analytic = decay_time_constant_power(I, OM0, OM_MIN, PH);
         let marched = time_to_min_rpm(I, OM0, OM_MIN, PH, 1.0e9, 0.001, 100.0).unwrap();
-        assert!((marched - analytic).abs() / analytic < 1e-3, "{marched} vs {analytic}");
+        assert!(
+            (marched - analytic).abs() / analytic < 1e-3,
+            "{marched} vs {analytic}"
+        );
     }
 
     /// With a realistic descent relief, the rotor decays SLOWER (more time) than
@@ -131,7 +142,10 @@ mod tests {
         // If it reaches Ω_min at all, the relieved decay must take longer than the
         // worst-case bound; if it never decays (None), that is even safer.
         if let Some(t) = time_to_min_rpm(I, OM0, OM_MIN, PH, 3.0, 0.001, 100.0) {
-            assert!(t > analytic, "relieved decay {t} should exceed bound {analytic}");
+            assert!(
+                t > analytic,
+                "relieved decay {t} should exceed bound {analytic}"
+            );
         }
     }
 

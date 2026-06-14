@@ -60,7 +60,10 @@ pub fn validation_report(cfg: &Config) {
     let results = run_case(&ct, cfg);
     report::print_validation(ct.name(), ct.description(), &results);
     let pass = results.iter().filter(|r| r.pass).count();
-    println!("  -> {pass}/{} oracle points within tolerance", results.len());
+    println!(
+        "  -> {pass}/{} oracle points within tolerance",
+        results.len()
+    );
     if let Some(notes) = ct.notes() {
         println!("  note: {notes}");
     }
@@ -93,7 +96,10 @@ pub fn harrington_sweep(cfg: &Config) {
         "\n=== Harrington Rotor 1 — figure-of-merit sweep (M_tip={:.2}) ===",
         harr.tip_mach
     );
-    println!("{:>7} {:>10} {:>10} {:>7}", "theta", "C_T", "C_T/sigma", "FM");
+    println!(
+        "{:>7} {:>10} {:>10} {:>7}",
+        "theta", "C_T", "C_T/sigma", "FM"
+    );
 
     let mut peak_fm = 0.0_f64;
     let mut peak_theta = 0.0_f64;
@@ -114,7 +120,11 @@ pub fn harrington_sweep(cfg: &Config) {
     }
 
     let (lo, hi) = harr.expected_peak_fm();
-    let verdict = if (lo..=hi).contains(&peak_fm) { "OK" } else { "outside band" };
+    let verdict = if (lo..=hi).contains(&peak_fm) {
+        "OK"
+    } else {
+        "outside band"
+    };
     println!(
         "  peak FM = {peak_fm:.3} at θ={peak_theta:.2}° (expected [{lo:.2}, {hi:.2}]) -> {verdict}"
     );

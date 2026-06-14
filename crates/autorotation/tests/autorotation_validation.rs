@@ -13,8 +13,8 @@
 //! oracle.
 
 use helisim_autorotation::{
-    autorotation_index, flare_height_equivalent, forward_induced_velocity, glide_polar,
-    hover_induced_velocity, profile_power, steady_autorotation, G,
+    G, autorotation_index, flare_height_equivalent, forward_induced_velocity, glide_polar,
+    hover_induced_velocity, profile_power, steady_autorotation,
 };
 use std::f64::consts::PI;
 

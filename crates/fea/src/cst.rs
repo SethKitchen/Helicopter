@@ -43,23 +43,49 @@ impl Cst {
     /// `(B, area)`: the 3×6 strain-displacement matrix (row-major) and the element
     /// area, for the triangle `tri`.
     fn b_matrix(&self, tri: [usize; 3]) -> ([f64; 18], f64) {
-        let [(x1, y1), (x2, y2), (x3, y3)] = [self.nodes[tri[0]], self.nodes[tri[1]], self.nodes[tri[2]]];
+        let [(x1, y1), (x2, y2), (x3, y3)] =
+            [self.nodes[tri[0]], self.nodes[tri[1]], self.nodes[tri[2]]];
         let area = 0.5 * ((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1));
         let (b1, b2, b3) = (y2 - y3, y3 - y1, y1 - y2);
         let (c1, c2, c3) = (x3 - x2, x1 - x3, x2 - x1);
         let k = 1.0 / (2.0 * area);
         // rows: [εxx; εyy; γxy], cols: u1,v1,u2,v2,u3,v3
         let b = [
-            b1 * k, 0.0, b2 * k, 0.0, b3 * k, 0.0,
-            0.0, c1 * k, 0.0, c2 * k, 0.0, c3 * k,
-            c1 * k, b1 * k, c2 * k, b2 * k, c3 * k, b3 * k,
+            b1 * k,
+            0.0,
+            b2 * k,
+            0.0,
+            b3 * k,
+            0.0,
+            0.0,
+            c1 * k,
+            0.0,
+            c2 * k,
+            0.0,
+            c3 * k,
+            c1 * k,
+            b1 * k,
+            c2 * k,
+            b2 * k,
+            c3 * k,
+            b3 * k,
         ];
         (b, area)
     }
 
     fn d_matrix(&self) -> [f64; 9] {
         let f = self.e / (1.0 - self.nu * self.nu);
-        [f, f * self.nu, 0.0, f * self.nu, f, 0.0, 0.0, 0.0, f * (1.0 - self.nu) / 2.0]
+        [
+            f,
+            f * self.nu,
+            0.0,
+            f * self.nu,
+            f,
+            0.0,
+            0.0,
+            0.0,
+            f * (1.0 - self.nu) / 2.0,
+        ]
     }
 
     /// Solve for displacements and element stresses. `loads` are nodal forces
@@ -84,10 +110,19 @@ impl Cst {
             let mut ke = [0.0; 36];
             for i in 0..6 {
                 for j in 0..6 {
-                    ke[i * 6 + j] = self.thickness * area * (0..3).map(|m| b[m * 6 + i] * db[m * 6 + j]).sum::<f64>();
+                    ke[i * 6 + j] = self.thickness
+                        * area
+                        * (0..3).map(|m| b[m * 6 + i] * db[m * 6 + j]).sum::<f64>();
                 }
             }
-            let map = [2 * tri[0], 2 * tri[0] + 1, 2 * tri[1], 2 * tri[1] + 1, 2 * tri[2], 2 * tri[2] + 1];
+            let map = [
+                2 * tri[0],
+                2 * tri[0] + 1,
+                2 * tri[1],
+                2 * tri[1] + 1,
+                2 * tri[2],
+                2 * tri[2] + 1,
+            ];
             for i in 0..6 {
                 for j in 0..6 {
                     k[map[i] * dof + map[j]] += ke[i * 6 + j];
@@ -114,13 +149,26 @@ impl Cst {
         let mut element_stress = Vec::new();
         for &tri in &self.elements {
             let (b, _) = self.b_matrix(tri);
-            let map = [2 * tri[0], 2 * tri[0] + 1, 2 * tri[1], 2 * tri[1] + 1, 2 * tri[2], 2 * tri[2] + 1];
+            let map = [
+                2 * tri[0],
+                2 * tri[0] + 1,
+                2 * tri[1],
+                2 * tri[1] + 1,
+                2 * tri[2],
+                2 * tri[2] + 1,
+            ];
             let ue: Vec<f64> = map.iter().map(|&g| u[g]).collect();
-            let strain: Vec<f64> = (0..3).map(|r| (0..6).map(|c| b[r * 6 + c] * ue[c]).sum()).collect();
-            let sigma: [f64; 3] = std::array::from_fn(|r| (0..3).map(|m| d[r * 3 + m] * strain[m]).sum());
+            let strain: Vec<f64> = (0..3)
+                .map(|r| (0..6).map(|c| b[r * 6 + c] * ue[c]).sum())
+                .collect();
+            let sigma: [f64; 3] =
+                std::array::from_fn(|r| (0..3).map(|m| d[r * 3 + m] * strain[m]).sum());
             element_stress.push(sigma);
         }
-        Some(CstSolution { disp, element_stress })
+        Some(CstSolution {
+            disp,
+            element_stress,
+        })
     }
 }
 

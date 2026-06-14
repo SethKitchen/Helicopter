@@ -28,6 +28,6 @@ pub mod beam;
 pub mod cst;
 pub mod linsolve;
 
-pub use beam::{uniform_beam, Bc, Beam, BeamSolution, NodalLoad};
-pub use cst::{rectangle_two_tris, Cst, CstSolution};
+pub use beam::{Bc, Beam, BeamSolution, NodalLoad, uniform_beam};
+pub use cst::{Cst, CstSolution, rectangle_two_tris};
 pub use linsolve::solve;

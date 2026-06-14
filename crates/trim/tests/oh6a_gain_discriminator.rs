@@ -24,7 +24,9 @@ fn my_theta(e: f64, cg: f64) -> f64 {
     let mut ac = Aircraft::oh6a();
     ac.flap.hinge_offset = e;
     ac.cg_offset = cg;
-    trim(&ac, &TrimCondition::hover(), &NewtonConfig::default()).pitch.to_degrees()
+    trim(&ac, &TrimCondition::hover(), &NewtonConfig::default())
+        .pitch
+        .to_degrees()
 }
 
 fn my_slope(e: f64) -> f64 {
@@ -39,20 +41,31 @@ fn oh6a_cg_sweep_gain_discriminator() {
         "  oracle Θ: FWD {TH_FWD:.2}° (cg {CG_FWD:+.3}m) | MID {TH_MID:.2}° (0) | AFT {TH_AFT:.2}° (cg {CG_AFT:+.3}m)"
     );
     // My sweep at nominal articulated hinge e=0.03.
-    let (tf, tm, ta) = (my_theta(0.03, CG_FWD), my_theta(0.03, CG_MID), my_theta(0.03, CG_AFT));
+    let (tf, tm, ta) = (
+        my_theta(0.03, CG_FWD),
+        my_theta(0.03, CG_MID),
+        my_theta(0.03, CG_AFT),
+    );
     let ms = (ta - tf) / (CG_AFT - CG_FWD);
-    println!("  mine   Θ: FWD {tf:.2}° | MID {tm:.2}° | AFT {ta:.2}°  → slope {ms:.1} °/m  ({:.2}× oracle)", ms / os);
+    println!(
+        "  mine   Θ: FWD {tf:.2}° | MID {tm:.2}° | AFT {ta:.2}°  → slope {ms:.1} °/m  ({:.2}× oracle)",
+        ms / os
+    );
 
     // Robustness across the unsourced articulated hinge-offset bracket [0.02, 0.08].
     println!("  slope across hinge-offset bracket (oracle {os:.1}):");
     let mut ratios = vec![];
     for &e in &[0.02, 0.03, 0.05, 0.08] {
         let s = my_slope(e);
-        println!("    e={e:.2} (ν_β={:.3}): slope {s:.1} °/m  ({:.2}× oracle)", {
-            let mut a = Aircraft::oh6a();
-            a.flap.hinge_offset = e;
-            a.flap.nu_beta_sq().sqrt()
-        }, s / os);
+        println!(
+            "    e={e:.2} (ν_β={:.3}): slope {s:.1} °/m  ({:.2}× oracle)",
+            {
+                let mut a = Aircraft::oh6a();
+                a.flap.hinge_offset = e;
+                a.flap.nu_beta_sq().sqrt()
+            },
+            s / os
+        );
         ratios.push(s / os);
     }
 

@@ -188,7 +188,10 @@ pub fn evaluate(ac: &Aircraft, cond: &TrimCondition, x: &[f64], kappa: f64) -> E
     // left in the shaft frame — a γ_s≈3° rotation of a moment vector is a ~0.1% mixing,
     // negligible vs the thrust-vector effect that sets the attitude.
     let gs = ac.shaft_tilt;
-    let (tx, tz) = (tx_s * gs.cos() - tz_s * gs.sin(), tx_s * gs.sin() + tz_s * gs.cos());
+    let (tx, tz) = (
+        tx_s * gs.cos() - tz_s * gs.sin(),
+        tx_s * gs.sin() + tz_s * gs.cos(),
+    );
 
     // Weight resolved into body axes from the attitude.
     let w = ac.mass * G;

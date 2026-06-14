@@ -9,7 +9,7 @@
 //! well-formed (correct facet/vertex counts, valid headers/footers) — the same
 //! "validate the structure, not a fabricated number" discipline.
 
-use crate::airfoil_coords::{naca00xx_contour, Point};
+use crate::airfoil_coords::{Point, naca00xx_contour};
 use crate::blade::BladeSpec;
 
 const THICKNESS_FRAC: f64 = 0.12;
@@ -36,7 +36,10 @@ fn facet(out: &mut String, a: V3, b: V3, c: V3) {
     out.push_str(&format!("  facet normal {nx:.6e} {ny:.6e} {nz:.6e}\n"));
     out.push_str("    outer loop\n");
     for v in [a, b, c] {
-        out.push_str(&format!("      vertex {:.6e} {:.6e} {:.6e}\n", v.x, v.y, v.z));
+        out.push_str(&format!(
+            "      vertex {:.6e} {:.6e} {:.6e}\n",
+            v.x, v.y, v.z
+        ));
     }
     out.push_str("    endloop\n  endfacet\n");
 }
@@ -63,9 +66,19 @@ pub fn blade_to_stl(blade: &BladeSpec, n: usize) -> String {
     // End caps: fan-triangulate the (convex) section at each end.
     for i in 1..m - 1 {
         // Root cap (normal toward −z): order for outward normal.
-        facet(&mut s, at(&contour[0], z0), at(&contour[i + 1], z0), at(&contour[i], z0));
+        facet(
+            &mut s,
+            at(&contour[0], z0),
+            at(&contour[i + 1], z0),
+            at(&contour[i], z0),
+        );
         // Tip cap (normal toward +z).
-        facet(&mut s, at(&contour[0], z1), at(&contour[i], z1), at(&contour[i + 1], z1));
+        facet(
+            &mut s,
+            at(&contour[0], z1),
+            at(&contour[i], z1),
+            at(&contour[i + 1], z1),
+        );
     }
 
     s.push_str("endsolid blade\n");

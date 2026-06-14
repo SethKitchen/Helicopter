@@ -65,8 +65,7 @@ impl BuildPart for MastSpec {
                 self.min_diameter_m * 1000.0,
                 self.torque_nm
             ),
-            "2. Turn bearing journals and the head taper/spline at the top end."
-                .to_string(),
+            "2. Turn bearing journals and the head taper/spline at the top end.".to_string(),
             "3. Machine the drive coupling (key/spline) at the bottom for the motor/gearbox."
                 .to_string(),
             "4. Verify runout < 0.05 mm; the mast must spin true.".to_string(),

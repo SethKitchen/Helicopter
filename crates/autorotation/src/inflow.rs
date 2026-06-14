@@ -102,6 +102,10 @@ mod tests {
         assert!((vortex_ring_inflow_ratio(0.0) - 1.0).abs() < 1e-12);
         let fit = vortex_ring_inflow_ratio(-2.0);
         let mom = windmill_brake_inflow_ratio(-2.0); // = 1.0
-        assert!((fit - mom).abs() < 0.05, "seam jump {} too large", (fit - mom).abs());
+        assert!(
+            (fit - mom).abs() < 0.05,
+            "seam jump {} too large",
+            (fit - mom).abs()
+        );
     }
 }

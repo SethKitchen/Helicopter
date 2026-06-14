@@ -28,7 +28,11 @@ pub fn summarize(bom: &Bom) -> CostReport {
     let total_cost: f64 = bom.items.iter().map(|c| c.cost).sum();
     let total_mass_kg: f64 = bom.items.iter().map(|c| c.mass_kg).sum();
     let self_built: f64 = bom.items.iter().map(|c| c.self_built_cost()).sum();
-    let vii = if total_cost > 0.0 { self_built / total_cost } else { 0.0 };
+    let vii = if total_cost > 0.0 {
+        self_built / total_cost
+    } else {
+        0.0
+    };
 
     let purchased_cost: f64 = bom
         .items
@@ -60,7 +64,11 @@ pub fn summarize(bom: &Bom) -> CostReport {
         total_mass_kg,
         vertical_integration_index: vii,
         purchased_cost,
-        purchased_cost_fraction: if total_cost > 0.0 { purchased_cost / total_cost } else { 0.0 },
+        purchased_cost_fraction: if total_cost > 0.0 {
+            purchased_cost / total_cost
+        } else {
+            0.0
+        },
         by_subsystem,
         buy_items,
     }

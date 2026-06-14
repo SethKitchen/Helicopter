@@ -122,7 +122,10 @@ fn char_poly_eigensolver_and_empty_matrix() {
     let a = vec![vec![0.0, -1.0], vec![1.0, 0.0]];
     let ev = eigenvalues_via_char_poly(&a);
     assert_eq!(ev.len(), 2);
-    assert!(ev.iter().all(|e| e.re.abs() < 1e-6 && (e.im.abs() - 1.0).abs() < 1e-6));
+    assert!(
+        ev.iter()
+            .all(|e| e.re.abs() < 1e-6 && (e.im.abs() - 1.0).abs() < 1e-6)
+    );
     // char_poly of a 2×2 is degree-2: λ² − tr·λ + det = λ² + 1 here.
     let p = char_poly(&a);
     assert_eq!(p.len(), 3);

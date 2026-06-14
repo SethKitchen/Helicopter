@@ -11,7 +11,7 @@
 use crate::airfoil_coords::naca00xx_contour;
 use crate::blade::blade_from_design;
 use crate::fuselage::fuselage_for;
-use crate::mesh::{cylinder_z, ellipsoid, lofted_blade_tris, place, tris_to_stl, Tri, Vec3};
+use crate::mesh::{Tri, Vec3, cylinder_z, ellipsoid, lofted_blade_tris, place, tris_to_stl};
 use helisim_design::{DesignCandidate, DesignReport};
 use std::f64::consts::PI;
 
@@ -37,19 +37,36 @@ pub fn aircraft_parts(c: &DesignCandidate, report: &DesignReport) -> Vec<(&'stat
     let fus = fuselage_for(c.gross_mass_kg, c.radius_m);
 
     let mut parts: Vec<(&'static str, Vec<Tri>)> = Vec::new();
-    parts.push(("fuselage", ellipsoid(fus.length_m * 500.0, fus.width_m * 500.0, fus.height_m * 500.0, 10, 16)));
+    parts.push((
+        "fuselage",
+        ellipsoid(
+            fus.length_m * 500.0,
+            fus.width_m * 500.0,
+            fus.height_m * 500.0,
+            10,
+            16,
+        ),
+    ));
     parts.push(("mast", cylinder_z(mast_d * 0.5, hub_z, 16)));
 
     let blade_tris = lofted_blade_tris(&blade, 12, 40);
     for k in 0..c.n_blades {
         let az = 2.0 * PI * k as f64 / c.n_blades as f64;
-        let laid = place(&blade_tris, 0.0, -PI / 2.0, Vec3::new(root_r_mm, 0.0, hub_z));
+        let laid = place(
+            &blade_tris,
+            0.0,
+            -PI / 2.0,
+            Vec3::new(root_r_mm, 0.0, hub_z),
+        );
         parts.push(("blade", place(&laid, az, 0.0, Vec3::new(0.0, 0.0, 0.0))));
     }
 
     let boom = cylinder_z(boom_od * 0.5, boom_len, 12);
     let boom_aft = place(&boom, 0.0, PI / 2.0, Vec3::new(0.0, 0.0, hub_z * 0.4));
-    parts.push(("tail boom", place(&boom_aft, PI, 0.0, Vec3::new(0.0, 0.0, 0.0))));
+    parts.push((
+        "tail boom",
+        place(&boom_aft, PI, 0.0, Vec3::new(0.0, 0.0, 0.0)),
+    ));
     parts
 }
 
@@ -103,12 +120,23 @@ pub fn aircraft_to_step(c: &DesignCandidate) -> String {
         point_ids_tip.push(id);
         id += 1;
     }
-    let refs = |ids: &[usize]| ids.iter().map(|i| format!("#{i}")).collect::<Vec<_>>().join(",");
+    let refs = |ids: &[usize]| {
+        ids.iter()
+            .map(|i| format!("#{i}"))
+            .collect::<Vec<_>>()
+            .join(",")
+    };
     let root_poly = id;
-    lines.push(format!("#{id}=POLYLINE('blade_root',({}));", refs(&point_ids_root)));
+    lines.push(format!(
+        "#{id}=POLYLINE('blade_root',({}));",
+        refs(&point_ids_root)
+    ));
     id += 1;
     let tip_poly = id;
-    lines.push(format!("#{id}=POLYLINE('blade_tip',({}));", refs(&point_ids_tip)));
+    lines.push(format!(
+        "#{id}=POLYLINE('blade_tip',({}));",
+        refs(&point_ids_tip)
+    ));
 
     let body = lines.join("\n");
     format!(

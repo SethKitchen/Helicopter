@@ -8,7 +8,7 @@
 //! (small chords → carve/laminate from stock; large chords → spar + skin), stated
 //! as recommendations, not the only route.
 
-use crate::airfoil_coords::{naca00xx_contour, Point};
+use crate::airfoil_coords::{Point, naca00xx_contour};
 use crate::part::{BuildPart, Source};
 use helisim_design::DesignCandidate;
 
@@ -124,7 +124,11 @@ pub fn blade_from_design(c: &DesignCandidate, twist_deg: f64) -> BladeSpec {
 /// As [`blade_from_design`] but with a tip-to-root chord `taper_ratio` (1.0 =
 /// rectangular, e.g. 0.6 = a 60%-tip taper). The stock block is sized on the root
 /// (largest) chord.
-pub fn blade_from_design_tapered(c: &DesignCandidate, twist_deg: f64, taper_ratio: f64) -> BladeSpec {
+pub fn blade_from_design_tapered(
+    c: &DesignCandidate,
+    twist_deg: f64,
+    taper_ratio: f64,
+) -> BladeSpec {
     let root_radius = c.root_cutout * c.radius_m;
     let span = c.radius_m - root_radius;
     let max_thickness = THICKNESS_FRAC * c.chord_m;

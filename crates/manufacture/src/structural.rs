@@ -45,7 +45,11 @@ pub struct MarginItem {
 }
 
 fn margin(part: &'static str, load: String, actual_pa: f64, allow_pa: f64) -> MarginItem {
-    let ms = if actual_pa > 0.0 { allow_pa / actual_pa - 1.0 } else { f64::INFINITY };
+    let ms = if actual_pa > 0.0 {
+        allow_pa / actual_pa - 1.0
+    } else {
+        f64::INFINITY
+    };
     MarginItem {
         part,
         load,
@@ -108,16 +112,29 @@ pub fn check_structure(
         let d_min = (16.0 * torque / (PI * TAU_ALLOW_AL)).cbrt();
         let d = (d_min * 1000.0).ceil() / 1000.0;
         let tau = 16.0 * torque / (PI * d.powi(3));
-        items.push(margin("mast", format!("torsion {torque:.2} N·m"), tau, TAU_ALLOW_AL));
+        items.push(margin(
+            "mast",
+            format!("torsion {torque:.2} N·m"),
+            tau,
+            TAU_ALLOW_AL,
+        ));
 
         // --- boom bending (root moment = main torque) ---
         let od_min = (torque / (0.058 * SIGMA_ALLOW_AL)).cbrt();
         let od = (od_min * 1000.0).ceil() / 1000.0;
         let sigma_boom = torque / (0.058 * od.powi(3));
-        items.push(margin("tail boom", format!("bending {torque:.2} N·m"), sigma_boom, SIGMA_ALLOW_AL));
+        items.push(margin(
+            "tail boom",
+            format!("bending {torque:.2} N·m"),
+            sigma_boom,
+            SIGMA_ALLOW_AL,
+        ));
     }
 
-    let min_margin = items.iter().map(|i| i.margin_of_safety).fold(f64::INFINITY, f64::min);
+    let min_margin = items
+        .iter()
+        .map(|i| i.margin_of_safety)
+        .fold(f64::INFINITY, f64::min);
     let all_pass = items.iter().all(|i| i.ok);
     StructuralReport {
         items,

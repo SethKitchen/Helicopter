@@ -21,7 +21,11 @@ pub struct SwashplateSpec {
 }
 
 /// Size a swashplate from the rotor radius and mast diameter.
-pub fn swashplate_for(rotor_radius_m: f64, mast_diameter_m: f64, n_blades: usize) -> SwashplateSpec {
+pub fn swashplate_for(
+    rotor_radius_m: f64,
+    mast_diameter_m: f64,
+    n_blades: usize,
+) -> SwashplateSpec {
     SwashplateSpec {
         outer_diameter_m: (0.15 * rotor_radius_m).max(2.5 * mast_diameter_m),
         bore_m: mast_diameter_m,

@@ -92,7 +92,12 @@ mod tests {
 
     #[test]
     fn channel_names_and_indices() {
-        for ch in [Channel::Collective, Channel::LatCyclic, Channel::LonCyclic, Channel::Pedal] {
+        for ch in [
+            Channel::Collective,
+            Channel::LatCyclic,
+            Channel::LonCyclic,
+            Channel::Pedal,
+        ] {
             assert!(!ch.name().is_empty());
         }
         assert_eq!(Channel::Pedal as usize, 3);
@@ -101,10 +106,19 @@ mod tests {
     #[test]
     fn schedules_apply_on_the_right_channel_and_window() {
         assert_eq!(Trim.deltas(1.0), [0.0; 4]);
-        let step = Step { channel: Channel::LonCyclic, amplitude: 0.05, t_start: 1.0 };
+        let step = Step {
+            channel: Channel::LonCyclic,
+            amplitude: 0.05,
+            t_start: 1.0,
+        };
         assert_eq!(step.deltas(0.5), [0.0; 4]); // before start
         assert_eq!(step.deltas(2.0)[2], 0.05); // on θ1s after start
-        let pulse = Pulse { channel: Channel::Pedal, amplitude: 0.1, t_start: 1.0, duration: 0.5 };
+        let pulse = Pulse {
+            channel: Channel::Pedal,
+            amplitude: 0.1,
+            t_start: 1.0,
+            duration: 0.5,
+        };
         assert_eq!(pulse.deltas(1.2)[3], 0.1); // inside the pulse
         assert_eq!(pulse.deltas(2.0), [0.0; 4]); // after the pulse
     }

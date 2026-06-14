@@ -5,7 +5,7 @@
 
 use helisim_airfoil::LinearAirfoil;
 use helisim_bemt::Config;
-use helisim_design::{recommend, DesignCandidate, DesignSpace};
+use helisim_design::{DesignCandidate, DesignSpace, recommend};
 use helisim_manufacture::{
     aircraft_to_step_ap203, aircraft_to_stl, airfoil_to_dxf, blade_from_design, blade_to_step_brep,
     build_package, check_structure, hardware_schedule, lofted_blade_to_stl, run_fea,
@@ -79,7 +79,11 @@ pub fn run() {
     }
     println!(
         "  → {} (min MS {:+.2}). Closed-form section check; FEA below refines it.",
-        if structure.all_pass { "all pass" } else { "REVIEW: a part fails" },
+        if structure.all_pass {
+            "all pass"
+        } else {
+            "REVIEW: a part fails"
+        },
         structure.min_margin
     );
 
@@ -98,7 +102,11 @@ pub fn run() {
             stiff,
             part.fe_stress_mpa,
             part.closed_form_stress_mpa,
-            if part.routes_agree { "agree" } else { "MISMATCH" }
+            if part.routes_agree {
+                "agree"
+            } else {
+                "MISMATCH"
+            }
         );
     }
 
@@ -121,10 +129,22 @@ pub fn run() {
         Ok(()) => {
             let files = [
                 ("blade.stl", &blade_stl, "lofted blade solid (printable)"),
-                ("blade_section.dxf", &dxf, "NACA 0012 section profile (cuttable)"),
+                (
+                    "blade_section.dxf",
+                    &dxf,
+                    "NACA 0012 section profile (cuttable)",
+                ),
                 ("aircraft.stl", &aircraft_stl, "full-aircraft assembly mesh"),
-                ("blade.step", &blade_step, "B-rep SOLID (MANIFOLD_SOLID_BREP)"),
-                ("aircraft.step", &aircraft_step, "whole-aircraft B-rep, full AP203 (multi-solid)"),
+                (
+                    "blade.step",
+                    &blade_step,
+                    "B-rep SOLID (MANIFOLD_SOLID_BREP)",
+                ),
+                (
+                    "aircraft.step",
+                    &aircraft_step,
+                    "whole-aircraft B-rep, full AP203 (multi-solid)",
+                ),
             ];
             for (name, content, desc) in files {
                 let path = format!("{dir}/{name}");

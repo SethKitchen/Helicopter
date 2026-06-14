@@ -36,7 +36,7 @@ pub mod component;
 pub mod costs;
 pub mod report;
 
-pub use bom::{build_bom, AircraftSpec, Bom};
+pub use bom::{AircraftSpec, Bom, build_bom};
 pub use component::{Buildability, Component};
 pub use costs::UnitCosts;
-pub use report::{summarize, CostReport};
+pub use report::{CostReport, summarize};

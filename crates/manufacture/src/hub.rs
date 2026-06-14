@@ -71,7 +71,10 @@ impl BuildPart for HubSpec {
     }
     fn build_steps(&self) -> Vec<String> {
         vec![
-            format!("1. Head type: {} for {} blades.", self.head_type, self.n_grips),
+            format!(
+                "1. Head type: {} for {} blades.",
+                self.head_type, self.n_grips
+            ),
             format!(
                 "2. Machine the central hub disc Ø{:.0} mm with a Ø{:.1} mm bore for the mast \
                  (interference/keyed fit).",

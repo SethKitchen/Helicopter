@@ -234,17 +234,33 @@ fn infeasible_mass_reports_not_feasible_without_panicking() {
     let pt = ConstantEfficiency::typical_electric_heli();
     let huge = 1000.0; // kg — impossible for a 0.5 m model rotor
     let h = analyze_hover(
-        &rotor, &op, &af, &pack_6s3p(), &pt, huge,
-        &Convective::natural_air(), ThermalLimits::default(),
-        &Config::default(), &MissionConfig::default(),
+        &rotor,
+        &op,
+        &af,
+        &pack_6s3p(),
+        &pt,
+        huge,
+        &Convective::natural_air(),
+        ThermalLimits::default(),
+        &Config::default(),
+        &MissionConfig::default(),
     );
     assert!(!h.hover_feasible);
     assert!(h.collective_deg.is_nan());
 
     let c = analyze_climb(
-        &rotor, &op, &af, &pack_6s3p(), &pt, huge, 5.0, 60.0,
-        &Convective::natural_air(), ThermalLimits::default(),
-        &Config::default(), &MissionConfig::default(),
+        &rotor,
+        &op,
+        &af,
+        &pack_6s3p(),
+        &pt,
+        huge,
+        5.0,
+        60.0,
+        &Convective::natural_air(),
+        ThermalLimits::default(),
+        &Config::default(),
+        &MissionConfig::default(),
     );
     assert!(!c.feasible);
 }

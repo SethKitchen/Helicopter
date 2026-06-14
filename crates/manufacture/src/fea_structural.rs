@@ -13,7 +13,7 @@
 
 use crate::airfoil_coords::naca4_half_thickness;
 use helisim_design::{DesignCandidate, DesignReport};
-use helisim_fea::{uniform_beam, Bc, NodalLoad};
+use helisim_fea::{Bc, NodalLoad, uniform_beam};
 use std::f64::consts::PI;
 
 /// Young's modulus of 6061-T6 aluminium, Pa.
@@ -84,7 +84,15 @@ pub fn run_fea(c: &DesignCandidate, report: &DesignReport) -> FeaReport {
     let z_boom = i_boom / (od / 2.0);
     let beam = uniform_beam(boom_len, 8, E_AL * i_boom, z_boom);
     let sol = beam
-        .solve(&[NodalLoad { node: 8, force: -tail_thrust, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .solve(
+            &[NodalLoad {
+                node: 8,
+                force: -tail_thrust,
+                moment: 0.0,
+            }],
+            None,
+            &[Bc::Clamped(0)],
+        )
         .unwrap();
     let cf_boom = tail_thrust * boom_len / z_boom;
     let boom = FeaPart {
@@ -159,8 +167,16 @@ mod tests {
         let (c, r) = cr();
         let fea = run_fea(&c, &r);
         // The boom (point load) is exact; the blade (uniform load) within 5%.
-        assert!(fea.boom.routes_agree, "boom FE {} vs CF {}", fea.boom.fe_stress_mpa, fea.boom.closed_form_stress_mpa);
-        assert!(fea.blade.routes_agree, "blade FE {} vs CF {}", fea.blade.fe_stress_mpa, fea.blade.closed_form_stress_mpa);
+        assert!(
+            fea.boom.routes_agree,
+            "boom FE {} vs CF {}",
+            fea.boom.fe_stress_mpa, fea.boom.closed_form_stress_mpa
+        );
+        assert!(
+            fea.blade.routes_agree,
+            "blade FE {} vs CF {}",
+            fea.blade.fe_stress_mpa, fea.blade.closed_form_stress_mpa
+        );
     }
 
     #[test]
@@ -179,6 +195,9 @@ mod tests {
         let fea = run_fea(&c, &r);
         let stiff = fea.blade.tip_deflection_stiffened_m.unwrap();
         assert!(stiff < fea.blade.tip_deflection_m);
-        assert!(stiff < 0.25 * fea.blade.tip_deflection_m, "stiffening should be large");
+        assert!(
+            stiff < 0.25 * fea.blade.tip_deflection_m,
+            "stiffening should be large"
+        );
     }
 }

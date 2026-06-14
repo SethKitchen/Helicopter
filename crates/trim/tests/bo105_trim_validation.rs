@@ -31,10 +31,16 @@ fn bo105_hover_cyclic_and_attitude_vs_cr3144() {
     // bias actuator blocked. θ1c magnitude is order-consistent with |A1S|=0.33° (sign
     // deferred to the convention reconciliation); roll Φ matches the tail-side-force bank.
     let lat_ratio = t1c.abs() / A1S_O.abs();
-    assert!((0.4..2.5).contains(&lat_ratio), "lateral cyclic magnitude order-consistent (got {lat_ratio:.2}×)");
+    assert!(
+        (0.4..2.5).contains(&lat_ratio),
+        "lateral cyclic magnitude order-consistent (got {lat_ratio:.2}×)"
+    );
     assert!(roll < 0.0, "left bank to balance the tail side force");
     let roll_ratio = roll / PHI_O;
-    assert!((0.4..2.5).contains(&roll_ratio), "roll order-consistent w/ oracle (got {roll_ratio:.2}×)");
+    assert!(
+        (0.4..2.5).contains(&roll_ratio),
+        "roll order-consistent w/ oracle (got {roll_ratio:.2}×)"
+    );
 
     // --- LONGITUDINAL axis: RECOVERED by the sourced 3° shaft tilt (MILESTONE6_SHAFT_TILT
     // _PREREG.md verified). It was a miss with shaft tilt omitted (θ1s≈0.03°, Θ≈0.09°);
@@ -44,7 +50,13 @@ fn bo105_hover_cyclic_and_attitude_vs_cr3144() {
     // what makes the UH-60's overshoot under the SAME term attributable to its cg_offset,
     // not to a shaft-tilt bug (see uh60_hover_trim_attitude_vs_genhel).
     let pitch_ratio = pitch / THETA_O;
-    assert!((0.5..2.0).contains(&pitch_ratio), "pitch recovered by sourced shaft tilt (got {pitch_ratio:.2}×)");
+    assert!(
+        (0.5..2.0).contains(&pitch_ratio),
+        "pitch recovered by sourced shaft tilt (got {pitch_ratio:.2}×)"
+    );
     let lon_ratio = t1s.abs() / B1S_O.abs();
-    assert!((0.4..2.5).contains(&lon_ratio), "longitudinal cyclic order-consistent after shaft tilt (got {lon_ratio:.2}×)");
+    assert!(
+        (0.4..2.5).contains(&lon_ratio),
+        "longitudinal cyclic order-consistent after shaft tilt (got {lon_ratio:.2}×)"
+    );
 }

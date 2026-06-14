@@ -6,7 +6,7 @@
 //! [`UnitCosts`] inputs (representative defaults, override with quotes); only the
 //! structure of the result is asserted.
 
-use helisim_cost::{build_bom, summarize, AircraftSpec, Buildability, UnitCosts};
+use helisim_cost::{AircraftSpec, Buildability, UnitCosts, build_bom, summarize};
 
 fn model_spec() -> AircraftSpec {
     // The ~3.5 kg model design point, with a plausible mass split.
@@ -38,7 +38,11 @@ fn cells_esc_and_sensors_are_the_irreducible_buy_items() {
     let names: Vec<&str> = r.buy_items.iter().map(|(n, _)| *n).collect();
     assert!(names.iter().any(|n| n.contains("cells")));
     assert!(names.iter().any(|n| n.contains("ESC")));
-    assert!(names.iter().any(|n| n.contains("controller") || n.contains("sensors")));
+    assert!(
+        names
+            .iter()
+            .any(|n| n.contains("controller") || n.contains("sensors"))
+    );
     // Purchased cost is a real, non-trivial share — you cannot self-build it away.
     assert!(r.purchased_cost > 0.0 && r.purchased_cost_fraction > 0.1);
 }

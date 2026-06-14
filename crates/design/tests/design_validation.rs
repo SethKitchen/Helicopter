@@ -13,9 +13,9 @@
 //!    priority metric the physically correct way.
 
 use helisim_airfoil::LinearAirfoil;
-use helisim_autorotation::{profile_power, steady_autorotation, G};
+use helisim_autorotation::{G, profile_power, steady_autorotation};
 use helisim_bemt::Config;
-use helisim_design::{evaluate, recommend, sweep_radius, DesignCandidate, DesignSpace};
+use helisim_design::{DesignCandidate, DesignSpace, evaluate, recommend, sweep_radius};
 
 #[test]
 fn delegates_autorotation_to_the_validated_core() {
@@ -26,7 +26,13 @@ fn delegates_autorotation_to_the_validated_core() {
     // Reproduce the autorotation path independently from the same inputs.
     let op = c.operating();
     let weight = c.gross_mass_kg * G;
-    let p0 = profile_power(op.rho, c.disk_area(), c.tip_speed_ms, c.solidity(), c.blade_cd0);
+    let p0 = profile_power(
+        op.rho,
+        c.disk_area(),
+        c.tip_speed_ms,
+        c.solidity(),
+        c.blade_cd0,
+    );
     let auto = steady_autorotation(weight, op.rho, c.disk_area(), p0);
 
     assert!((report.autorotation_ratio - auto.descent_ratio).abs() < 1e-12);
@@ -92,7 +98,13 @@ fn recommender_returns_a_safe_feasible_winner() {
 fn recommender_ranks_by_score_and_winner_is_the_max() {
     let base = DesignCandidate::model();
     let af = LinearAirfoil::naca0012();
-    let rec = recommend(&DesignSpace::model_default(), &base, &af, &Config::default()).unwrap();
+    let rec = recommend(
+        &DesignSpace::model_default(),
+        &base,
+        &af,
+        &Config::default(),
+    )
+    .unwrap();
 
     // Ranked list is sorted descending; the winner tops it.
     for w in rec.ranked.windows(2) {
@@ -113,7 +125,9 @@ fn tightening_the_safety_floor_shrinks_the_feasible_set() {
     strict.min_flare_margin = 2.0;
 
     let n_lax = recommend(&lax, &base, &af, &cfg).unwrap().n_feasible;
-    let n_strict = recommend(&strict, &base, &af, &cfg).map(|r| r.n_feasible).unwrap_or(0);
+    let n_strict = recommend(&strict, &base, &af, &cfg)
+        .map(|r| r.n_feasible)
+        .unwrap_or(0);
     // A stricter safety floor can only reduce (or keep) the feasible count.
     assert!(n_strict <= n_lax);
 }

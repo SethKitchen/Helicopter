@@ -77,19 +77,17 @@ pub mod survivability;
 
 pub use descent::{profile_power, steady_autorotation};
 pub use forward::{
-    forward_descent_rate, forward_induced_velocity, glide_polar, power_required, GlidePoint,
-    GlidePolar,
+    GlidePoint, GlidePolar, forward_descent_rate, forward_induced_velocity, glide_polar,
+    power_required,
+};
+pub use height_velocity::{
+    HeightVelocityDiagram, HvPoint, build_low_speed_hv, knee_speed, low_speed_critical_height,
 };
 pub use index::{autorotation_index, flare_height_equivalent, rotor_kinetic_energy};
-pub use height_velocity::{
-    build_low_speed_hv, knee_speed, low_speed_critical_height, HeightVelocityDiagram, HvPoint,
-};
+pub use inflow::{descent_inflow_ratio, hover_induced_velocity, windmill_brake_inflow_ratio};
 pub use rotor_decay::{decay_time_constant_power, simulate_decay, time_to_min_rpm};
-pub use survivability::{assess_vertical, FlareAssessment};
-pub use inflow::{
-    descent_inflow_ratio, hover_induced_velocity, windmill_brake_inflow_ratio,
-};
 pub use solution::AutorotationSolution;
+pub use survivability::{FlareAssessment, assess_vertical};
 
 /// Standard gravity, m/s². Weight `W = m g`.
 pub const G: f64 = 9.80665;

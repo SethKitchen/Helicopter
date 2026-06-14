@@ -58,7 +58,9 @@ pub fn build_package(c: &DesignCandidate, report: &DesignReport) -> BuildPackage
     let m_blade = c.blade_areal_density_kg_m2 * c.chord_m * span;
     let r_cg = 0.5 * (c.radius_m + blade.root_radius_m);
     let f_cf = omega2 * m_blade * r_cg;
-    let bolt_d = (2.0 * f_cf / (std::f64::consts::PI * 200.0e6)).sqrt().max(0.003);
+    let bolt_d = (2.0 * f_cf / (std::f64::consts::PI * 200.0e6))
+        .sqrt()
+        .max(0.003);
     let root_fit = root_fitting_for(c.n_blades, blade.chord_m, blade.max_thickness_m, bolt_d);
     let tail = tail_rotor_for(torque, c.radius_m, c.tip_speed_ms);
 
@@ -92,16 +94,19 @@ pub fn build_package(c: &DesignCandidate, report: &DesignReport) -> BuildPackage
             .to_string(),
     ];
 
-    BuildPackage { parts, assembly_steps }
+    BuildPackage {
+        parts,
+        assembly_steps,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::part::Source;
+    use helisim_airfoil::LinearAirfoil;
     use helisim_bemt::Config;
     use helisim_design::evaluate;
-    use helisim_airfoil::LinearAirfoil;
 
     fn pkg() -> BuildPackage {
         let c = DesignCandidate::model();
@@ -118,11 +123,20 @@ mod tests {
             assert!(!part.name().is_empty());
             assert!(!part.material().is_empty());
             assert!(!part.source().label().is_empty());
-            assert!(!part.build_steps().is_empty(), "{} has no steps", part.name());
+            assert!(
+                !part.build_steps().is_empty(),
+                "{} has no steps",
+                part.name()
+            );
             assert!(!part.key_dimensions_mm().is_empty());
         }
         // Every Source variant has a label.
-        for s in [Source::RawStock, Source::Fabricated, Source::Assembled, Source::Purchased] {
+        for s in [
+            Source::RawStock,
+            Source::Fabricated,
+            Source::Assembled,
+            Source::Purchased,
+        ] {
             assert!(!s.label().is_empty());
         }
         assert!(p.assembly_steps.len() >= 8);

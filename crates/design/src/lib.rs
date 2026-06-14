@@ -44,6 +44,6 @@ pub mod sweep;
 
 pub use candidate::DesignCandidate;
 pub use metrics::evaluate;
-pub use recommend::{recommend, DesignSpace, Recommendation, ScoredCandidate};
+pub use recommend::{DesignSpace, Recommendation, ScoredCandidate, recommend};
 pub use report::DesignReport;
-pub use sweep::{sweep_radius, SweepPoint};
+pub use sweep::{SweepPoint, sweep_radius};

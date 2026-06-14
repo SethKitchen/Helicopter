@@ -104,7 +104,13 @@ fn trait_default_thermal_and_electrical_methods() {
     assert!((cell.heat_capacity() - cell.mass_kg() * 900.0).abs() < 1e-9);
     // V = OCV − I·R at SoC 0.5.
     let (soc, i) = (0.5, 10.0);
-    assert!((cell.terminal_voltage(soc, i) - (cell.ocv(soc) - i * cell.internal_resistance(soc))).abs() < 1e-12);
+    assert!(
+        (cell.terminal_voltage(soc, i) - (cell.ocv(soc) - i * cell.internal_resistance(soc))).abs()
+            < 1e-12
+    );
     // max power = OCV²/4R.
-    assert!((cell.max_power(soc) - cell.ocv(soc).powi(2) / (4.0 * cell.internal_resistance(soc))).abs() < 1e-9);
+    assert!(
+        (cell.max_power(soc) - cell.ocv(soc).powi(2) / (4.0 * cell.internal_resistance(soc))).abs()
+            < 1e-9
+    );
 }

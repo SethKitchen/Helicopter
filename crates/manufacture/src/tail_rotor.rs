@@ -39,7 +39,11 @@ pub struct TailRotorSpec {
 
 /// Size a tail rotor to react `main_torque_nm`, given the main rotor radius and
 /// tip speed (the tail tip speed is matched to the main for a first cut).
-pub fn tail_rotor_for(main_torque_nm: f64, main_radius_m: f64, main_tip_speed_ms: f64) -> TailRotorSpec {
+pub fn tail_rotor_for(
+    main_torque_nm: f64,
+    main_radius_m: f64,
+    main_tip_speed_ms: f64,
+) -> TailRotorSpec {
     let boom_len = 1.15 * main_radius_m;
     let thrust = main_torque_nm / boom_len;
     let radius = TAIL_RADIUS_FRACTION * main_radius_m;

@@ -16,7 +16,17 @@ use helisim_acoustics::*;
 /// Representative rotor: 2 blades, Ω = 50 rad/s, R_e = 3.2 m (≈0.8·4 m),
 /// T = 9810 N, Q = 4000 N·m, observer 50 m away.
 fn spectrum_at(theta_deg: f64) -> NoiseSpectrum {
-    rotational_spectrum(6, 2, 50.0, 340.0, 50.0, 9810.0, 4000.0, 3.2, theta_deg.to_radians())
+    rotational_spectrum(
+        6,
+        2,
+        50.0,
+        340.0,
+        50.0,
+        9810.0,
+        4000.0,
+        3.2,
+        theta_deg.to_radians(),
+    )
 }
 
 #[test]

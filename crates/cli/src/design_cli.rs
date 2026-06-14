@@ -5,8 +5,10 @@
 
 use helisim_airfoil::LinearAirfoil;
 use helisim_bemt::Config;
-use helisim_cost::{build_bom, summarize, AircraftSpec, UnitCosts};
-use helisim_design::{evaluate, recommend, sweep_radius, DesignCandidate, DesignReport, DesignSpace};
+use helisim_cost::{AircraftSpec, UnitCosts, build_bom, summarize};
+use helisim_design::{
+    DesignCandidate, DesignReport, DesignSpace, evaluate, recommend, sweep_radius,
+};
 use helisim_manufacture::blade_from_design;
 
 pub fn run() {
@@ -35,14 +37,23 @@ pub fn run() {
                 let r = &sc.report;
                 println!(
                     "  {:>2}b R={:.2} σ={:.3} V={:>3.0}  {:>5.2} {:>5.1}m ${:>4.0} {:>4.0}% {:>4.1}dB {:>6.2}",
-                    c.n_blades, c.radius_m, c.solidity(), c.tip_speed_ms,
-                    r.flare_margin, r.endurance_min, r.total_cost,
-                    r.vertical_integration_index * 100.0, r.oaspl_db, sc.score
+                    c.n_blades,
+                    c.radius_m,
+                    c.solidity(),
+                    c.tip_speed_ms,
+                    r.flare_margin,
+                    r.endurance_min,
+                    r.total_cost,
+                    r.vertical_integration_index * 100.0,
+                    r.oaspl_db,
+                    sc.score
                 );
             }
             emit_blade_build(&rec.best.candidate);
         }
-        None => println!("  No design met the constraints; relax the safety floor or widen the grid."),
+        None => {
+            println!("  No design met the constraints; relax the safety floor or widen the grid.")
+        }
     }
     println!();
     println!(
@@ -95,21 +106,31 @@ pub fn run() {
 
     // Capstone: the same validated stack on a human-scale 2-pax point, to show
     // how the priorities — especially the safety findings — scale from the model.
-    println!("\n=== Scale-up: human-scale 2-passenger point (same stack, defensible assumptions) ===");
+    println!(
+        "\n=== Scale-up: human-scale 2-passenger point (same stack, defensible assumptions) ==="
+    );
     let human = DesignCandidate::human_scale_2pax();
     let hr = evaluate(&human, &af, &cfg);
     println!(
         "  {:.0} kg, R={:.1} m, V_tip={:.0} m/s, {:.0} kWh pack",
-        human.gross_mass_kg, human.radius_m, human.tip_speed_ms, human.pack_energy_wh / 1000.0
+        human.gross_mass_kg,
+        human.radius_m,
+        human.tip_speed_ms,
+        human.pack_energy_wh / 1000.0
     );
     if hr.hover_feasible {
         println!(
             "  hover {:.0} kW, endurance {:.0} min, FM {:.2}, OASPL {:.0} dB @ 150 m",
-            hr.hover_shaft_power_w / 1000.0, hr.endurance_min, hr.figure_of_merit, hr.oaspl_db
+            hr.hover_shaft_power_w / 1000.0,
+            hr.endurance_min,
+            hr.figure_of_merit,
+            hr.oaspl_db
         );
         println!(
             "  SAFETY scale-up: rotor-decay reaction {:.1} s (vs {:.2} s model), flare margin {:.2} ({}),",
-            hr.rotor_decay_time_s, r.rotor_decay_time_s, hr.flare_margin,
+            hr.rotor_decay_time_s,
+            r.rotor_decay_time_s,
+            hr.flare_margin,
             if hr.can_flare { "OK" } else { "FAILS" }
         );
         println!(
@@ -160,7 +181,11 @@ fn emit_blade_build(c: &DesignCandidate) {
     println!("\n  --- BLADE build (recommended design) ---");
     println!(
         "  {} ×{}, span {:.0} mm, chord {:.0} mm, max thickness {:.1} mm @ 30% chord",
-        b.airfoil, b.n_blades, b.span_m * 1000.0, b.chord_m * 1000.0, b.max_thickness_m * 1000.0
+        b.airfoil,
+        b.n_blades,
+        b.span_m * 1000.0,
+        b.chord_m * 1000.0,
+        b.max_thickness_m * 1000.0
     );
     for step in b.instructions() {
         println!("    {step}");
@@ -189,7 +214,10 @@ fn print_cost(c: &DesignCandidate, r: &DesignReport) {
     };
     let costs = UnitCosts::default();
     let cr = summarize(&build_bom(&spec, &costs));
-    println!("  [cost/build] total ≈ ${:.0} (PARAMETRIC — representative unit costs, override w/ quotes)", cr.total_cost);
+    println!(
+        "  [cost/build] total ≈ ${:.0} (PARAMETRIC — representative unit costs, override w/ quotes)",
+        cr.total_cost
+    );
     print!("               by subsystem:");
     for (s, cost) in &cr.by_subsystem {
         print!(" {s} ${cost:.0};");
@@ -211,19 +239,29 @@ fn print_cost(c: &DesignCandidate, r: &DesignReport) {
 fn print_point(c: &DesignCandidate, r: &DesignReport) {
     println!("=== Starter point evaluated ===");
     if !r.hover_feasible {
-        println!("  INFEASIBLE: cannot hover {:.1} kg at this rotor/tip speed.", c.gross_mass_kg);
+        println!(
+            "  INFEASIBLE: cannot hover {:.1} kg at this rotor/tip speed.",
+            c.gross_mass_kg
+        );
         return;
     }
     println!(
         "  [safety]     vertical auto {:.0} fpm (V_d/v_h={:.2}); forward min-sink {:.0} fpm @ {:.1} m/s,",
-        r.autorotation_descent_fpm, r.autorotation_ratio, r.forward_min_sink_fpm, r.forward_min_sink_speed_ms
+        r.autorotation_descent_fpm,
+        r.autorotation_ratio,
+        r.forward_min_sink_fpm,
+        r.forward_min_sink_speed_ms
     );
     println!(
         "               best glide {:.1}° @ {:.1} m/s; flare margin {:.2} ({}), flare-height {:.2} m",
         r.best_glide_angle_deg,
         r.best_glide_speed_ms,
         r.flare_margin,
-        if r.can_flare { "energy bound MET" } else { "FAILS bound" },
+        if r.can_flare {
+            "energy bound MET"
+        } else {
+            "FAILS bound"
+        },
         r.flare_height_m,
     );
     println!(

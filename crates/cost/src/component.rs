@@ -85,8 +85,20 @@ mod tests {
             assert!(!b.label().is_empty());
         }
         // A raw-stock part contributes 95% of its cost; a purchased one 0%.
-        let raw = Component { name: "blade", subsystem: "rotor", mass_kg: 0.1, cost: 100.0, buildability: Buildability::RawStock };
-        let bought = Component { name: "esc", subsystem: "powertrain", mass_kg: 0.05, cost: 100.0, buildability: Buildability::Purchased };
+        let raw = Component {
+            name: "blade",
+            subsystem: "rotor",
+            mass_kg: 0.1,
+            cost: 100.0,
+            buildability: Buildability::RawStock,
+        };
+        let bought = Component {
+            name: "esc",
+            subsystem: "powertrain",
+            mass_kg: 0.05,
+            cost: 100.0,
+            buildability: Buildability::Purchased,
+        };
         assert!((raw.self_built_cost() - 95.0).abs() < 1e-9);
         assert_eq!(bought.self_built_cost(), 0.0);
     }

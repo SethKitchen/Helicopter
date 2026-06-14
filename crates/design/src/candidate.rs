@@ -117,7 +117,13 @@ impl DesignCandidate {
     /// A copy with new rotor geometry (blades/radius/chord/tip speed) **and** the
     /// rotor inertia re-estimated from that geometry — the search primitive the
     /// recommender uses so each candidate is self-consistent.
-    pub fn with_geometry(&self, n_blades: usize, radius_m: f64, chord_m: f64, tip_speed_ms: f64) -> Self {
+    pub fn with_geometry(
+        &self,
+        n_blades: usize,
+        radius_m: f64,
+        chord_m: f64,
+        tip_speed_ms: f64,
+    ) -> Self {
         let mut c = DesignCandidate {
             n_blades,
             radius_m,

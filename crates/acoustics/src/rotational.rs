@@ -43,7 +43,8 @@ pub fn gutin_harmonic_pressure(
     theta: f64,
 ) -> f64 {
     let mb = (m * blades) as f64;
-    let amp = mb * omega / (2.0 * std::f64::consts::SQRT_2 * std::f64::consts::PI * sound_speed * distance);
+    let amp = mb * omega
+        / (2.0 * std::f64::consts::SQRT_2 * std::f64::consts::PI * sound_speed * distance);
     let bracket = thrust * theta.cos() - sound_speed * torque / (omega * r_eff * r_eff);
     let arg = mb * omega * r_eff * theta.sin() / sound_speed;
     amp * bracket * bessel_j(m * blades, arg)
@@ -66,7 +67,10 @@ mod tests {
 
     #[test]
     fn on_axis_null() {
-        assert!(case(0.0).abs() < 1e-12, "rotational noise must vanish on axis");
+        assert!(
+            case(0.0).abs() < 1e-12,
+            "rotational noise must vanish on axis"
+        );
     }
 
     #[test]

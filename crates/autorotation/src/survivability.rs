@@ -32,9 +32,9 @@
 //! (height-velocity / flare energy). The specific bound here is a transparent
 //! simplification, stated as such, not a fit to a published H-V curve.
 
+use crate::G;
 use crate::descent::steady_autorotation;
 use crate::index::rotor_kinetic_energy;
-use crate::G;
 
 /// Flare-survivability assessment for a vertical autorotation (the bounding case).
 #[derive(Clone, Copy, Debug)]
@@ -80,7 +80,8 @@ pub fn assess_vertical(
 
     // Usable flare energy: KE at Ω₀ minus KE at the minimum controllable speed.
     let omega_min = omega_min_frac * omega0;
-    let flare_energy = rotor_kinetic_energy(inertia, omega0) - rotor_kinetic_energy(inertia, omega_min);
+    let flare_energy =
+        rotor_kinetic_energy(inertia, omega0) - rotor_kinetic_energy(inertia, omega_min);
 
     // Descent KE that must be removed to reach the safe touchdown rate.
     let descent_ke = 0.5 * mass_kg * (v_d * v_d - safe_touchdown_ms * safe_touchdown_ms).max(0.0);

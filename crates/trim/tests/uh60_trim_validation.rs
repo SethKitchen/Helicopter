@@ -19,7 +19,9 @@ fn uh60_hover_trim_attitude_vs_genhel() {
     // Decomposition: cg-only (shaft tilt off) to expose the seam.
     let mut cg_only = Aircraft::uh60();
     cg_only.shaft_tilt = 0.0;
-    let pitch_cg = trim(&cg_only, &TrimCondition::hover(), &NewtonConfig::default()).pitch.to_degrees();
+    let pitch_cg = trim(&cg_only, &TrimCondition::hover(), &NewtonConfig::default())
+        .pitch
+        .to_degrees();
     let (pitch_o, roll_o) = (5.05, -2.34);
     println!(
         "UH-60 hover trim: Θ(cg+shaft)={pitch:+.2}° | Θ(cg-only)={pitch_cg:+.2}° (o +5.05°) | Φ={roll:+.2}° (o -2.34°)"
@@ -27,7 +29,10 @@ fn uh60_hover_trim_attitude_vs_genhel() {
 
     // Roll: unchanged by the (longitudinal) shaft tilt — the tail-side-force bank (5g φ_e).
     assert!(roll < 0.0, "left bank to balance tail side force");
-    assert!((roll - roll_o).abs() / roll_o.abs() < 0.20, "roll Φ within 20% of GENHEL");
+    assert!(
+        (roll - roll_o).abs() / roll_o.abs() < 0.20,
+        "roll Φ within 20% of GENHEL"
+    );
 
     // THE FINDING (Outcome A confirmed). cg-only gives Θ=+5.94° (≈+5.05°, the seam); adding
     // the SOURCED 3° shaft tilt → Θ=+7.82°, which OVERSHOOTS +5.05° by ~55%. So cg_offset
@@ -36,9 +41,18 @@ fn uh60_hover_trim_attitude_vs_genhel() {
     // once the BO-105 (cg≈0) validated the shaft-tilt mechanism in isolation. The combined
     // over-prediction localizes a real trim-geometry issue (the longitudinal attitude over-
     // responds to cg+shaft forcing by ~55%) — the next investigation, NOT fixed by re-tuning.
-    assert!(pitch > pitch_cg, "shaft tilt adds nose-up on top of the cg-only attitude");
-    assert!(pitch > pitch_o * 1.2, "Θ OVERSHOOTS oracle with both sourced terms (cg over-attribution)");
-    assert!((pitch_cg - pitch_o).abs() / pitch_o < 0.25, "cg-only ≈ oracle was the SEAM (the fortuitous match)");
+    assert!(
+        pitch > pitch_cg,
+        "shaft tilt adds nose-up on top of the cg-only attitude"
+    );
+    assert!(
+        pitch > pitch_o * 1.2,
+        "Θ OVERSHOOTS oracle with both sourced terms (cg over-attribution)"
+    );
+    assert!(
+        (pitch_cg - pitch_o).abs() / pitch_o < 0.25,
+        "cg-only ≈ oracle was the SEAM (the fortuitous match)"
+    );
 }
 
 #[test]
@@ -72,8 +86,15 @@ fn uh60_hover_collective_shows_the_bemt_overprediction() {
     );
     // Assert only the robust claim: collective is lower (over-prediction direction) by a
     // sane margin. NOT a magnitude match to C&T (the paths differ — tip loss).
-    assert!(mine_deg < oracle_deg, "collective lower (BEMT over-predicts thrust)");
-    assert!((0.03..0.30).contains(&frac_lower), "lower by a sane margin (got {:.0}%)", frac_lower * 100.0);
+    assert!(
+        mine_deg < oracle_deg,
+        "collective lower (BEMT over-predicts thrust)"
+    );
+    assert!(
+        (0.03..0.30).contains(&frac_lower),
+        "lower by a sane margin (got {:.0}%)",
+        frac_lower * 100.0
+    );
 }
 
 #[test]
@@ -111,8 +132,14 @@ fn uh60_hover_cyclic_vs_genhel_units_and_lateral() {
     let dc = (r.collective - c5) / c6;
     let dp = (r.tail_collective - c7) / c8 - sk11 * dc;
     // δc low by the BEMT thrust over-prediction (its own test); still the right ORDER.
-    assert!((2.0..7.0).contains(&dc), "δc={dc:.2} in not in oracle order (o 5.72) — units bug");
-    assert!((-2.5..-0.5).contains(&dp), "δp={dp:.2} in not in oracle order (o -1.28) — units bug");
+    assert!(
+        (2.0..7.0).contains(&dc),
+        "δc={dc:.2} in not in oracle order (o 5.72) — units bug"
+    );
+    assert!(
+        (-2.5..-0.5).contains(&dp),
+        "δp={dp:.2} in not in oracle order (o -1.28) — units bug"
+    );
 
     // --- LATERAL cyclic (clean axis): compare blade-pitch MAGNITUDE to the oracle's.
     // Oracle lateral blade cyclic A = CK2·(δa + SK8·δc) from Table 4 (no PBA on this axis).
@@ -126,10 +153,14 @@ fn uh60_hover_cyclic_vs_genhel_units_and_lateral() {
          LATERAL  mine |θ1c|={:.2}° vs oracle |A|={:.2}°  → {:.2}× (clean axis, order-consistent)\n  \
          LON.     mine |θ1s|={:.2}° vs oracle pilot |B|={:.2}°  → {:.1}× (CONFOUNDED by PBA — not comparable)\n  \
          units x-check: δc={:.2} in (o 5.72, low by BEMT bias) | δp={:+.2} in (o -1.28)",
-        r.cyclic_lat.to_degrees(), a_oracle.abs().to_degrees(), lat_ratio,
-        r.cyclic_lon.to_degrees(), b_oracle.abs().to_degrees(),
+        r.cyclic_lat.to_degrees(),
+        a_oracle.abs().to_degrees(),
+        lat_ratio,
+        r.cyclic_lon.to_degrees(),
+        b_oracle.abs().to_degrees(),
         r.cyclic_lon.abs() / b_oracle.abs(),
-        dc, dp
+        dc,
+        dp
     );
 
     // Lateral cyclic blade-pitch magnitude order-consistent with the oracle (within ~3×).

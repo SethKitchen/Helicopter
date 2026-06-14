@@ -78,7 +78,13 @@ pub fn bearing_catalogue() -> Vec<Bearing> {
         ("6002", 15.0, 32.0, 9.0, 5600.0),
     ];
     raw.iter()
-        .map(|&(name, bore, od, w, c)| Bearing { name, bore_mm: bore, od_mm: od, width_mm: w, dynamic_c_n: c })
+        .map(|&(name, bore, od, w, c)| Bearing {
+            name,
+            bore_mm: bore,
+            od_mm: od,
+            width_mm: w,
+            dynamic_c_n: c,
+        })
         .collect()
 }
 
@@ -121,7 +127,10 @@ pub fn hardware_schedule(c: &DesignCandidate, report: &DesignReport) -> Vec<Hard
         items.push(HardwareItem {
             joint: "blade retention".to_string(),
             part: b.name.to_string(),
-            detail: format!("centrifugal {f_cf:.0} N (double shear, SF2) → cap {:.0} N", 2.0 * b.shear_capacity_n),
+            detail: format!(
+                "centrifugal {f_cf:.0} N (double shear, SF2) → cap {:.0} N",
+                2.0 * b.shear_capacity_n
+            ),
         });
     }
 
@@ -138,7 +147,10 @@ pub fn hardware_schedule(c: &DesignCandidate, report: &DesignReport) -> Vec<Hard
         items.push(HardwareItem {
             joint: "mast bearings (×2)".to_string(),
             part: brg.name.to_string(),
-            detail: format!("bore {:.0} mm ≥ mast {:.0} mm, C {:.0} N ≥ {:.0} N", brg.bore_mm, mast_d_mm, brg.dynamic_c_n, weight),
+            detail: format!(
+                "bore {:.0} mm ≥ mast {:.0} mm, C {:.0} N ≥ {:.0} N",
+                brg.bore_mm, mast_d_mm, brg.dynamic_c_n, weight
+            ),
         });
     }
 
@@ -148,7 +160,10 @@ pub fn hardware_schedule(c: &DesignCandidate, report: &DesignReport) -> Vec<Hard
         items.push(HardwareItem {
             joint: format!("grip pitch bearings (×{})", c.n_blades),
             part: brg.name.to_string(),
-            detail: format!("carries {f_cf:.0} N centrifugal, C {:.0} N", brg.dynamic_c_n),
+            detail: format!(
+                "carries {f_cf:.0} N centrifugal, C {:.0} N",
+                brg.dynamic_c_n
+            ),
         });
     }
 

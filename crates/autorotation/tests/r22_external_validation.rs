@@ -20,7 +20,7 @@
 //! (which carry the project's standing power-calibration caveat) are asserted only
 //! to the pre-registered bands, with the error in the pre-registered direction.
 
-use helisim_autorotation::{glide_polar, profile_power, steady_autorotation, G};
+use helisim_autorotation::{G, glide_polar, profile_power, steady_autorotation};
 use std::f64::consts::PI;
 
 const KT_TO_MS: f64 = 0.514444;
@@ -87,5 +87,9 @@ fn best_glide_ratio_matches_published_within_band() {
     let ratio = 1.0 / polar.best_glide.glide_angle_deg.to_radians().tan();
     let published = 4.0;
     let err = (ratio - published).abs() / published;
-    assert!(err < 0.25, "glide ratio {ratio:.2}:1 vs 4:1, err {:.0}% > 25%", err * 100.0);
+    assert!(
+        err < 0.25,
+        "glide ratio {ratio:.2}:1 vs 4:1, err {:.0}% > 25%",
+        err * 100.0
+    );
 }

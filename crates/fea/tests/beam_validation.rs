@@ -5,7 +5,7 @@
 //! cubic elements are exact for point loads, so the agreement is to machine
 //! precision (not a tolerance fudge).
 
-use helisim_fea::{uniform_beam, Bc, NodalLoad};
+use helisim_fea::{Bc, NodalLoad, uniform_beam};
 
 const EI: f64 = 1000.0; // N·m²
 const Z: f64 = 1e-5; // m³ (section modulus, for stress)
@@ -18,10 +18,22 @@ fn cantilever_point_load_is_exact() {
     let p = -150.0; // N, downward
     let beam = uniform_beam(l, 1, EI, Z);
     let sol = beam
-        .solve(&[NodalLoad { node: 1, force: p, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .solve(
+            &[NodalLoad {
+                node: 1,
+                force: p,
+                moment: 0.0,
+            }],
+            None,
+            &[Bc::Clamped(0)],
+        )
         .unwrap();
     let exact = p * l * l * l / (3.0 * EI);
-    assert!((sol.deflection[1] - exact).abs() < 1e-9, "{} vs {exact}", sol.deflection[1]);
+    assert!(
+        (sol.deflection[1] - exact).abs() < 1e-9,
+        "{} vs {exact}",
+        sol.deflection[1]
+    );
     // Root bending moment = |P|·L.
     assert!((sol.max_moment_nm - p.abs() * l).abs() < 1e-9);
     // And the peak stress is M/Z.
@@ -52,13 +64,21 @@ fn simply_supported_center_load_is_exact() {
     let mid = n_el / 2;
     let sol = beam
         .solve(
-            &[NodalLoad { node: mid, force: p, moment: 0.0 }],
+            &[NodalLoad {
+                node: mid,
+                force: p,
+                moment: 0.0,
+            }],
             None,
             &[Bc::Pinned(0), Bc::Pinned(n_el)],
         )
         .unwrap();
     let exact = p * l.powi(3) / (48.0 * EI);
-    assert!((sol.deflection[mid] - exact).abs() / exact.abs() < 1e-9, "{} vs {exact}", sol.deflection[mid]);
+    assert!(
+        (sol.deflection[mid] - exact).abs() / exact.abs() < 1e-9,
+        "{} vs {exact}",
+        sol.deflection[mid]
+    );
 }
 
 #[test]
@@ -68,15 +88,34 @@ fn geometric_stiffening_reduces_deflection_and_zero_tension_recovers_beam() {
     let (l, p) = (2.0, -150.0);
     let base = uniform_beam(l, 8, EI, Z);
     let no_t = base
-        .solve(&[NodalLoad { node: 8, force: p, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .solve(
+            &[NodalLoad {
+                node: 8,
+                force: p,
+                moment: 0.0,
+            }],
+            None,
+            &[Bc::Clamped(0)],
+        )
         .unwrap();
     let mut tensioned = uniform_beam(l, 8, EI, Z);
     tensioned.tension = vec![5000.0; 8];
     let with_t = tensioned
-        .solve(&[NodalLoad { node: 8, force: p, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .solve(
+            &[NodalLoad {
+                node: 8,
+                force: p,
+                moment: 0.0,
+            }],
+            None,
+            &[Bc::Clamped(0)],
+        )
         .unwrap();
     assert!((no_t.max_deflection_m - (p * l * l * l / (3.0 * EI)).abs()).abs() < 1e-9);
-    assert!(with_t.max_deflection_m < no_t.max_deflection_m, "tension must stiffen");
+    assert!(
+        with_t.max_deflection_m < no_t.max_deflection_m,
+        "tension must stiffen"
+    );
 }
 
 #[test]
@@ -89,10 +128,15 @@ fn taut_string_limit_recovers_q_l2_over_8t() {
     let mut beam = uniform_beam(l, n_el, tiny_ei, Z);
     beam.tension = vec![t; n_el];
     let dist = beam.uniform_load_vector(q);
-    let sol = beam.solve(&[], Some(&dist), &[Bc::Pinned(0), Bc::Pinned(n_el)]).unwrap();
+    let sol = beam
+        .solve(&[], Some(&dist), &[Bc::Pinned(0), Bc::Pinned(n_el)])
+        .unwrap();
     let string = q * l * l / (8.0 * t); // centre deflection of a loaded string
     let mid = sol.deflection[n_el / 2];
-    assert!((mid - string).abs() / string.abs() < 0.02, "{mid} vs string {string}");
+    assert!(
+        (mid - string).abs() / string.abs() < 0.02,
+        "{mid} vs string {string}"
+    );
 }
 
 #[test]
@@ -104,13 +148,32 @@ fn combined_loads_superpose_exactly() {
     let n = 16;
     let tip = |dist, pt| -> f64 {
         let b = uniform_beam(l, n, EI, Z);
-        let d: Option<Vec<f64>> = if dist { Some(b.uniform_load_vector(q)) } else { None };
-        let loads: Vec<NodalLoad> = if pt { vec![NodalLoad { node: n, force: p, moment: 0.0 }] } else { vec![] };
-        *b.solve(&loads, d.as_deref(), &[Bc::Clamped(0)]).unwrap().deflection.last().unwrap()
+        let d: Option<Vec<f64>> = if dist {
+            Some(b.uniform_load_vector(q))
+        } else {
+            None
+        };
+        let loads: Vec<NodalLoad> = if pt {
+            vec![NodalLoad {
+                node: n,
+                force: p,
+                moment: 0.0,
+            }]
+        } else {
+            vec![]
+        };
+        *b.solve(&loads, d.as_deref(), &[Bc::Clamped(0)])
+            .unwrap()
+            .deflection
+            .last()
+            .unwrap()
     };
     let combined = tip(true, true);
     let separate = tip(false, true) + tip(true, false);
-    assert!((combined - separate).abs() < 1e-9, "superposition: {combined} vs {separate}");
+    assert!(
+        (combined - separate).abs() < 1e-9,
+        "superposition: {combined} vs {separate}"
+    );
     let closed = p * l.powi(3) / (3.0 * EI) + q * l.powi(4) / (8.0 * EI);
     assert!((combined - closed).abs() / closed.abs() < 1e-3);
 }
@@ -122,14 +185,30 @@ fn a_soft_outboard_segment_adds_tip_compliance() {
     // correctly carries variable stiffness along the span.
     let (l, p, n) = (2.0, -100.0, 8);
     let stiff = uniform_beam(l, n, EI, Z)
-        .solve(&[NodalLoad { node: n, force: p, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .solve(
+            &[NodalLoad {
+                node: n,
+                force: p,
+                moment: 0.0,
+            }],
+            None,
+            &[Bc::Clamped(0)],
+        )
         .unwrap();
     let mut soft_tip = uniform_beam(l, n, EI, Z);
     for e in n / 2..n {
         soft_tip.ei[e] = EI / 4.0; // outer half is 4× more flexible
     }
     let soft = soft_tip
-        .solve(&[NodalLoad { node: n, force: p, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .solve(
+            &[NodalLoad {
+                node: n,
+                force: p,
+                moment: 0.0,
+            }],
+            None,
+            &[Bc::Clamped(0)],
+        )
         .unwrap();
     assert!(soft.max_deflection_m > stiff.max_deflection_m);
     // Root bending moment is unchanged (statically determinate: M_root = |P|·L).
@@ -141,10 +220,26 @@ fn refinement_does_not_change_the_exact_point_load_answer() {
     // The point-load cantilever is exact at any mesh density — 1 vs 8 elements agree.
     let (l, p) = (2.5, -120.0);
     let coarse = uniform_beam(l, 1, EI, Z)
-        .solve(&[NodalLoad { node: 1, force: p, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .solve(
+            &[NodalLoad {
+                node: 1,
+                force: p,
+                moment: 0.0,
+            }],
+            None,
+            &[Bc::Clamped(0)],
+        )
         .unwrap();
     let fine = uniform_beam(l, 8, EI, Z)
-        .solve(&[NodalLoad { node: 8, force: p, moment: 0.0 }], None, &[Bc::Clamped(0)])
+        .solve(
+            &[NodalLoad {
+                node: 8,
+                force: p,
+                moment: 0.0,
+            }],
+            None,
+            &[Bc::Clamped(0)],
+        )
         .unwrap();
     assert!((coarse.max_deflection_m - fine.max_deflection_m).abs() < 1e-9);
 }
