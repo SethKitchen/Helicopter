@@ -63,4 +63,11 @@ mod tests {
         assert!((t.cl(20.0_f64.to_radians(), 0.0) - 1.0).abs() < 1e-9);
         assert!((t.cl(-5.0_f64.to_radians(), 0.0) - 0.0).abs() < 1e-9);
     }
+
+    #[test]
+    fn empty_table_returns_zero() {
+        // The empty-points guard returns zero lift/drag rather than panicking.
+        let t = TableAirfoil::from_deg(&[]);
+        assert_eq!(t.cl_cd(0.1, 0.0), (0.0, 0.0));
+    }
 }

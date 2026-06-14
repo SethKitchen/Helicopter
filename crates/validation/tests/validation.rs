@@ -177,3 +177,34 @@ fn spanwise_loading_shape() {
         "tip-loss factor should vanish at the tip"
     );
 }
+
+/// A minimal ValidationCase that does NOT override `notes()`, exercising the
+/// trait's default (returns `None`) and the rest of the trait surface.
+struct MinimalCase;
+impl ValidationCase for MinimalCase {
+    fn name(&self) -> &str { "minimal" }
+    fn description(&self) -> &str { "a bare validation case" }
+    fn build_rotor(&self, collective_rad: f64) -> Rotor {
+        Rotor::rectangular(2, 1.0, 0.1, collective_rad, 0.2)
+    }
+    fn airfoil(&self) -> Box<dyn helisim_airfoil::Airfoil> {
+        Box::new(LinearAirfoil::naca0012())
+    }
+    fn oracle_points(&self) -> Vec<helisim_validation::OraclePoint> {
+        vec![helisim_validation::OraclePoint {
+            collective_deg: 8.0,
+            tip_mach: 0.4,
+            ct_expected: 0.006,
+            tol_frac: 0.5,
+        }]
+    }
+}
+
+#[test]
+fn default_notes_is_none_and_run_case_works_on_a_minimal_case() {
+    let c = MinimalCase;
+    assert!(c.notes().is_none()); // the trait default
+    assert!(!c.name().is_empty() && !c.description().is_empty());
+    let results = run_case(&c, &Config::default());
+    assert_eq!(results.len(), 1);
+}
