@@ -117,3 +117,24 @@ fn tightening_the_safety_floor_shrinks_the_feasible_set() {
     // A stricter safety floor can only reduce (or keep) the feasible count.
     assert!(n_strict <= n_lax);
 }
+
+#[test]
+fn infeasible_design_reports_not_feasible() {
+    // A tiny rotor under a huge mass cannot hover → the evaluate() infeasible path
+    // (NaN power/cost, autorotation still computed).
+    let mut c = DesignCandidate::model();
+    c.gross_mass_kg = 500.0; // far too heavy for the 0.6 m model rotor
+    let r = evaluate(&c, &LinearAirfoil::naca0012(), &Config::default());
+    assert!(!r.hover_feasible);
+    assert!(r.hover_shaft_power_w.is_nan());
+    assert!(r.autorotation_descent_fpm > 0.0); // safety physics still reported
+}
+
+#[test]
+fn recommender_returns_none_when_nothing_meets_the_floor() {
+    let base = DesignCandidate::model();
+    let af = LinearAirfoil::naca0012();
+    let mut space = DesignSpace::model_default();
+    space.min_flare_margin = 1.0e6; // impossible safety floor
+    assert!(recommend(&space, &base, &af, &Config::default()).is_none());
+}

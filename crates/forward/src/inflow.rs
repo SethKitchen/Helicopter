@@ -98,4 +98,13 @@ mod tests {
         assert!((r0 - 1.0).abs() < 1e-9);
         assert!(r1 < r0 && r2 < r1);
     }
+
+    #[test]
+    fn high_thrust_grows_the_bracket_and_zero_thrust_has_no_induced_power() {
+        // A large C_T at low μ forces the bracket-growth loop (initial hi < ct).
+        let solved = glauert_inflow(2.0, 0.05, 0.0, 1e-10, 200);
+        assert!((momentum_ct(solved, 0.05, 0.0) - 2.0).abs() < 1e-4);
+        // Zero thrust → zero hover induced velocity → induced-power ratio is 0.
+        assert_eq!(induced_power_ratio(0.0, 0.1), 0.0);
+    }
 }

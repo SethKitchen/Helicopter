@@ -24,3 +24,18 @@ impl Controls {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn from_deg_converts_and_none_is_zero() {
+        let c = Controls::from_deg(180.0, 90.0);
+        assert!((c.theta_1c - std::f64::consts::PI).abs() < 1e-12);
+        assert!((c.theta_1s - std::f64::consts::FRAC_PI_2).abs() < 1e-12);
+        let z = Controls::none();
+        assert_eq!(z.theta_1c, 0.0);
+        assert_eq!(z.theta_1s, 0.0);
+    }
+}

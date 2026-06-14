@@ -38,6 +38,29 @@ fn fixed_point_converges_across_speed() {
 }
 
 #[test]
+fn dimensional_accessors_match_coefficients() {
+    // The dimensional outputs are the coefficients × ρ·A·(ΩR)^k — checkable by hand.
+    let (rotor, op, af) = setup();
+    let flap = FlapProperties::articulated(8.0);
+    let s = solve_coupled(
+        &rotor,
+        &op,
+        &af,
+        &ForwardCondition::new(0.3, 0.0),
+        &flap,
+        &Controls::none(),
+        &CoupledConfig::default(),
+    );
+    let vt = op.tip_speed(rotor.radius);
+    let a = rotor.disk_area();
+    assert!((s.thrust_n(&op, &rotor) - s.ct * op.rho * a * vt * vt).abs() < 1e-6);
+    assert!((s.power_w(&op, &rotor) - s.cp * op.rho * a * vt * vt * vt).abs() < 1e-3);
+    assert!((s.torque_nm(&op, &rotor) - s.power_w(&op, &rotor) / op.omega).abs() < 1e-3);
+    // The κ-calibrated physical rotor power is positive.
+    assert!(s.rotor_power_w(&op, &rotor, 1.15) > 0.0);
+}
+
+#[test]
 fn coupling_redistributes_loading_off_the_advancing_side() {
     // The whole point: flapping folded into the loads sheds the advancing-side
     // excess the rigid solve over-predicts, so the advancing/retreating loading

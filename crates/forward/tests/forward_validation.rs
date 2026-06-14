@@ -22,6 +22,30 @@ fn rotor_op() -> (Rotor, Operating, LinearAirfoil) {
     (rotor, op, LinearAirfoil::naca0012())
 }
 
+#[test]
+fn dimensional_accessors_match_their_coefficients() {
+    // The dimensional outputs are the coefficients × ρ·A·(ΩR)^k, so a reader can
+    // check them by hand from the converged coefficients.
+    let (rotor, op, af) = rotor_op();
+    let cond = ForwardCondition::from_speed(30.0, &op, rotor.radius, 0.0);
+    // from_speed: μ = V cosα / (ΩR), α = 0 here.
+    assert!((cond.advance_ratio - 30.0 / op.tip_speed(rotor.radius)).abs() < 1e-12);
+
+    let sol = solve_forward(&rotor, &op, &af, &cond, &ForwardConfig::default());
+    let vt = op.tip_speed(rotor.radius);
+    let a = rotor.disk_area();
+    assert!((sol.thrust_n(&op, &rotor) - sol.ct * op.rho * a * vt * vt).abs() < 1e-6);
+    assert!((sol.power_w(&op, &rotor) - sol.cp * op.rho * a * vt * vt * vt).abs() < 1e-3);
+    assert!(
+        (sol.rolling_moment_nm(&op, &rotor) - sol.c_roll * op.rho * a * vt * vt * rotor.radius)
+            .abs()
+            < 1e-6
+    );
+    // Glauert momentum thrust is consistent at the converged inflow.
+    let g = glauert_inflow(sol.ct, cond.advance_ratio, 0.0, 1e-12, 200);
+    assert!((g - glauert_inflow_closed_form(sol.ct, cond.advance_ratio)).abs() < 1e-6);
+}
+
 /// Trim collective so the forward-flight C_T equals `target_ct` (C_T rises
 /// monotonically with collective). Returns the solved solution.
 fn trim_to_ct(

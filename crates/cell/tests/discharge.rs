@@ -92,3 +92,19 @@ fn continuous_rating_is_8c() {
     let cell = TheveninCell::samsung_25r();
     assert!((cell.max_continuous_c_rate() - 8.0).abs() < 1e-9);
 }
+
+/// DOCUMENTED defaults — the trait's lumped-thermal and electrical default methods
+/// for an 18650: specific heat 900 J/(kg·K), surface area ≈4.09e-3 m² (18×65 mm
+/// cylinder), heat capacity = m·c_p, and the V=OCV−I·R / max-power identities.
+#[test]
+fn trait_default_thermal_and_electrical_methods() {
+    let cell = TheveninCell::samsung_25r();
+    assert!((cell.specific_heat() - 900.0).abs() < 1e-9);
+    assert!((cell.surface_area() - 4.09e-3).abs() < 1e-9);
+    assert!((cell.heat_capacity() - cell.mass_kg() * 900.0).abs() < 1e-9);
+    // V = OCV − I·R at SoC 0.5.
+    let (soc, i) = (0.5, 10.0);
+    assert!((cell.terminal_voltage(soc, i) - (cell.ocv(soc) - i * cell.internal_resistance(soc))).abs() < 1e-12);
+    // max power = OCV²/4R.
+    assert!((cell.max_power(soc) - cell.ocv(soc).powi(2) / (4.0 * cell.internal_resistance(soc))).abs() < 1e-9);
+}

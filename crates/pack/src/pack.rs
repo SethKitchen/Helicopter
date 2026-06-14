@@ -173,4 +173,18 @@ mod tests {
         assert!((p.mass_kg() - 0.540).abs() < 1e-6);
         assert!((p.max_continuous_current() - 40.0).abs() < 1e-6);
     }
+
+    #[test]
+    fn terminal_voltage_sags_by_pack_resistance() {
+        // V = OCV(soc) − I·R_pack; a 10 A draw on the 63 mΩ 6S2P pack sags 0.63 V.
+        let p = pack_6s2p();
+        let soc = 0.5;
+        let v0 = p.terminal_voltage(soc, 0.0);
+        let v10 = p.terminal_voltage(soc, 10.0);
+        assert!((v0 - p.ocv(soc)).abs() < 1e-9);
+        assert!((v0 - v10 - 10.0 * p.internal_resistance(soc)).abs() < 1e-9);
+        assert!((v0 - v10 - 0.63).abs() < 1e-3);
+        // max_power = OCV²/4R (matched load).
+        assert!((p.max_power(soc) - p.ocv(soc).powi(2) / (4.0 * p.internal_resistance(soc))).abs() < 1e-6);
+    }
 }

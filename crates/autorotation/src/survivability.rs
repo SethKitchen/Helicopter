@@ -154,6 +154,17 @@ mod tests {
     }
 
     #[test]
+    fn safe_touchdown_above_descent_gives_infinite_margin() {
+        // If the acceptable touchdown rate exceeds the steady descent, there is no
+        // descent KE to remove → the flare margin is unbounded.
+        let (w, m, i, om, rho, a, p0) = rep();
+        let f = assess_vertical(w, m, i, om, 0.7, rho, a, p0, 1.0, 100.0);
+        assert!(f.flare_margin.is_infinite());
+        assert!(f.can_flare);
+        assert_eq!(f.descent_ke_j, 0.0);
+    }
+
+    #[test]
     fn critical_height_grows_with_delay() {
         let (w, m, i, om, rho, a, p0) = rep();
         let quick = assess_vertical(w, m, i, om, 0.7, rho, a, p0, 0.5, 2.0).critical_hover_height_m;

@@ -226,4 +226,20 @@ mod tests {
         assert!(steps.len() >= 5);
         assert!(steps[0].contains("stock"));
     }
+
+    #[test]
+    fn tapered_twisted_blade_lofts_and_emits_washout_step() {
+        // A 0.6-taper, 8°-washout blade exercises the loft helpers and the twist
+        // branch of the build instructions.
+        let b = blade_from_design_tapered(&DesignCandidate::model(), 8.0, 0.6);
+        assert!(b.is_lofted());
+        assert!((b.tip_chord_m - 0.6 * b.chord_m).abs() < 1e-12);
+        // Linear chord/twist interpolation: midspan is the mean.
+        assert!((b.local_chord_m(0.5) - 0.5 * (b.chord_m + b.tip_chord_m)).abs() < 1e-12);
+        assert!((b.local_twist_deg(1.0) + 8.0).abs() < 1e-12); // tip = −washout
+        assert!((b.local_twist_deg(0.0)).abs() < 1e-12); // root = 0
+        assert!(b.instructions().iter().any(|s| s.contains("washout")));
+        // A rectangular untwisted blade is not lofted.
+        assert!(!blade_from_design(&DesignCandidate::model(), 0.0).is_lofted());
+    }
 }

@@ -113,6 +113,15 @@ mod tests {
     ///     NACA 0012 at Re ≈ 3–6 M).
     ///   * C_d0 ≈ 0.0065 at zero lift, rising with α² (low-Re NACA 0012 drag).
     #[test]
+    fn trait_default_cl_and_cd_match_cl_cd() {
+        // The Airfoil::cl/cd default methods just project cl_cd; exercise both.
+        let af = LinearAirfoil::naca0012();
+        let (cl, cd) = af.cl_cd(0.1, 0.3);
+        assert!((af.cl(0.1, 0.3) - cl).abs() < 1e-15);
+        assert!((af.cd(0.1, 0.3) - cd).abs() < 1e-15);
+    }
+
+    #[test]
     fn documented_naca0012_coefficients() {
         let af = LinearAirfoil::naca0012_incompressible();
         // Lift slope: 0.10 rad of AoA → ΔCl = 0.573 → a₀ = 5.73 /rad = 0.100 /deg.

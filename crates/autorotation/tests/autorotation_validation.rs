@@ -140,3 +140,14 @@ fn flare_energy_margin_is_positive_and_index_orders_rotors() {
     let small = autorotation_index(inertia, omega, weight, PI * 3.0 * 3.0);
     assert!(big > small);
 }
+
+#[test]
+fn glide_polar_skips_nonpositive_airspeeds() {
+    // The glide-polar builder ignores v ≤ 0 (the continue branch) and still finds
+    // the min-sink / best-glide at the positive speeds.
+    let (thrust, rho, area, p0) = representative_case();
+    let speeds = [-5.0, 0.0, 10.0, 20.0, 30.0, 40.0];
+    let polar = glide_polar(thrust, rho, area, p0, 1.0, &speeds);
+    assert!(polar.min_sink.airspeed_ms > 0.0);
+    assert!(polar.best_glide.airspeed_ms > 0.0);
+}

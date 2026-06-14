@@ -150,6 +150,18 @@ mod tests {
     }
 
     #[test]
+    fn whole_aircraft_ap203_brep_is_emitted() {
+        let (c, r) = cr();
+        let step = aircraft_to_step_ap203(&c, &r);
+        assert!(step.starts_with("ISO-10303-21;") && step.contains("END-ISO-10303-21;"));
+        // One solid per main part (fuselage, mast, n blades, boom).
+        assert!(step.matches("MANIFOLD_SOLID_BREP").count() >= 4);
+        assert!(step.contains("ADVANCED_BREP_SHAPE_REPRESENTATION"));
+        // aircraft_parts returns the named positioned meshes.
+        assert!(aircraft_parts(&c, &r).iter().any(|(n, _)| *n == "fuselage"));
+    }
+
+    #[test]
     fn step_is_valid_iso_10303_with_both_section_curves() {
         let (c, _) = cr();
         let step = aircraft_to_step(&c);

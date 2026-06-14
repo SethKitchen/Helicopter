@@ -101,4 +101,12 @@ mod tests {
         assert!(b.pack_current > a.pack_current);
         assert!(b.terminal_voltage < a.terminal_voltage); // more sag
     }
+    #[test]
+    fn zero_power_draws_no_current() {
+        // The P_elec ≤ 0 short-circuit: no load → no current, terminal V = OCV.
+        let p = pack();
+        let s = solve_pack_current(&p, 0.8, 0.0).unwrap();
+        assert_eq!(s.pack_current, 0.0);
+        assert!((s.terminal_voltage - p.ocv(0.8)).abs() < 1e-12);
+    }
 }

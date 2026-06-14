@@ -69,3 +69,25 @@ impl Component {
         self.cost * self.buildability.self_fraction()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn labels_cover_every_variant_and_self_built_cost_scales() {
+        for b in [
+            Buildability::RawStock,
+            Buildability::Fabricated,
+            Buildability::Assembled,
+            Buildability::Purchased,
+        ] {
+            assert!(!b.label().is_empty());
+        }
+        // A raw-stock part contributes 95% of its cost; a purchased one 0%.
+        let raw = Component { name: "blade", subsystem: "rotor", mass_kg: 0.1, cost: 100.0, buildability: Buildability::RawStock };
+        let bought = Component { name: "esc", subsystem: "powertrain", mass_kg: 0.05, cost: 100.0, buildability: Buildability::Purchased };
+        assert!((raw.self_built_cost() - 95.0).abs() < 1e-9);
+        assert_eq!(bought.self_built_cost(), 0.0);
+    }
+}

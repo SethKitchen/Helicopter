@@ -85,4 +85,15 @@ mod tests {
         assert!((5.0..=10.0).contains(&Convective::natural_air().h));
         assert!((30.0..=60.0).contains(&Convective::forced_air().h));
     }
+
+    #[test]
+    fn rotor_downwash_is_strongest_and_label_reports_h() {
+        let dw = Convective::rotor_downwash();
+        assert!(dw.h > Convective::forced_air().h);
+        // Stronger cooling removes more heat for the same ΔT and area.
+        let q_dw = dw.heat_removed(40.0, 25.0, 0.004);
+        let q_nat = Convective::natural_air().heat_removed(40.0, 25.0, 0.004);
+        assert!(q_dw > q_nat);
+        assert!(dw.label().contains("h=80"));
+    }
 }

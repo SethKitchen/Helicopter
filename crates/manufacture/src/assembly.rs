@@ -98,6 +98,7 @@ pub fn build_package(c: &DesignCandidate, report: &DesignReport) -> BuildPackage
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::part::Source;
     use helisim_bemt::Config;
     use helisim_design::evaluate;
     use helisim_airfoil::LinearAirfoil;
@@ -113,8 +114,16 @@ mod tests {
         let p = pkg();
         assert_eq!(p.parts.len(), 9);
         for part in &p.parts {
+            // Exercise the full BuildPart surface on every concrete part type.
+            assert!(!part.name().is_empty());
+            assert!(!part.material().is_empty());
+            assert!(!part.source().label().is_empty());
             assert!(!part.build_steps().is_empty(), "{} has no steps", part.name());
             assert!(!part.key_dimensions_mm().is_empty());
+        }
+        // Every Source variant has a label.
+        for s in [Source::RawStock, Source::Fabricated, Source::Assembled, Source::Purchased] {
+            assert!(!s.label().is_empty());
         }
         assert!(p.assembly_steps.len() >= 8);
     }
