@@ -151,6 +151,16 @@ pub const KAPTON_ROLL: UnitPrice = UnitPrice::new(7.0, "(Kapton tape, representa
 pub const CELL_HOLDER_EACH: UnitPrice =
     UnitPrice::new(0.20, "(21700 spacer, representative)", "");
 
+// ---- Power distribution between the pack and the actuators ----
+
+/// Brushless heli ESC that drives the motor off the pack (size ≥ motor continuous
+/// current × headroom). Representative — confirm against a vendor part at the
+/// motor's current/cell rating.
+pub const ESC: UnitPrice = UnitPrice::new(40.0, "(brushless heli ESC, representative)", "");
+/// Switching HV BEC that powers the digital control-surface servos off the pack
+/// (size ≥ servo peak current). Representative.
+pub const HV_BEC: UnitPrice = UnitPrice::new(20.0, "(HV switching BEC, representative)", "");
+
 // ---- One-time tools (not consumed per pack) ----
 
 /// Battery spot welder (kWeld-class / Sunkko 709A class).
