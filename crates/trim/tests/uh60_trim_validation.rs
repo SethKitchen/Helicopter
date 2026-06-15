@@ -2,14 +2,14 @@
 //! Oracle: NASA TM 85890 Table 4 (level-flight trim), 1.0-kt column: Euler pitch
 //! Θ=+5.05°, roll Φ=−2.34°. The fuselage attitudes are physical (no control rigging
 //! needed); the stick positions δ need the swashplate rigging and are deferred.
-//! Predictions pre-registered in validation/MILESTONE6_TRIM_PREREG.md, all confirmed.
+//! Predictions pre-registered in this test's comments before the run, all confirmed.
 
 use helisim_trim::{Aircraft, NewtonConfig, TrimCondition, trim};
 
 #[test]
 fn uh60_hover_trim_attitude_vs_genhel() {
     // SHAFT-TILT VERIFICATION + the backward-reaching falsifier into the cg_offset
-    // attribution (pre-registered: MILESTONE6_SHAFT_TILT_PREREG.md). Both longitudinal
+    // attribution (pre-registered below). Both longitudinal
     // params INDEPENDENTLY SOURCED — cg_offset 0.488 m (station lines) AND shaft_tilt 3°
     // (Table 1) — and the attitude is a PREDICTION, NOT a target (neither re-tuned to hit
     // +5.05°; the discipline lock that keeps two-params/one-target from becoming a fit).
@@ -59,12 +59,12 @@ fn uh60_hover_trim_attitude_vs_genhel() {
 fn uh60_hover_collective_shows_the_bemt_overprediction() {
     // Stick-position comparison via the TM 85890 control rigging (Table 1):
     // root collective θ0 = C5 + C6·δc, C5=0.2286 rad, C6=0.02792 rad/in.
-    // Pre-registered (MILESTONE6_TRIM_PREREG.md): my hover collective comes out LOWER
+    // Pre-registered: my hover collective comes out LOWER
     // than the UH-60's because the BEMT over-predicts thrust, so the rotor makes
     // thrust=weight at less collective. The DIRECTION is a second independent external
     // sighting of the milestone-1 BEMT over-prediction (the first was C&T hover C_T) —
     // triangulation. The MAGNITUDE is NOT a clean matched scalar (see
-    // MILESTONE6_RESULTS.md "BEMT bias"): collective-reduction ≠ C_T-over-prediction,
+    // the "BEMT bias" finding): collective-reduction ≠ C_T-over-prediction,
     // and this trim aero (`longitudinal_main_aero`) omits the Prandtl tip loss the C&T
     // hover BEMT included, inflating its over-prediction (~56% at fixed collective vs
     // C&T's ~20–27%). So this test asserts only the robust part: direction + a sane
@@ -100,10 +100,10 @@ fn uh60_hover_collective_shows_the_bemt_overprediction() {
 #[test]
 fn uh60_hover_cyclic_vs_genhel_units_and_lateral() {
     // CYCLIC comparison via the full TM 85890 swashplate rigging (Table 1 sensitivities +
-    // Table 2 crossfeed mixing), pre-registered in MILESTONE6_CYCLIC_PREREG.md, rigging
-    // LOCKED in MILESTONE6_PARAMETER_MAPPING.md (#10).
+    // Table 2 crossfeed mixing), pre-registered below, rigging
+    // locked before the run (parameter-mapping item #10).
     //
-    // What the run surfaced (see MILESTONE6_RESULTS.md "Cyclic"):
+    // What the run surfaced:
     //  - UNITS are clean: the SAME rigging inverts collective and pedal into the oracle's
     //    range (δc low only by the already-separate BEMT bias; δp within ~20%). The cyclic
     //    conversion is the identical rad/(rad/in) arithmetic, so it is unit-clean too.

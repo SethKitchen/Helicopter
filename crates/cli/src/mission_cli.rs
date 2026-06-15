@@ -6,7 +6,7 @@
 use helisim_airfoil::LinearAirfoil;
 use helisim_bemt::Config;
 use helisim_cell::TheveninCell;
-use helisim_mission::{HoverReport, MissionConfig, analyze_climb, analyze_hover};
+use helisim_mission::{HoverReport, MissionConfig, MissionScenario, analyze_climb, analyze_hover};
 use helisim_pack::Pack;
 use helisim_powertrain::{ConstantEfficiency, Powertrain};
 use helisim_rotor::{Operating, Rotor};
@@ -71,7 +71,18 @@ pub fn run() {
     );
 
     let rep = analyze_hover(
-        &rotor, &op, &af, &pack, &pt, 3.0, &cooling, limits, &bemt, &mission,
+        &MissionScenario {
+            rotor: &rotor,
+            op: &op,
+            airfoil: &af,
+            pack: &pack,
+            powertrain: &pt,
+            cooling: &cooling,
+            limits,
+            bemt_cfg: &bemt,
+            mission_cfg: &mission,
+        },
+        3.0,
     );
     print_report(&rep);
 
@@ -87,28 +98,23 @@ pub fn run() {
     );
     for &m in &[2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0] {
         let pack = demo_pack();
-        let h = analyze_hover(
-            &rotor, &op, &af, &pack, &pt, m, &cooling, limits, &bemt, &mission,
-        );
+        let scen = MissionScenario {
+            rotor: &rotor,
+            op: &op,
+            airfoil: &af,
+            pack: &pack,
+            powertrain: &pt,
+            cooling: &cooling,
+            limits,
+            bemt_cfg: &bemt,
+            mission_cfg: &mission,
+        };
+        let h = analyze_hover(&scen, m);
         if !h.hover_feasible {
             println!("{m:>5.1}kg   cannot hover");
             continue;
         }
-        let pack = demo_pack();
-        let c = analyze_climb(
-            &rotor,
-            &op,
-            &af,
-            &pack,
-            &pt,
-            m,
-            climb_rate,
-            climb_duration,
-            &cooling,
-            limits,
-            &bemt,
-            &mission,
-        );
+        let c = analyze_climb(&scen, m, climb_rate, climb_duration);
         let crating = if c.within_c_rating {
             format!("{:.1}C", c.cell_c_rate)
         } else {

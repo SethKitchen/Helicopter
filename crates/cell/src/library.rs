@@ -42,7 +42,7 @@
 //! in clean numeric form (About:Energy/Voltt is login-gated; datasheet discharge
 //! curves are published only as graphs), so the shared curve is retained. The API
 //! already supports per-cell curves — [`TheveninCell::new`] takes one — so this is
-//! a sourcing gap, not a structural one. See `validation/BATTERY_EXTERNAL_RESULTS.md`.
+//! a sourcing gap, not a structural one. See `crates/bms/tests/battery_external_validation.rs`.
 
 use crate::cell::Cell;
 use crate::thevenin::TheveninCell;

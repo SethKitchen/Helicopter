@@ -14,9 +14,9 @@
 use helisim_airfoil::LinearAirfoil;
 use helisim_bemt::Config;
 use helisim_bms::{LifeSizing, PackBuild, build_pack, size_for_life};
-use helisim_cell::{Cell, DegradationModel, molicel_p50b};
+use helisim_cell::{CalendarLoad, Cell, DegradationModel, molicel_p50b};
 use helisim_charging::{ChargeKit, kit_120v, kit_240v, kit_dc_fast, kit_solar};
-use helisim_design::{DesignCandidate, evaluate, size_for_daily_life};
+use helisim_design::{DesignCandidate, UpsizeParams, evaluate, size_for_daily_life};
 
 /// Upsizing assumptions (representative, overridable): figure of merit, empty-mass
 /// fraction (structure+motor+avionics, of gross), profile-power factor, useful
@@ -87,17 +87,15 @@ fn recommend_upsize(deg: &DegradationModel, flight_time_h: f64) {
     );
     let mut best: Option<helisim_design::UpsizeResult> = None;
     for &dl in &DISK_LOADINGS {
-        match size_for_daily_life(
-            PAYLOAD_KG,
-            EMPTY_FRACTION,
-            dl,
-            FM,
-            DRIVELINE_ETA,
-            PROFILE_FACTOR,
+        let up = UpsizeParams {
+            fm: FM,
+            eta: DRIVELINE_ETA,
+            profile_factor: PROFILE_FACTOR,
             flight_time_h,
             dod,
-            PACK_WH_PER_KG,
-        ) {
+            specific_energy_wh_per_kg: PACK_WH_PER_KG,
+        };
+        match size_for_daily_life(PAYLOAD_KG, EMPTY_FRACTION, dl, &up) {
             Some(r) => {
                 println!(
                     "  {:>8.0} {:>6.2} m {:>6.1} kg {:>7.0} W {:>7.0} Wh   ✓ ({:.0}% pack)",
@@ -183,9 +181,7 @@ fn years_to_eol(deg: &DegradationModel, c_rate: f64, _flight_time_h: f64) -> f64
             1.0,
             c_rate,
             25.0,
-            y,
-            STORAGE_TEMP_C,
-            1.0,
+            CalendarLoad { years: y, storage_temp_c: STORAGE_TEMP_C, soc_factor: 1.0 },
         );
         if fade >= deg.eol_fade {
             return y;

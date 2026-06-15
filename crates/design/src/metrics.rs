@@ -10,11 +10,11 @@
 
 use crate::candidate::DesignCandidate;
 use crate::report::DesignReport;
-use helisim_acoustics::{P_REF, rotational_spectrum};
+use helisim_acoustics::{P_REF, RotorNoise, rotational_spectrum};
 use helisim_airfoil::Airfoil;
 use helisim_autorotation::{
-    G, assess_vertical, autorotation_index, decay_time_constant_power, flare_height_equivalent,
-    glide_polar, profile_power, steady_autorotation,
+    FlareParams, G, assess_vertical, autorotation_index, decay_time_constant_power,
+    flare_height_equivalent, glide_polar, profile_power, steady_autorotation,
 };
 use helisim_bemt::Config;
 use helisim_cost::{AircraftSpec, UnitCosts, build_bom, summarize};
@@ -46,18 +46,18 @@ pub fn evaluate(c: &DesignCandidate, airfoil: &dyn Airfoil, cfg: &Config) -> Des
     let auto = steady_autorotation(weight, op.rho, area, p0);
     let flare_height_m = flare_height_equivalent(c.rotor_inertia, omega, weight);
     let auto_index = autorotation_index(c.rotor_inertia, omega, weight, area);
-    let flare = assess_vertical(
-        weight,
-        c.gross_mass_kg,
-        c.rotor_inertia,
-        omega,
-        OMEGA_MIN_FRAC,
-        op.rho,
-        area,
-        p0,
-        REACTION_DELAY_S,
-        SAFE_TOUCHDOWN_MS,
-    );
+    let flare = assess_vertical(&FlareParams {
+        weight_n: weight,
+        mass_kg: c.gross_mass_kg,
+        inertia: c.rotor_inertia,
+        omega0: omega,
+        omega_min_frac: OMEGA_MIN_FRAC,
+        rho: op.rho,
+        disk_area_m2: area,
+        profile_power_w: p0,
+        reaction_delay_s: REACTION_DELAY_S,
+        safe_touchdown_ms: SAFE_TOUCHDOWN_MS,
+    });
 
     // Forward-flight glide polar (the realistic, gentler case). Speeds 0.5..40 m/s
     // span the bucket for model through light-helicopter scales.
@@ -109,14 +109,16 @@ pub fn evaluate(c: &DesignCandidate, airfoil: &dyn Airfoil, cfg: &Config) -> Des
     let torque = shaft_power / omega;
     let spectrum = rotational_spectrum(
         N_HARMONICS,
-        c.n_blades,
-        omega,
-        op.sound_speed,
-        c.observer_distance_m,
-        weight,
-        torque,
-        R_EFF_FRACTION * c.radius_m,
-        c.observer_angle_deg.to_radians(),
+        &RotorNoise {
+            blades: c.n_blades,
+            omega,
+            sound_speed: op.sound_speed,
+            distance: c.observer_distance_m,
+            thrust: weight,
+            torque,
+            r_eff: R_EFF_FRACTION * c.radius_m,
+            theta: c.observer_angle_deg.to_radians(),
+        },
     );
 
     // Cost + vertical integration (priorities #2/#3). Documented mass split of the

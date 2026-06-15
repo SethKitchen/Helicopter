@@ -139,16 +139,9 @@ fn rect_perimeter_pt(cx: f64, cy: f64, hx: f64, hy: f64, theta: f64, z: f64) -> 
 /// One face of a "rectangle minus a centred circular hole" at height `z` — the
 /// annular band triangulated by connecting each circle arc segment to the matching
 /// rectangle-perimeter segment. `up` sets the normal (+z) vs (−z) winding.
-fn rect_minus_circle_face(
-    cx: f64,
-    cy: f64,
-    hx: f64,
-    hy: f64,
-    r: f64,
-    z: f64,
-    n: usize,
-    up: bool,
-) -> Vec<Tri> {
+fn rect_minus_circle_face(center: [f64; 2], half: [f64; 2], r: f64, z: f64, n: usize, up: bool) -> Vec<Tri> {
+    let [cx, cy] = center;
+    let [hx, hy] = half;
     let mut tris = Vec::new();
     for k in 0..n {
         let t0 = 2.0 * PI * k as f64 / n as f64;
@@ -189,10 +182,10 @@ pub fn splice_plate(
         let cx = (i as f64 + 0.5) * cell;
         // Top (+z) and bottom (0) faces, each rectangle-minus-circle.
         tris.extend(rect_minus_circle_face(
-            cx, 0.0, hx, hy, hole_r, thickness, n_arc, true,
+            [cx, 0.0], [hx, hy], hole_r, thickness, n_arc, true,
         ));
         tris.extend(rect_minus_circle_face(
-            cx, 0.0, hx, hy, hole_r, 0.0, n_arc, false,
+            [cx, 0.0], [hx, hy], hole_r, 0.0, n_arc, false,
         ));
         // Bore wall (cylinder), normal facing into the hole.
         for k in 0..n_arc {

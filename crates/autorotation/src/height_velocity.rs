@@ -29,7 +29,7 @@
 //! needs the entry/flare dynamics this crate intentionally omits.
 
 use crate::G;
-use crate::survivability::assess_vertical;
+use crate::survivability::{FlareParams, assess_vertical};
 
 /// Low-speed critical height at airspeed `V`: the minimum height for a survivable
 /// power-loss recovery, `max(0, h_crit_hover − V²/2g)`.
@@ -74,32 +74,8 @@ impl HeightVelocityDiagram {
 /// Build the low-speed H-V boundary for a rotor, anchored to its validated
 /// vertical critical height. `airspeeds` samples the curve (m/s). The remaining
 /// arguments mirror [`assess_vertical`].
-pub fn build_low_speed_hv(
-    weight_n: f64,
-    mass_kg: f64,
-    inertia: f64,
-    omega0: f64,
-    omega_min_frac: f64,
-    rho: f64,
-    disk_area_m2: f64,
-    profile_power_w: f64,
-    reaction_delay_s: f64,
-    safe_touchdown_ms: f64,
-    airspeeds: &[f64],
-) -> HeightVelocityDiagram {
-    let h_hover = assess_vertical(
-        weight_n,
-        mass_kg,
-        inertia,
-        omega0,
-        omega_min_frac,
-        rho,
-        disk_area_m2,
-        profile_power_w,
-        reaction_delay_s,
-        safe_touchdown_ms,
-    )
-    .critical_hover_height_m;
+pub fn build_low_speed_hv(p: &FlareParams, airspeeds: &[f64]) -> HeightVelocityDiagram {
+    let h_hover = assess_vertical(p).critical_hover_height_m;
 
     let boundary = airspeeds
         .iter()
@@ -130,16 +106,18 @@ mod tests {
         let p0 = profile_power(rho, area, vt, sigma, cd0);
         let speeds: Vec<f64> = (0..=40).map(|i| i as f64).collect();
         build_low_speed_hv(
-            mass * G,
-            mass,
-            1500.0,
-            omega0,
-            0.7,
-            rho,
-            area,
-            p0,
-            1.0,
-            2.0,
+            &FlareParams {
+                weight_n: mass * G,
+                mass_kg: mass,
+                inertia: 1500.0,
+                omega0,
+                omega_min_frac: 0.7,
+                rho,
+                disk_area_m2: area,
+                profile_power_w: p0,
+                reaction_delay_s: 1.0,
+                safe_touchdown_ms: 2.0,
+            },
             &speeds,
         )
     }

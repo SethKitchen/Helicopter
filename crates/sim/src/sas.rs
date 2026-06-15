@@ -21,8 +21,7 @@ use crate::control::{Channel, ControlSchedule};
 use crate::driven_equilibrium::{equilibrium_state11_at, model11_at};
 use crate::driven_march::{State11, deriv11};
 use crate::rk4::rk4_step_t;
-use helisim_dynamics::Inertia;
-use helisim_trim::Aircraft;
+use crate::sim_setup::Sim11Setup;
 
 /// A proportional rate damper: control deltas `Δu = K·(x − x_eq)`, with `K`
 /// nonzero only on the (rate → damping-control) entries.
@@ -76,16 +75,13 @@ pub fn closed_loop_matrix(a: &[Vec<f64>], b: &[[f64; 4]; 11], sas: &RateSas) -> 
 /// Integrate the SAS-augmented 11-state EOM about the equilibrium at body velocity
 /// `vel`, with pilot feedforward `pilot` plus the state-feedback `sas`.
 pub fn simulate11_sas(
-    ac: &Aircraft,
-    j: Inertia,
-    vel: [f64; 3],
+    setup: &Sim11Setup,
     pilot: &dyn ControlSchedule,
     sas: &RateSas,
     perturbation: State11,
-    dt: f64,
-    t_end: f64,
+    span: [f64; 2],
 ) -> Vec<State11> {
-    simulate11_sas_dist(ac, j, vel, pilot, sas, [0.0; 3], perturbation, dt, t_end)
+    simulate11_sas_dist(setup, pilot, sas, [0.0; 3], perturbation, span)
 }
 
 /// As [`simulate11_sas`], with a **sustained external body-moment disturbance**
@@ -94,16 +90,15 @@ pub fn simulate11_sas(
 /// state), so the standing attitude error this leaves is the regulation gate: a
 /// rate damper allows a standing offset (or diverges), attitude hold drives it small.
 pub fn simulate11_sas_dist(
-    ac: &Aircraft,
-    j: Inertia,
-    vel: [f64; 3],
+    setup: &Sim11Setup,
     pilot: &dyn ControlSchedule,
     sas: &RateSas,
     disturb: [f64; 3],
     perturbation: State11,
-    dt: f64,
-    t_end: f64,
+    span: [f64; 2],
 ) -> Vec<State11> {
+    let Sim11Setup { ac, j, vel } = *setup;
+    let [dt, t_end] = span;
     let m = model11_at(ac, j, vel);
     let eq = [equilibrium_state11_at(ac, vel)];
     let (ixx, iyy, izz) = (j.i_xx, j.i_yy, j.i_zz);

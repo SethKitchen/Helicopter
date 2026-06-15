@@ -22,8 +22,7 @@ use crate::driven_equilibrium::{equilibrium_state11_at, model11_at};
 use crate::driven_march::{State11, deriv11};
 use crate::rk4::rk4_step_t;
 use crate::sas::{RateSas, closed_loop_matrix};
-use helisim_dynamics::Inertia;
-use helisim_trim::Aircraft;
+use crate::sim_setup::Sim11Setup;
 
 /// PI attitude hold: the proportional law `p` (rate damper + attitude P) plus
 /// integral gains on the pitch- and roll-attitude errors.
@@ -76,16 +75,15 @@ pub type State13 = [f64; 13];
 /// velocity `vel`, with pilot feedforward, the PI controller, and an optional
 /// sustained external moment disturbance `[L,M,N]`. Integrators start at zero.
 pub fn simulate13(
-    ac: &Aircraft,
-    j: Inertia,
-    vel: [f64; 3],
+    setup: &Sim11Setup,
     pilot: &dyn ControlSchedule,
     pi: &PiAttitudeHold,
     disturb: [f64; 3],
     perturbation: State11,
-    dt: f64,
-    t_end: f64,
+    span: [f64; 2],
 ) -> Vec<State13> {
+    let Sim11Setup { ac, j, vel } = *setup;
+    let [dt, t_end] = span;
     let m = model11_at(ac, j, vel);
     let eq = [equilibrium_state11_at(ac, vel)];
     let (ixx, iyy, izz) = (j.i_xx, j.i_yy, j.i_zz);

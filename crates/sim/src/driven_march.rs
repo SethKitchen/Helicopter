@@ -16,7 +16,7 @@
 use crate::control::{ControlSchedule, Trim};
 use crate::driven_equilibrium::{equilibrium_state11, equilibrium_state11_at, model11, model11_at};
 use crate::rk4::rk4_step_t;
-use helisim_dynamics::{Inertia, inflow_rate, tail_thrust};
+use helisim_dynamics::{Inertia, RotorAero, inflow_rate, tail_thrust};
 use helisim_flapping::Controls;
 use helisim_trim::Aircraft;
 
@@ -59,12 +59,14 @@ pub fn deriv11(m: &Model11, d: [f64; 4], s: &[f64]) -> Vec<f64> {
 
     let rotor = ac.main.with_collective(collective);
     let (nu_dot, main) = inflow_rate(
-        &rotor,
-        &ac.main_op,
-        ac.main_airfoil.as_ref(),
-        &ac.flap,
-        ac.hub_height,
-        &controls,
+        &RotorAero {
+            rotor: &rotor,
+            op: &ac.main_op,
+            airfoil: ac.main_airfoil.as_ref(),
+            props: &ac.flap,
+            hub_height: ac.hub_height,
+            controls: &controls,
+        },
         [u, v, w],
         [p, q],
         nu,

@@ -11,7 +11,7 @@
 //! drops the flight C-rate, so a **1:1 charge (= flight power) becomes a gentle
 //! low-C charge** — the longevity and fast-turnaround goals reinforce each other.
 
-use helisim_cell::DegradationModel;
+use helisim_cell::{CalendarLoad, DegradationModel};
 
 /// A life-sized pack: the depth-of-discharge it runs at, how much bigger than the
 /// energy-minimum pack it is, and the resulting capacity / mass / C-rate / fade.
@@ -46,13 +46,14 @@ pub fn size_for_life(
     pack_specific_energy_wh_per_kg: f64,
 ) -> LifeSizing {
     let n = flights_per_year * life_years;
+    let cal = CalendarLoad { years: life_years, storage_temp_c, soc_factor: 1.0 };
     // Lower DoD ⇒ lower C-rate and lower effective throughput ⇒ less fade (monotone),
     // so scan DoD from full down and take the FIRST (largest) depth that meets EOL.
     let mut chosen: Option<f64> = None;
     let mut d = 1.0;
     while d >= 0.05 {
         let c_rate = d / flight_time_h;
-        let fade = model.fade_over_life(n, d, c_rate, 25.0, life_years, storage_temp_c, 1.0);
+        let fade = model.fade_over_life(n, d, c_rate, 25.0, cal);
         if fade <= model.eol_fade {
             chosen = Some(d);
             break;
@@ -63,7 +64,7 @@ pub fn size_for_life(
     let dod = chosen.unwrap_or(0.05);
     let c_rate = dod / flight_time_h;
     let capacity_wh = flight_energy_wh / dod;
-    let fade = model.fade_over_life(n, dod, c_rate, 25.0, life_years, storage_temp_c, 1.0);
+    let fade = model.fade_over_life(n, dod, c_rate, 25.0, cal);
     LifeSizing {
         dod,
         oversize: 1.0 / dod,

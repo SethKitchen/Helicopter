@@ -10,10 +10,24 @@
 //!   (pitch↔roll) response to cyclic — the classic dynamic-inflow result.
 
 use helisim_dynamics::{
-    main_rotor_full, main_rotor_with_inflow, march_inflow, quasi_static_inflow, uniform_inflow,
+    RotorAero, main_rotor_full, main_rotor_with_inflow, march_inflow, quasi_static_inflow,
+    uniform_inflow,
 };
 use helisim_flapping::Controls;
+use helisim_rotor::Rotor;
 use helisim_trim::Aircraft;
+
+/// Bundle the main-rotor context for the calls below.
+fn aero<'a>(ac: &'a Aircraft, rotor: &'a Rotor, controls: &'a Controls) -> RotorAero<'a> {
+    RotorAero {
+        rotor,
+        op: &ac.main_op,
+        airfoil: ac.main_airfoil.as_ref(),
+        props: &ac.flap,
+        hub_height: ac.hub_height,
+        controls,
+    }
+}
 
 fn hover_setup() -> (Aircraft, f64) {
     let ac = Aircraft::demo();
@@ -35,36 +49,10 @@ fn zeroing_cyclic_inflow_recovers_baseline_exactly() {
     let vel = [3.0, 1.5, -0.5];
     let rates = [0.05, -0.03];
 
-    let baseline = main_rotor_full(
-        &rotor,
-        &ac.main_op,
-        ac.main_airfoil.as_ref(),
-        &ac.flap,
-        ac.hub_height,
-        &c,
-        vel,
-        rates,
-    );
-    let li = uniform_inflow(
-        &rotor,
-        &ac.main_op,
-        ac.main_airfoil.as_ref(),
-        &ac.flap,
-        &c,
-        vel,
-        rates,
-    );
-    let (recovered, _) = main_rotor_with_inflow(
-        &rotor,
-        &ac.main_op,
-        ac.main_airfoil.as_ref(),
-        &ac.flap,
-        ac.hub_height,
-        &c,
-        vel,
-        rates,
-        [li, 0.0, 0.0],
-    );
+    let baseline = main_rotor_full(&aero(&ac, &rotor, &c), vel, rates);
+    let li = uniform_inflow(&aero(&ac, &rotor, &c), vel, rates);
+    let (recovered, _) =
+        main_rotor_with_inflow(&aero(&ac, &rotor, &c), vel, rates, [li, 0.0, 0.0]);
 
     for (a, b) in [
         (baseline.fx, recovered.fx),
@@ -94,25 +82,11 @@ fn dynamic_inflow_reduces_to_quasi_static_as_lag_goes_to_zero() {
     let vel = [4.0, 0.0, 0.0];
     let rates = [0.0, 0.0];
 
-    let (f_qs, nu_qs, _) = quasi_static_inflow(
-        &rotor,
-        &ac.main_op,
-        ac.main_airfoil.as_ref(),
-        &ac.flap,
-        ac.hub_height,
-        &c,
-        vel,
-        rates,
-    );
+    let (f_qs, nu_qs, _) = quasi_static_inflow(&aero(&ac, &rotor, &c), vel, rates);
 
     // March from a deliberately wrong inflow; tiny lag ⇒ snaps to quasi-static.
     let (nu_dyn, f_dyn) = march_inflow(
-        &rotor,
-        &ac.main_op,
-        ac.main_airfoil.as_ref(),
-        &ac.flap,
-        ac.hub_height,
-        &c,
+        &aero(&ac, &rotor, &c),
         vel,
         rates,
         [0.02, 0.02, -0.02],
@@ -154,41 +128,15 @@ fn cyclic_inflow_shifts_off_axis_response() {
         theta_1c: 0.0,
         theta_1s: 0.0,
     };
-    let li = uniform_inflow(
-        &rotor,
-        &ac.main_op,
-        ac.main_airfoil.as_ref(),
-        &ac.flap,
-        &base,
-        vel,
-        rates,
-    );
+    let li = uniform_inflow(&aero(&ac, &rotor, &base), vel, rates);
 
     let off_axis = |c: &Controls, frozen: bool| -> f64 {
         if frozen {
-            let (f, _) = main_rotor_with_inflow(
-                &rotor,
-                &ac.main_op,
-                ac.main_airfoil.as_ref(),
-                &ac.flap,
-                ac.hub_height,
-                c,
-                vel,
-                rates,
-                [li, 0.0, 0.0],
-            );
+            let (f, _) =
+                main_rotor_with_inflow(&aero(&ac, &rotor, c), vel, rates, [li, 0.0, 0.0]);
             f.my // off-axis (pitch) moment for a lateral-cyclic (roll) input
         } else {
-            let (f, _, _) = quasi_static_inflow(
-                &rotor,
-                &ac.main_op,
-                ac.main_airfoil.as_ref(),
-                &ac.flap,
-                ac.hub_height,
-                c,
-                vel,
-                rates,
-            );
+            let (f, _, _) = quasi_static_inflow(&aero(&ac, &rotor, c), vel, rates);
             f.my
         }
     };
@@ -206,16 +154,7 @@ fn cyclic_inflow_shifts_off_axis_response() {
     let off_inflow = (off_axis(&cp, false) - off_axis(&cm, false)) / (2.0 * d);
     // On-axis for context.
     let on = |c: &Controls| {
-        let (f, _, _) = quasi_static_inflow(
-            &rotor,
-            &ac.main_op,
-            ac.main_airfoil.as_ref(),
-            &ac.flap,
-            ac.hub_height,
-            c,
-            vel,
-            rates,
-        );
+        let (f, _, _) = quasi_static_inflow(&aero(&ac, &rotor, c), vel, rates);
         f.mx
     };
     let on_inflow = (on(&cp) - on(&cm)) / (2.0 * d);

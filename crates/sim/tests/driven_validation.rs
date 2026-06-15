@@ -12,7 +12,7 @@
 //!    mode (period/growth) as an initial-condition perturbation, matching the
 //!    linear eigenvalue, inside a bounded pre-divergence window.
 
-use helisim_dynamics::{Inertia, eigenvalues, quasi_static_inflow};
+use helisim_dynamics::{Inertia, RotorAero, eigenvalues, quasi_static_inflow};
 use helisim_flapping::Controls;
 use helisim_sim::control::ControlSchedule;
 use helisim_sim::{
@@ -122,14 +122,16 @@ fn off_axis_cyclic_response_flips_with_inflow() {
     let rotor = ac.main.with_collective(coll);
     let my = |dt1c: f64| {
         quasi_static_inflow(
-            &rotor,
-            &ac.main_op,
-            ac.main_airfoil.as_ref(),
-            &ac.flap,
-            ac.hub_height,
-            &Controls {
-                theta_1c: t1c + dt1c,
-                theta_1s: t1s,
+            &RotorAero {
+                rotor: &rotor,
+                op: &ac.main_op,
+                airfoil: ac.main_airfoil.as_ref(),
+                props: &ac.flap,
+                hub_height: ac.hub_height,
+                controls: &Controls {
+                    theta_1c: t1c + dt1c,
+                    theta_1s: t1s,
+                },
             },
             [0.0; 3],
             [0.0; 2],

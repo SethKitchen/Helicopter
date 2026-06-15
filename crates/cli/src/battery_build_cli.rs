@@ -110,7 +110,6 @@ fn print_build(title: &str, b: &PackBuild) {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn print_line(item: &str, qty: f64, kind: &str, unit: f64, line: f64, retailer: &str, url: &str) {
     println!(
         "{:<46}{:>6.0} {:>6} {:>9.2} {:>9.2}  {} {}",

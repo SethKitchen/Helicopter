@@ -28,26 +28,31 @@
 
 use crate::bessel::bessel_j;
 
+/// The steady rotor + observer condition a Gutin tone radiates from — the inputs
+/// shared by every harmonic. `omega` rad/s, `sound_speed` & all lengths SI,
+/// `theta` radians from the rotor axis, `r_eff` the effective loading radius.
+#[derive(Clone, Copy, Debug)]
+pub struct RotorNoise {
+    pub blades: usize,
+    pub omega: f64,
+    pub sound_speed: f64,
+    pub distance: f64,
+    pub thrust: f64,
+    pub torque: f64,
+    pub r_eff: f64,
+    pub theta: f64,
+}
+
 /// Signed rms acoustic pressure (Pa) of the `m`-th blade-passage harmonic from
-/// Gutin's formula. `omega` rad/s, `sound_speed` & all lengths SI, `theta`
-/// radians from the rotor axis, `r_eff` the effective loading radius.
-pub fn gutin_harmonic_pressure(
-    m: usize,
-    blades: usize,
-    omega: f64,
-    sound_speed: f64,
-    distance: f64,
-    thrust: f64,
-    torque: f64,
-    r_eff: f64,
-    theta: f64,
-) -> f64 {
-    let mb = (m * blades) as f64;
-    let amp = mb * omega
-        / (2.0 * std::f64::consts::SQRT_2 * std::f64::consts::PI * sound_speed * distance);
-    let bracket = thrust * theta.cos() - sound_speed * torque / (omega * r_eff * r_eff);
-    let arg = mb * omega * r_eff * theta.sin() / sound_speed;
-    amp * bracket * bessel_j(m * blades, arg)
+/// Gutin's formula, for the rotor/observer condition `src`.
+pub fn gutin_harmonic_pressure(m: usize, src: &RotorNoise) -> f64 {
+    let mb = (m * src.blades) as f64;
+    let amp = mb * src.omega
+        / (2.0 * std::f64::consts::SQRT_2 * std::f64::consts::PI * src.sound_speed * src.distance);
+    let bracket =
+        src.thrust * src.theta.cos() - src.sound_speed * src.torque / (src.omega * src.r_eff * src.r_eff);
+    let arg = mb * src.omega * src.r_eff * src.theta.sin() / src.sound_speed;
+    amp * bracket * bessel_j(m * src.blades, arg)
 }
 
 /// Blade-passage frequency `B Ω / 2π`, Hz (the `m = 1` tone frequency).
@@ -60,9 +65,22 @@ mod tests {
     use super::*;
     use std::f64::consts::PI;
 
-    fn case(theta: f64) -> f64 {
+    fn src(theta: f64) -> RotorNoise {
         // 2-blade, Ω=50 rad/s, a₀=340, s=50 m, T=9810 N, Q=4000 N·m, R_e=3.2 m.
-        gutin_harmonic_pressure(1, 2, 50.0, 340.0, 50.0, 9810.0, 4000.0, 3.2, theta)
+        RotorNoise {
+            blades: 2,
+            omega: 50.0,
+            sound_speed: 340.0,
+            distance: 50.0,
+            thrust: 9810.0,
+            torque: 4000.0,
+            r_eff: 3.2,
+            theta,
+        }
+    }
+
+    fn case(theta: f64) -> f64 {
+        gutin_harmonic_pressure(1, &src(theta))
     }
 
     #[test]
@@ -88,10 +106,10 @@ mod tests {
 
     #[test]
     fn higher_harmonics_decay_for_subsonic_tip() {
-        let theta = 80f64.to_radians();
-        let p1 = gutin_harmonic_pressure(1, 2, 50.0, 340.0, 50.0, 9810.0, 4000.0, 3.2, theta).abs();
-        let p2 = gutin_harmonic_pressure(2, 2, 50.0, 340.0, 50.0, 9810.0, 4000.0, 3.2, theta).abs();
-        let p3 = gutin_harmonic_pressure(3, 2, 50.0, 340.0, 50.0, 9810.0, 4000.0, 3.2, theta).abs();
+        let s = src(80f64.to_radians());
+        let p1 = gutin_harmonic_pressure(1, &s).abs();
+        let p2 = gutin_harmonic_pressure(2, &s).abs();
+        let p3 = gutin_harmonic_pressure(3, &s).abs();
         // Tip Mach = 50*3.2/340 ≈ 0.47, well subsonic → strong decay.
         assert!(p2 < p1 && p3 < p2);
     }

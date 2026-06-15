@@ -48,4 +48,6 @@ pub use metrics::evaluate;
 pub use recommend::{DesignSpace, Recommendation, ScoredCandidate, recommend};
 pub use report::DesignReport;
 pub use sweep::{SweepPoint, sweep_radius};
-pub use upsizing::{UpsizeResult, hover_power_per_kg, required_pack_fraction, size_for_daily_life};
+pub use upsizing::{
+    UpsizeParams, UpsizeResult, hover_power_per_kg, required_pack_fraction, size_for_daily_life,
+};

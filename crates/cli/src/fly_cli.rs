@@ -3,7 +3,7 @@
 //! the driven control derivatives (the 5h result, now in the loop), and the
 //! open-loop divergence to a control pulse.
 
-use helisim_dynamics::{Inertia, eigenvalues, quasi_static_inflow};
+use helisim_dynamics::{Inertia, RotorAero, eigenvalues, quasi_static_inflow};
 use helisim_flapping::Controls;
 use helisim_sim::{
     Channel, Pulse, control_matrix11, equilibrium_state11, linearize11, simulate11,
@@ -67,14 +67,16 @@ pub fn run() {
     let rotor = ac.main.with_collective(coll);
     let my = |dt1c: f64| {
         quasi_static_inflow(
-            &rotor,
-            &ac.main_op,
-            ac.main_airfoil.as_ref(),
-            &ac.flap,
-            ac.hub_height,
-            &Controls {
-                theta_1c: t1c + dt1c,
-                theta_1s: t1s,
+            &RotorAero {
+                rotor: &rotor,
+                op: &ac.main_op,
+                airfoil: ac.main_airfoil.as_ref(),
+                props: &ac.flap,
+                hub_height: ac.hub_height,
+                controls: &Controls {
+                    theta_1c: t1c + dt1c,
+                    theta_1s: t1s,
+                },
             },
             [0.0; 3],
             [0.0; 2],

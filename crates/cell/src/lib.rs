@@ -15,7 +15,7 @@ pub mod library;
 pub mod temperature;
 pub mod thevenin;
 
-pub use aging::{DegradationModel, equivalent_full_cycles};
+pub use aging::{CalendarLoad, DegradationModel, equivalent_full_cycles};
 pub use cell::Cell;
 pub use library::{
     ampace_jp40, bak_45d, benchmark_cells, eve_40pl, max_charge_current, molicel_p50b,

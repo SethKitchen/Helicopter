@@ -31,22 +31,28 @@ pub struct Loads {
     pub retreating_ct: f64,
 }
 
-/// Integrate the blade loads over azimuth and radius with flapping `(β0,β1c,β1s)`
-/// and cyclic pitch `controls`, at inflow `lambda`, advance ratio `mu`, tip Mach
-/// `tip_mach`. Reverse-flow elements (`u_T<0`) are nulled.
+/// Flow condition for the blade-element integral: tip Mach, advance ratio, inflow.
+#[derive(Clone, Copy, Debug)]
+pub struct Flow {
+    pub tip_mach: f64,
+    pub mu: f64,
+    pub lambda: f64,
+}
+
+/// Integrate the blade loads over azimuth and radius with flapping
+/// `flap = [β0, β1c, β1s]` and cyclic pitch `controls`, at flow condition `flow`,
+/// on a `grid = [n_azimuth, n_radial]`. Reverse-flow elements (`u_T<0`) are nulled.
 pub fn integrate_with_flap(
     rotor: &Rotor,
     airfoil: &dyn Airfoil,
-    tip_mach: f64,
-    mu: f64,
-    lambda: f64,
+    flow: Flow,
     controls: &Controls,
-    beta0: f64,
-    beta1c: f64,
-    beta1s: f64,
-    n_azimuth: usize,
-    n_radial: usize,
+    flap: [f64; 3],
+    grid: [usize; 2],
 ) -> Loads {
+    let Flow { tip_mach, mu, lambda } = flow;
+    let [beta0, beta1c, beta1s] = flap;
+    let [n_azimuth, n_radial] = grid;
     let x0 = rotor.root_cutout;
     let dx = (1.0 - x0) / n_radial as f64;
     let dpsi = 2.0 * PI / n_azimuth as f64;

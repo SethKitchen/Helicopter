@@ -15,6 +15,7 @@
 
 use crate::aero::longitudinal_main_aero;
 use crate::complex::Complex;
+use crate::context::RotorAero;
 use crate::eigen::eigenvalues;
 use crate::full_aero::{Forces6, main_rotor_full, rotate6};
 use crate::model::{Mode, hover_collective_for_weight};
@@ -40,12 +41,14 @@ fn main_pure_v(
 ) -> Forces6 {
     rotate6(
         main_rotor_full(
-            rotor,
-            op,
-            af,
-            flap,
-            h,
-            &Controls::none(),
+            &RotorAero {
+                rotor,
+                op,
+                airfoil: af,
+                props: flap,
+                hub_height: h,
+                controls: &Controls::none(),
+            },
             [v, 0.0, 0.0],
             [0.0, 0.0],
         ),
@@ -66,12 +69,14 @@ fn main_pure_p(
 ) -> Forces6 {
     rotate6(
         main_rotor_full(
-            rotor,
-            op,
-            af,
-            flap,
-            h,
-            &Controls::none(),
+            &RotorAero {
+                rotor,
+                op,
+                airfoil: af,
+                props: flap,
+                hub_height: h,
+                controls: &Controls::none(),
+            },
             [0.0, 0.0, 0.0],
             [0.0, p],
         ),
@@ -104,12 +109,14 @@ pub fn tail_thrust(ac: &Aircraft, tail_collective: f64, v_axial: f64) -> f64 {
     let rotor = ac.tail.rotor.with_collective(tail_collective);
     // Map axial velocity (along +thrust) to the rotor's "climb" = heave w<0.
     longitudinal_main_aero(
-        &rotor,
-        &ac.tail.op,
-        ac.tail.airfoil.as_ref(),
-        &ac.flap,
-        0.0,
-        &Controls::none(),
+        &RotorAero {
+            rotor: &rotor,
+            op: &ac.tail.op,
+            airfoil: ac.tail.airfoil.as_ref(),
+            props: &ac.flap,
+            hub_height: 0.0,
+            controls: &Controls::none(),
+        },
         0.0,
         -v_axial,
         0.0,

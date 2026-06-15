@@ -44,10 +44,12 @@ pub mod eom;
 pub mod pi_attitude;
 pub mod rk4;
 pub mod sas;
+pub mod sim_setup;
 pub mod simulate;
 pub mod velocity_hold;
 
 pub use analysis::{ModeFit, fit_growing_oscillation};
+pub use sim_setup::Sim11Setup;
 pub use attitude_hold::attitude_hold;
 pub use control::{Channel, ControlSchedule, Pulse, Step, Trim};
 pub use coupled_march::{

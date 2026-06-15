@@ -9,14 +9,10 @@
 
 use crate::G;
 use crate::electrical::solve_pack_current;
-use crate::endurance::{MissionConfig, simulate_discharge_thermal};
+use crate::endurance::simulate_discharge_thermal;
 use crate::hover_trim::trim_hover_collective;
-use helisim_airfoil::Airfoil;
-use helisim_bemt::Config;
-use helisim_pack::Pack;
-use helisim_powertrain::Powertrain;
-use helisim_rotor::{Operating, Rotor};
-use helisim_thermal::{Cooling, ThermalLimits, ThermalStatus};
+use crate::scenario::MissionScenario;
+use helisim_thermal::ThermalStatus;
 
 /// Outcome of a sustained-climb thermal check.
 #[derive(Clone, Copy, Debug)]
@@ -45,19 +41,22 @@ pub struct ClimbReport {
 
 /// Assess a sustained climb at `climb_rate_mps` held for `duration_s`.
 pub fn analyze_climb(
-    rotor: &Rotor,
-    op: &Operating,
-    airfoil: &dyn Airfoil,
-    pack: &Pack,
-    powertrain: &dyn Powertrain,
+    s: &MissionScenario,
     gross_mass_kg: f64,
     climb_rate_mps: f64,
     duration_s: f64,
-    cooling: &dyn Cooling,
-    limits: ThermalLimits,
-    bemt_cfg: &Config,
-    mission_cfg: &MissionConfig,
 ) -> ClimbReport {
+    let (rotor, op, airfoil, pack, powertrain, cooling, limits, bemt_cfg, mission_cfg) = (
+        s.rotor,
+        s.op,
+        s.airfoil,
+        s.pack,
+        s.powertrain,
+        s.cooling,
+        s.limits,
+        s.bemt_cfg,
+        s.mission_cfg,
+    );
     let weight = gross_mass_kg * G;
 
     let infeasible = |status| ClimbReport {

@@ -1,7 +1,0 @@
-# Helicopter physics solvers and force/moment assembly take many scalar inputs
-# (the 11-component blade-element loads, the 10-state EOM derivatives, etc.). We
-# prefer wide-but-explicit signatures over opaque parameter bags, so the
-# too-many-arguments threshold is raised from the default 7 to 12 — letting the
-# code carry NO #[allow(clippy::too_many_arguments)] suppressions while staying
-# clippy-clean.
-too-many-arguments-threshold = 12

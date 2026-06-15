@@ -2,6 +2,7 @@
 
 use crate::aero::longitudinal_main_aero;
 use crate::complex::Complex;
+use crate::context::RotorAero;
 use crate::derivatives::{LongitudinalDerivatives, longitudinal_derivatives};
 use crate::eigen::eigenvalues;
 use helisim_flapping::Controls;
@@ -21,12 +22,14 @@ pub fn hover_collective_for_weight(ac: &Aircraft) -> f64 {
     let w = ac.mass * G;
     let thrust = |coll: f64| {
         longitudinal_main_aero(
-            &ac.main.with_collective(coll),
-            &ac.main_op,
-            ac.main_airfoil.as_ref(),
-            &ac.flap,
-            ac.hub_height,
-            &Controls::none(),
+            &RotorAero {
+                rotor: &ac.main.with_collective(coll),
+                op: &ac.main_op,
+                airfoil: ac.main_airfoil.as_ref(),
+                props: &ac.flap,
+                hub_height: ac.hub_height,
+                controls: &Controls::none(),
+            },
             0.0,
             0.0,
             0.0,

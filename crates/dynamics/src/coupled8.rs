@@ -15,6 +15,7 @@
 //! turning coupling on shifts them into genuinely coupled modes.
 
 use crate::complex::Complex;
+use crate::context::RotorAero;
 use crate::eigen::eigenvalues;
 use crate::full_aero::{main_rotor_full, rotate6};
 use crate::lateral::lateral_derivatives;
@@ -63,18 +64,16 @@ struct D6 {
 pub fn analyze_coupled_hover(ac: &Aircraft, j: Inertia, coupled: bool) -> CoupledModal {
     let coll = hover_collective_for_weight(ac);
     let rotor = ac.main.with_collective(coll);
-    let f = |vel: [f64; 3], rates: [f64; 2]| {
-        main_rotor_full(
-            &rotor,
-            &ac.main_op,
-            ac.main_airfoil.as_ref(),
-            &ac.flap,
-            ac.hub_height,
-            &Controls::none(),
-            vel,
-            rates,
-        )
+    let controls = Controls::none();
+    let aero = RotorAero {
+        rotor: &rotor,
+        op: &ac.main_op,
+        airfoil: ac.main_airfoil.as_ref(),
+        props: &ac.flap,
+        hub_height: ac.hub_height,
+        controls: &controls,
     };
+    let f = |vel: [f64; 3], rates: [f64; 2]| main_rotor_full(&aero, vel, rates);
     let deriv = |plus: crate::full_aero::Forces6, minus: crate::full_aero::Forces6, h: f64| D6 {
         fx: (plus.fx - minus.fx) / (2.0 * h),
         fy: (plus.fy - minus.fy) / (2.0 * h),

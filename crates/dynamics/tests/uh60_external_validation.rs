@@ -4,11 +4,10 @@
 //! Oracle: NASA TM 85890 (GENHEL), Table 13 (M-moment) and Table 12 (X/Z-force)
 //! "BOEING-VERTOL UH-60 MATH MODEL", hover (0.5-knot) column unless noted; values
 //! converted to SI here (the conversion done ONCE — see asserts). The aircraft is
-//! `Aircraft::uh60()`, built strictly from the locked parameter mapping
-//! (`crates/validation/MILESTONE6_PARAMETER_MAPPING.md`); no parameter was tuned to
-//! this comparison.
+//! `Aircraft::uh60()`, built strictly from a parameter mapping decided on PHYSICS
+//! and locked BEFORE this comparison; no parameter was tuned to it.
 //!
-//! Predictions locked before the run (`MILESTONE6_PREDICTIONS.md`): the force/moment
+//! Predictions locked before the run (this IS the pre-registration): the force/moment
 //! derivatives match in sign + order (~20–35% from uniform inflow + rigid blade).
 //! What the comparison actually found is encoded as the test's expectations, per the
 //! "be honest about model error" rule — including the one predicted-clean derivative
@@ -101,7 +100,7 @@ const IZZ: f64 = 37200.0 * 1.355_82; // 50 437 kg·m²
 
 #[test]
 fn uh60_lateral_directional_discriminator_vs_genhel() {
-    // The discriminating experiment (pre-registered in MILESTONE6_RESULTS.md): does the
+    // The discriminating experiment (pre-registered): does the
     // hover damping deficit travel with the main-rotor flap across axes, or is it
     // pitch-specific? Roll is the CLEAN test — oracle Lp is non-degenerate and roll has
     // no horizontal-stabilator confound. Oracle: NASA TM 85890 Tables 12/14/15, 0.5 kt.

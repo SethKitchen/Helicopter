@@ -5,7 +5,7 @@
 //! (mean-square) basis, so the overall level uses
 //! `p_total = √(Σ p_m²)`.
 
-use crate::rotational::gutin_harmonic_pressure;
+use crate::rotational::{gutin_harmonic_pressure, RotorNoise};
 use crate::solution::{Harmonic, NoiseSpectrum};
 
 /// Reference acoustic pressure, Pa (20 µPa).
@@ -23,32 +23,12 @@ pub fn combine_rms(pressures: &[f64]) -> f64 {
 
 /// Build the Gutin rotational-noise spectrum (harmonics `1..=n_harmonics`) for a
 /// rotor and report each tone plus the overall level at the observer.
-pub fn rotational_spectrum(
-    n_harmonics: usize,
-    blades: usize,
-    omega: f64,
-    sound_speed: f64,
-    distance: f64,
-    thrust: f64,
-    torque: f64,
-    r_eff: f64,
-    theta: f64,
-) -> NoiseSpectrum {
+pub fn rotational_spectrum(n_harmonics: usize, src: &RotorNoise) -> NoiseSpectrum {
     let mut harmonics = Vec::with_capacity(n_harmonics);
     let mut pressures = Vec::with_capacity(n_harmonics);
-    let f1 = blades as f64 * omega / (2.0 * std::f64::consts::PI);
+    let f1 = src.blades as f64 * src.omega / (2.0 * std::f64::consts::PI);
     for m in 1..=n_harmonics {
-        let p = gutin_harmonic_pressure(
-            m,
-            blades,
-            omega,
-            sound_speed,
-            distance,
-            thrust,
-            torque,
-            r_eff,
-            theta,
-        );
+        let p = gutin_harmonic_pressure(m, src);
         pressures.push(p);
         harmonics.push(Harmonic {
             m,
@@ -61,8 +41,8 @@ pub fn rotational_spectrum(
     NoiseSpectrum {
         harmonics,
         oaspl_db: spl_db(overall),
-        observer_distance_m: distance,
-        observer_angle_rad: theta,
+        observer_distance_m: src.distance,
+        observer_angle_rad: src.theta,
     }
 }
 

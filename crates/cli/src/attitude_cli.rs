@@ -6,7 +6,7 @@ use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
     PiAttitudeHold, RateSas, Trim, attitude_hold, augmented_matrix, closed_loop_matrix,
     control_matrix11, control_matrix11_at, equilibrium_state11, equilibrium_state11_at,
-    linearize11, linearize11_at, simulate11_sas, simulate13,
+    linearize11, linearize11_at, simulate11_sas, simulate13, Sim11Setup,
 };
 use helisim_trim::Aircraft;
 
@@ -65,9 +65,10 @@ pub fn run() {
     pert[3] = 5f64.to_radians();
     let eqf = equilibrium_state11_at(&ac, vel);
     let eqh = equilibrium_state11(&ac);
-    let off = simulate11_sas(&ac, j, vel, &Trim, &hold, pert, dt, 16.0);
-    let hov = simulate11_sas(&ac, j, [0.0, 0.0, 0.0], &Trim, &hold, pert, dt, 16.0);
-    let hov_d = simulate11_sas(&ac, j, [0.0, 0.0, 0.0], &Trim, &rate, pert, dt, 16.0);
+    let off = simulate11_sas(&Sim11Setup { ac: &ac, j, vel }, &Trim, &hold, pert, [dt, 16.0]);
+    let hov_setup = Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] };
+    let hov = simulate11_sas(&hov_setup, &Trim, &hold, pert, [dt, 16.0]);
+    let hov_d = simulate11_sas(&hov_setup, &Trim, &rate, pert, [dt, 16.0]);
 
     println!("Regulation from a θ=5° disturbance, attitude hold active:");
     println!(
@@ -112,8 +113,9 @@ pub fn run() {
     );
     let dist = [0.0, 0.6, 0.0];
     let tw = 14.0;
-    let dp = simulate13(&ac, j, vel, &Trim, &p_only, dist, [0.0; 11], dt, tw);
-    let dpi = simulate13(&ac, j, vel, &Trim, &pi, dist, [0.0; 11], dt, tw);
+    let setup = Sim11Setup { ac: &ac, j, vel };
+    let dp = simulate13(&setup, &Trim, &p_only, dist, [0.0; 11], [dt, tw]);
+    let dpi = simulate13(&setup, &Trim, &pi, dist, [0.0; 11], [dt, tw]);
     let k = (tw / dt) as usize;
     println!("  under a sustained 0.6 N·m pitch moment, at t={tw}s:");
     println!(

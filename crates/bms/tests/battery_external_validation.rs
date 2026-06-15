@@ -1,5 +1,5 @@
 //! EXTERNAL validation of the cell + thermal model on the four 21700 benchmark
-//! cells — predictions LOCKED in `validation/BATTERY_EXTERNAL_PREREG.md` before the
+//! cells — predictions LOCKED below (this comment is the pre-registration) before the
 //! oracle was sourced. The `TheveninCell` model was built/fitted only on the
 //! Samsung 25R, so applying it to these cells is a genuine external test.
 //!

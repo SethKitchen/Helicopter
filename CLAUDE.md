@@ -163,12 +163,14 @@ Aero track:
     runs away — position feedback finally has authority over the slow drift the
     inner loops were blind to. Anti-windup still not needed (θ_cmd ≈ 0.8°, modest).
     Scope: hold/steady-command only. `helisim hover`.
-20. **External validation (Milestone 6)** — *next; a CATEGORY CHANGE.* Every gate
-    so far has been *internal* (closed forms, reduction-to-known-case, derivative
-    signs, route-vs-route). The stack is internally coherent end-to-end — earned,
-    but distinct from *external accuracy*. Scope: match published data for ONE
-    documented aircraft (Bo-105 or UH-60 — pick the one whose FULL parameter set
-    *and* results are findable in the open literature: Padfield, GARTEUR/ADS-33).
+20. **External validation (Milestone 6) — DONE; a CATEGORY CHANGE** (internal gates
+    → external accuracy). Every prior gate was *internal* (closed forms,
+    reduction-to-known-case, derivative signs, route-vs-route); this matched
+    published data for real aircraft. Source of truth = the TESTS
+    (`dynamics/tests/uh60_external_validation.rs`, `trim/tests/uh60_trim_validation.rs`);
+    oracle = NASA TM 85890 (UH-60A GENHEL), with BO-105 / OH-6A (NASA CR-3144) as the
+    2nd / 3rd airframes. Predictions were LOCKED before the oracle was seen (the
+    irreversible-moment rule). Scope was: match published data for documented aircraft
     Order by least-approximated-first so a match is meaningful and a mismatch
     diagnostic: **(1) trimmed control positions vs. airspeed** (forgiving of inflow
     detail; tests the force/moment balance validated hardest); **(2) stability
@@ -181,15 +183,13 @@ Aero track:
     blade, first-harmonic flap), each named and isolated so the result is diagnostic
     rather than a single uninterpretable "off by 20%". **Hard rule applies: never
     fabricate oracle values — source and cite, or say so.**
-    *Status:* predictions recorded before comparison (`validation/MILESTONE6_PREDICTIONS.md`);
-    aircraft chosen = **UH-60A**, dataset sourced from one public citable
+    *Aircraft chosen = **UH-60A**, dataset sourced from one public citable
     apples-to-apples report — NASA TM 85890 (GENHEL), holding both parameters and the
-    oracle (Table 4 trim positions, Tables 12+ derivatives). Captured:
-    `validation/UH60_GENHEL_TM85890.md` (+ UH-60-specific caveats: canted TR,
-    stabilator, SC1095). Rejected the flybar R-50 (unrepresentable) and the
-    export-restricted Fletcher TM.
+    oracle (Table 4 trim positions, Tables 12+ derivatives), with the UH-60-specific
+    caveats noted in the test (canted TR, stabilator, SC1095). Rejected the flybar
+    R-50 (unrepresentable) and the export-restricted Fletcher TM.
     *First comparison DONE — hover longitudinal derivatives* (`Aircraft::uh60()`,
-    `dynamics/tests/uh60_external_validation.rs`, results in `validation/MILESTONE6_RESULTS.md`):
+    `dynamics/tests/uh60_external_validation.rs`):
     all four signs match the real aircraft (incl. Mu>0); **Zw lands at 12%** (within
     the predicted band — core heave physics externally confirmed) and **Mu is right
     sign + order** (speed-stability physics confirmed). **The finding: Mq (predicted
@@ -209,8 +209,8 @@ Aero track:
     missing gyroscopic/kinematic body-rate coupling in the flap equation. The external
     comparison localized a real model gap to one term in one sub-model — the diagnostic
     resolution the internal chain was built for.
-    *Flap-damping fix DERIVED + IMPLEMENTED + VALIDATED* (pre-registered in
-    `validation/MILESTONE6_FLAP_FIX_PREREG.md`): the missing **gyroscopic
+    *Flap-damping fix DERIVED + IMPLEMENTED + VALIDATED* (pre-registered before the
+    fix): the missing **gyroscopic
     "rotor-follows-shaft" coupling** of hub rate into flap (`FlapProperties.gyro_rate`,
     added to `aero.rs`/`flap_general.rs` forcing). Derivation: spin angular momentum
     rotated by hub rate gives an O(rate) sinψ/cosψ forcing feeding the in-phase β1c/β1s.
@@ -223,7 +223,7 @@ Aero track:
     unchanged (150 tests pass); `uh60()` uses −2. Universal default = a deliberate
     5c–5m revalidation step (it changes the demo dynamics).
     *Trim attitude comparison DONE* (rigging-free, `trim/tests/uh60_trim_validation.rs`,
-    pre-reg `MILESTONE6_TRIM_PREREG.md`): vs Table 4 hover, **roll Φ −2.03° vs −2.34°
+    pre-registered): vs Table 4 hover, **roll Φ −2.03° vs −2.34°
     (13%)** — the tail-side-force bank, a mechanism the model has; **pitch Θ** missed
     with the locked cg_offset=0 (→0°) then recovered to **+5.94° vs +5.05° (18%)** with
     the SOURCED cg_offset=0.488 m (CG aft of hub, STA difference, not fit; trim-only so
@@ -234,15 +234,18 @@ Aero track:
     (`trim/tests/uh60_trim_validation.rs`): root collective 19.29° vs oracle 22.25° (14%
     lower) — BEMT over-predicts thrust, a **2nd external sighting of the milestone-1
     over-prediction in DIRECTION** (triangulation, robust). **Characterizing the bias as
-    a number corrected the framing** (`MILESTONE6_RESULTS.md` "BEMT bias"): collective-
+    a number corrected the framing** (the "BEMT bias" finding): collective-
     reduction ≠ C_T-over-prediction, and the trim aero `longitudinal_main_aero` **omits
     Prandtl tip loss** the C&T hover BEMT had → over-predicts ~56% at fixed collective,
     not C&T's ~20–27%. So the magnitude is path/config-dependent, NOT a clean scalar —
     *account, don't correct*; clean figure stays C&T ~20–27%. (Tip-loss omission barely
     affects the derivatives — perturbations, ~cancels — but biases the absolute trim
     collective; a candidate fix that would ripple through 5c–5m, not done.) Pedal right
-    sign, magnitude torque/κ-derived. NEXT: cyclic stick (crossfeed, pre-register first);
-    Lp-3% 2nd-airframe discriminator; optional global gyro_rate=−2 + 5c–5m revalidation.
+    sign, magnitude torque/κ-derived. *2nd/3rd airframe DONE:* the gyro flap-damping
+    fix (−2) GENERALIZES to BO-105 (hingeless) and OH-6A (NASA CR-3144) — validated on
+    3 airframes / 2 oracles; the OH-6A cg-sweep also overturned a single-point cg_offset
+    over-attribution (★ multi-point cross-check). Remaining-optional: cyclic-stick
+    crossfeed (pre-register first); a global `gyro_rate = −2` default + 5c–5m revalidation.
 
 Electric-powertrain track — **COMPLETE & trustworthy** (don't revisit before aero):
 - **Cell → pack → powertrain → thermal → mission.** Couples BEMT shaft power
@@ -254,6 +257,44 @@ Electric-powertrain track — **COMPLETE & trustworthy** (don't revisit before a
   sustained climb cook the cells.* Validated against the Samsung INR18650-25R
   datasheet (capacity + voltage sag) and 18650 thermal characterization
   (specific heat, 75 °C protection behaviour).
+
+Battery-management + charging track — **active (branch `charging`)**:
+- **BMS layer (`bms`).** The protection/estimation/sizing layer the bare cell/pack
+  lacked: OV/UV/OC/OT protection envelope, coulomb-count + OCV-reanchor SoC
+  estimation, cell balancing/imbalance, parametric S/P sizing to a (V, P, energy)
+  target, a 4-cell benchmark, and an **emergent true-continuous current** (cell R +
+  2-node thermal + cooling) so the rating falls out of physics rather than a
+  datasheet label. **Life-aware sizing** (`life_sizing`) sizes the pack for an
+  N-year life at a usage. Buildable output: `helisim bms`, `helisim battery-build`
+  (sourced BOM — qty + dated/overridable prices + buy links).
+- **Four sourced 21700 cells (`cell/library`).** Molicel P50B / Ampace JP40 / BAK
+  45D / EVE 40PL as `TheveninCell` oracles (datasheets + Battery-Mooch measured
+  DCIR); temperature-dependent R (Arrhenius); cycle+calendar capacity-fade aging
+  (`cell/aging`, calibrated to the BAK 45D datasheet + a 1C reference, DoD-aware).
+  **EXTERNAL validation (prereg-locked, `crates/bms/tests/battery_external_validation.rs`):** 10C
+  capacity retention 96–98 % vs the sourced ≥95 %; the steady still-air continuous
+  current reproduces JP40 47/45 A and P50B 36/35 A *emergently*.
+- **Charging (`charging`).** `ChargeSource` trait + 120 V/240 V mains (NEC-limited),
+  solar PV (MPPT/derate/peak-sun), DC fast charge; CC/CV charge model (reuses the
+  power-balance quadratic); charge:flight ratio (`= P_flight/P_charge`, pack-size-
+  independent); 1:1 charging-equipment kits with a circuit BOM. `helisim charging`,
+  `helisim charge-build`. **Findings:** daily flying is cycle-limited (the charger
+  is not the lever); a 10-yr daily pack needs ~3× oversize, which a 3.5 kg model
+  cannot carry (mass spiral), so upsizing (`design/upsizing`) recommends a
+  battery-heavy, low-disk-loading redesign.
+
+Actuation + structures track — **active (merged from `motor-control-surfaces` and
+`structures`):**
+- **Actuation (`actuation`).** Parametric, *buyable* motor + swashplate/tail servo
+  selection (Scorpion / Align catalogues with cited prices + links, smallest-
+  adequate rule); design-derived control loads (centrifugal propeller-moment);
+  `power_budget` (motor via ESC + servos via HV BEC + avionics → the pack power the
+  battery sizing must feed); printed **control-surface** stiffness + Markforged
+  material choice, and in-house-print-vs-outsourced-service catalogues.
+- **Structures (new `manufacture` modules).** Split an oversized part to a printer
+  **build volume** and bolt the pieces back (`split`/`split_geometry`), the
+  structural/inertial cost of splitting (`joint_structural`), per-route print
+  planning (`print_plan`), and impact-sized **landing-gear** skids (`landing_gear`).
 
 Safety & design track — **COMPLETE** (the power-off + noise + sizing layer the
 powered-flight stack omitted; built off the validated cores, never modifies them):
@@ -298,8 +339,8 @@ powered-flight stack omitted; built off the validated cores, never modifies them
   detection + instant collective drop; no human reacts that fast.
 - **★ EXTERNAL validation (autorotation, R22).** The first *external* check of
   this track (a category change, like Milestone 6 for the core aero) — predictions
-  + parameter mapping LOCKED in `validation/AUTOROTATION_EXTERNAL_PREREG.md` before
-  the oracle was sourced; results in `..._RESULTS.md`; test
+  + parameter mapping LOCKED (in the test's pre-registration comment) before
+  the oracle was sourced; results encoded as the test's expectations; test
   `crates/autorotation/tests/r22_external_validation.rs`. Oracle: Robinson R22 POH
   (best glide **75 KIAS**, ~**4:1** ratio; min-RoD **53 KIAS**), sourced + cited,
   not fabricated. **Result:** the clean calibration-free claims PASS exactly
@@ -469,20 +510,23 @@ Each milestone is added as new crate(s); never break the existing cores.
 
 ## Oracle coverage (documented example numbers for every module)
 
-`validation/ORACLE_COVERAGE.md` is the **coverage map**: every validated quantity,
-the documented example number it matches, the source, and the oracle type
-(A external / B closed-form / C self-consistency / D structural). After an audit
-that found several modules validating only by self-consistency where a documented
-number was readily sourceable, documented-number tests were added so a reader can
-hand-check each: **pack** (6S2P 25R → 21.6 V / 5 Ah / 108 Wh / 63 mΩ / 540 g / 40 A,
-Samsung datasheet), **powertrain** (0.85×0.95=0.80; 1000 W→1250 W), **thermal**
+Every validated quantity has a documented example number, a source, and an oracle
+type (A external / B closed-form / C self-consistency / D structural), all enforced
+by a `#[test]` in the relevant crate's `tests/` (or inline `#[cfg(test)]`) — there is
+no separate coverage doc; the tests ARE the coverage map. Documented-number anchors a
+reader can hand-check: **pack** (6S2P 25R → 21.6 V / 5 Ah / 108 Wh / 63 mΩ / 540 g /
+40 A, Samsung datasheet), **powertrain** (0.85×0.95=0.80; 1000 W→1250 W), **thermal**
 (convection h in the Incropera Nu·k/D bands), **airfoil** (NACA0012 a₀=5.73/rad,
 C_lmax 1.4, C_d0 0.0065 — Abbott & von Doenhoff / Prouty), **manufacture**
 (bolt areas = ISO 724, working shear = ISO 898-1 0.6·800/2.4; boom Z≈0.058D³ =
-Roark; Al allowables MMPDS/ASM). Honest gaps that remain (no clean external number
-without Milestone-6-style sourcing) are listed at the bottom of that file — chiefly
-the **acoustics external-SPL** anchor. The rule still holds: a "match" is a passing
-`#[test]`, and a number with no source is never fabricated — it is named as a gap.
+Roark; Al allowables MMPDS/ASM), **cells** (4×21700 datasheets + Battery-Mooch DCIR).
+**Honest gaps that remain** (no clean external number without Milestone-6-style
+sourcing, named not faked): the **acoustics external-SPL** anchor (only Bessel tables
++ Gutin closed form + directivity); per-cell measured OCV curves and per-rate
+discharge-sag curves (paywalled/graphical); a published eVTOL **pack** spec; and the
+aging coefficients (calibrated to the BAK datasheet + a representative 1C life, not a
+per-cell fit). The rule holds: a "match" is a passing `#[test]`, and a number with no
+source is never fabricated — it is named as a gap.
 
 ## Validation lessons (hard-won; violate at your peril)
 
@@ -507,11 +551,11 @@ the **acoustics external-SPL** anchor. The rule still holds: a "match" is a pass
   everything before you see the oracle (Milestone 6).** Internal milestones can be
   re-run and re-validated; the model meeting ground truth cannot be un-seen, and the
   comparison's value depends entirely on the predictions AND the parameter mapping
-  being fixed beforehand. Predictions live in `validation/MILESTONE6_PREDICTIONS.md`;
-  parameter-mapping decisions (every place the real aircraft doesn't map one-to-one
-  onto the model — canted tail rotor, stabilator, cross-inertia, airfoil, twist,
-  parasite) are decided on PHYSICS and locked in `validation/MILESTONE6_PARAMETER_MAPPING.md`.
-  Why this is a lesson and not just a note: the parameter-entry step is where the lock
+  being fixed beforehand. Predictions and the parameter-mapping decisions (every place
+  the real aircraft doesn't map one-to-one onto the model — canted tail rotor,
+  stabilator, cross-inertia, airfoil, twist, parasite) are decided on PHYSICS and
+  locked in the external-validation TEST's pre-registration comment BEFORE the oracle
+  is read. Why this is a lesson and not just a note: the parameter-entry step is where the lock
   silently leaks — "correcting" a parameter during the build while glancing at Table 4
   is model-fitting you'd never detect afterward. So the build-and-compare runs as its
   OWN session, never rushed at the tail of another. Stop *because* of this, not just
@@ -633,8 +677,11 @@ crates/
     harrington.rs      secondary check (figure-of-merit band)
     tests/validation.rs  the validation suite as tests
   cell/         battery cell equivalent-circuit
-    cell.rs       trait Cell                <- polymorphism boundary
+    cell.rs       trait Cell                <- polymorphism boundary (+ internal_resistance_at)
     thevenin.rs   TheveninCell (+ samsung_25r oracle)
+    library.rs    4 sourced 21700 cells (P50B/JP40/BAK45D/40PL) + true/charge current
+    temperature.rs R(T) Arrhenius factor (Ea≈27 kJ/mol NMC; ~7× at −20 °C)
+    aging.rs      DegradationModel — cycle (Wang power-law) + calendar (√t) fade, DoD-aware
     tests/discharge.rs  datasheet discharge validation
   pack/         series/parallel pack
     pack.rs       Pack (S×P scaling of voltage/capacity/resistance/mass)
@@ -644,6 +691,7 @@ crates/
   thermal/      lumped-mass cell thermal
     cooling.rs    trait Cooling + Convective  <- polymorphism boundary
     lumped.rs     LumpedThermalCell (C dT/dt = Qgen - Qcool)
+    two_node.rs   TwoNodeThermalCell (core+surface, R_int=1/4πkL) — internal gradient (tabless)
     limits.rs     ThermalLimits / ThermalStatus (safe/warn/over-temp band)
     tests/thermal_validation.rs  18650 thermal oracle
   mission/      end-to-end coupling
@@ -653,6 +701,26 @@ crates/
     hover_mission.rs  analyze_hover -> HoverReport (incl. hover peak temp)
     climb.rs          analyze_climb -> ClimbReport (sustained-climb thermal check)
     tests/end_to_end.rs  chain + design-tension + thermal-safety tests
+  bms/          battery management: protection, estimation, sizing, build (cell+pack+thermal)
+    protection.rs  ProtectionLimits + Fault (OV/UV/OC/OT envelope)
+    soc_estimator.rs  SocEstimator (coulomb count + OCV re-anchor)
+    balancing.rs   CellSpread imbalance + passive balancing (weakest-cell limits)
+    sizing.rs      size_for_target — parametric S/P from (bus V, peak P, energy)
+    benchmark.rs   run_benchmark — the 4 cells compared on one target
+    thermal_envelope.rs  emergent true-continuous (R + 2-node thermal + cooling)
+    life_sizing.rs  size_for_life — pack oversize for an N-year life at a usage
+    components.rs  purchasable catalog: sourced/dated/overridable prices + links + ESC/BEC
+    pack_build.rs  build_pack — BOM (qty/price/link) + tools + safety assembly steps
+    tests/battery_external_validation.rs  EXTERNAL: capacity retention + emergent continuous
+  charging/     charge the pack (sources + CC/CV + ratio + 1:1 equipment)
+    source.rs     trait ChargeSource  <- polymorphism boundary
+    mains.rs      MainsCharger (120 V / 240 V, NEC 80% continuous + charger η)
+    solar.rs      SolarArray (panels × MPPT × derate; peak-sun-hours daily energy)
+    fast.rs       DcFastCharger (high-power DC — the path to ~1:1 for a big pack)
+    charge.rs     CC/CV charge model (power-balance quadratic + Thévenin CV taper)
+    ratio.rs      charge:flight ratio = P_flight/P_charge (size-independent) + cell ceiling
+    equipment.rs  kit_120v/240v/dc_fast/solar — 1:1-sized circuit BOM per source
+    solution.rs   ChargeReport (time/energy/source-limited)
   autorotation/ power-off descent (safety; std + helisim-rotor only)
     inflow.rs     descent-regime v_i/v_h: climb + windmill closed forms + measured VRS curve
     descent.rs    steady vertical autorotation V_d=v_i+P₀/T (bisection, adaptive bracket)
@@ -677,6 +745,8 @@ crates/
     metrics.rs    evaluate — BEMT trim + autorotation + acoustics + cost → report
     sweep.rs      sweep_radius — the disk-loading trade at fixed tip speed
     recommend.rs  recommend — search + safety-constrained priority-ranked suggestion
+    upsizing.rs   size_for_daily_life — closure condition (disk loading + pack fraction)
+                  for a 10-yr daily-flight pack; finds the battery-heavy redesign
     tests/design_validation.rs  composition-consistency + trade-direction + recommender
   manufacture/  recommended design → buildable geometry + step-by-step (the end goal)
     part.rs       trait BuildPart (polymorphism boundary) + Source taxonomy
@@ -696,7 +766,13 @@ crates/
     structural.rs check_structure — section margins (centrifugal/torsion/bending)
     fea_structural.rs run_fea — beam-FEM boom+blade (deflection + FE-vs-closed-form)
     fasteners.rs  bolt/bearing catalogues + select-smallest-adequate + hardware_schedule
-    assembly.rs   BuildPackage — all 9 parts + the assembly sequence
+    assembly.rs   BuildPackage — all parts + the assembly sequence
+    build_volume.rs  printer build envelopes (the box a part must fit, or split to fit)
+    split.rs      split an oversized part to fit + bolt the pieces back (generated splice)
+    split_geometry.rs  emit printable pieces + bolt-hole bosses at each joint
+    joint_structural.rs  structural/inertial cost of a split (ties back to the physics)
+    print_plan.rs  fit every part to a build volume, split what doesn't, pick the fastening
+    landing_gear.rs  skid landing gear, sized from the landing impact load
     export.rs     blade_to_stl/lofted_blade_to_stl (printable) + airfoil_to_dxf (cuttable)
     assembly_export.rs aircraft_to_stl (whole-aircraft) + aircraft_to_step (STEP wireframe)
     step_brep.rs  mesh_to_step_brep/blade_to_step_brep — real MANIFOLD_SOLID_BREP solid
@@ -713,7 +789,18 @@ crates/
     bom.rs        AircraftSpec → Bom (bill of materials)
     report.rs     summarize → CostReport (vertical-integration index + buy-list)
     tests/cost_validation.rs  accounting consistency + monotonicity + taxonomy order
-  cli/          command-line driver (report/study/mission_cli/design_cli formatting)
+  actuation/    parametric motor + control-servo selection (buyable parts, cited)
+    selectable.rs  trait Selectable + select_smallest_adequate (the sizing rule)
+    motor.rs      BldcMotor + Scorpion HK/HKII catalogue (price + purchase URL)
+    servo.rs      Servo + Align HV catalogue (cyclic/tail, price + URL)
+    loads.rs      design-derived demands: motor power + Kv gate + propeller moment
+    scaling.rs    beyond-catalogue extrapolation + honest flag
+    plan.rs       ActuationPlan + select_actuation (motor + servos for a design)
+    power_budget.rs  pack power the battery must feed (motor + servos-via-BEC + avionics)
+    control_surface.rs  printed control-surface stiffness under load (Markforged choice)
+    material.rs / service.rs / service_material.rs  print-material DB + in-house-vs-service
+    tests/actuation_validation.rs  catalogue↔datasheet + smallest-adequate + scaling
+  cli/          command-line driver (report/study/*_cli formatting; bms/charging/build)
 ```
 
 ## Physics conventions (BEMT core)
@@ -987,6 +1074,29 @@ r nose-right +.
   Batemo free-convection test's which-limit-terminates behaviour. Heat = I²R
   using the cell's own R (consistent with the voltage sag, so it equals the
   dissipated electrical energy); entropic term neglected.
+- **Four 21700 benchmark cells (EXTERNAL):** P50B/JP40/BAK45D/40PL built from
+  datasheets + Battery-Mooch measured DCIR (cited, never fabricated). Prereg-locked
+  external check (`crates/bms/tests/battery_external_validation.rs`): 10C capacity
+  retention **96–98 % vs the sourced ≥95 %** (clean match); the prereg's surface-
+  limited continuous was *falsified* and believed (skin lags core), and the
+  steady still-air *surface* limit then **reproduces JP40 47/45 A and P50B 36/35 A
+  emergently** (temperature-dependent R load-bearing); BAK over-predicted (its 30 A
+  rating is conservative — believed, not patched). `helisim bms`.
+- **Battery aging + life sizing:** cycle (Wang power-law) + calendar (√t, Arrhenius)
+  fade, DoD-aware, calibrated to the BAK 45D datasheet (600 cyc @ 6.7C→60 %) + a
+  representative 1C reference (coeffs overridable). Tests anchor both points + Q10=2
+  + √t + shallow-DoD gentleness. **Findings:** daily flying is cycle-limited; a
+  10-yr/365-per-yr pack needs ~3× oversize; a 3.5 kg model can't close it (mass
+  spiral) → `design/upsizing` recommends a battery-heavy redesign.
+- **Charging:** mains power matches NEC (15 A → 1440 W AC × 0.90 = 1296 W DC); solar
+  power/daily-energy from the array formula; CC/CV charge time matches the closed-
+  form CC anchor; charge current is the min of source / cell-rating (falsifiable);
+  the 1:1 equipment kits confirm only DC fast charge reaches 1:1 for a human-scale
+  pack (120/240 V branch-capped). Self-consistency + closed-form checks, not an
+  external oracle (representative install prices flagged). `helisim charging`.
+- **Actuation (`actuation`):** motor/servo catalogues match the published Scorpion /
+  Align datasheets (external) and the selection is falsifiable (chosen passes, next
+  size down fails); every catalogue part carries a cited price + purchase URL.
 
 ## Electric-hover chain conventions (mission)
 
@@ -1041,3 +1151,16 @@ r nose-right +.
   build package — every part sized from the design (mast by torsion, boom by
   bending, etc.), the assembly sequence, and exported STL (printable blade) + DXF
   (cuttable section) files to `build_output/`.
+- `cargo run -- bms` — battery + BMS benchmark: the 4-cell trade (sourced datasheet
+  + measured DCIR), protection/SoC/balancing demo, and the emergent true-continuous
+  from the 2-node thermal model (label-vs-true continuous = the finding).
+- `cargo run -- battery-build` — exact pack + BMS shopping list (qty, sourced/dated
+  prices, buy links) + tools + safety-forward assembly steps; scale-aware
+  (nickel→busbar, XT90→heavy cable, integrated→distributed BMS); motor+actuator
+  power budget feeds the pack sizing.
+- `cargo run -- charging` — charge the pack two ways (120 V mains + solar), CC/CV
+  time/energy/limits; the charge:flight ratio ladder (= P_flight/P_charge) and the
+  battery-aging + fast-charge sweet spot (≥10-year life).
+- `cargo run -- charge-build` — fold a 10-year daily-flight life into the design
+  (mass→power propagation), the upsizing recommendation when it won't close on a
+  3.5 kg airframe, and 1:1 charging-equipment kits (120 V/240 V/solar/DC-fast).

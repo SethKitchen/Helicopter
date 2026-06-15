@@ -98,34 +98,25 @@ impl DegradationModel {
         (self.eol_fade / per_cycle).powf(1.0 / self.throughput_exp)
     }
 
-    /// Total fade after a usage: `cycle_fade(EFC, …) + calendar_fade(years, …)`.
-    #[allow(clippy::too_many_arguments)]
-    pub fn total_fade(
-        &self,
-        efc: f64,
-        c_rate: f64,
-        op_temp_c: f64,
-        years: f64,
-        storage_temp_c: f64,
-        soc_factor: f64,
-    ) -> f64 {
+    /// Total fade after a usage: `cycle_fade(EFC, …) + calendar_fade(…)`.
+    pub fn total_fade(&self, efc: f64, c_rate: f64, op_temp_c: f64, cal: CalendarLoad) -> f64 {
         self.cycle_fade(efc, c_rate, op_temp_c)
-            + self.calendar_fade(years, storage_temp_c, soc_factor)
+            + self.calendar_fade(cal.years, cal.storage_temp_c, cal.soc_factor)
     }
 
     /// Does the pack still retain ≥ (1 − eol) after this usage?
-    #[allow(clippy::too_many_arguments)]
-    pub fn meets_life(
-        &self,
-        efc: f64,
-        c_rate: f64,
-        op_temp_c: f64,
-        years: f64,
-        storage_temp_c: f64,
-        soc_factor: f64,
-    ) -> bool {
-        self.total_fade(efc, c_rate, op_temp_c, years, storage_temp_c, soc_factor) <= self.eol_fade
+    pub fn meets_life(&self, efc: f64, c_rate: f64, op_temp_c: f64, cal: CalendarLoad) -> bool {
+        self.total_fade(efc, c_rate, op_temp_c, cal) <= self.eol_fade
     }
+}
+
+/// The calendar-aging inputs: how long, at what storage temperature, and a
+/// state-of-charge factor (≈1.0 at mid SoC, higher near full).
+#[derive(Clone, Copy, Debug)]
+pub struct CalendarLoad {
+    pub years: f64,
+    pub storage_temp_c: f64,
+    pub soc_factor: f64,
 }
 
 /// Equivalent full cycles from a usage pattern: `flights_per_year · years · dod`
@@ -143,19 +134,16 @@ impl DegradationModel {
     }
 
     /// Total fade for a usage given the raw flight count and per-flight depth.
-    #[allow(clippy::too_many_arguments)]
     pub fn fade_over_life(
         &self,
         n_cycles: f64,
         dod: f64,
         c_rate: f64,
         op_temp_c: f64,
-        years: f64,
-        storage_temp_c: f64,
-        soc_factor: f64,
+        cal: CalendarLoad,
     ) -> f64 {
         self.cycle_fade(self.effective_efc(n_cycles, dod), c_rate, op_temp_c)
-            + self.calendar_fade(years, storage_temp_c, soc_factor)
+            + self.calendar_fade(cal.years, cal.storage_temp_c, cal.soc_factor)
     }
 }
 
@@ -235,8 +223,9 @@ mod tests {
             "50% DoD eff EFC {half} should be < 50 (throughput)"
         );
         // Same flight count at lower depth → less total fade.
-        let full = m.fade_over_life(1000.0, 1.0, 2.0, 25.0, 5.0, 25.0, 1.0);
-        let shallow = m.fade_over_life(1000.0, 0.5, 2.0, 25.0, 5.0, 25.0, 1.0);
+        let cal = CalendarLoad { years: 5.0, storage_temp_c: 25.0, soc_factor: 1.0 };
+        let full = m.fade_over_life(1000.0, 1.0, 2.0, 25.0, cal);
+        let shallow = m.fade_over_life(1000.0, 0.5, 2.0, 25.0, cal);
         assert!(shallow < full);
     }
 }

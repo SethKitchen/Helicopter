@@ -7,7 +7,7 @@ use helisim_airfoil::LinearAirfoil;
 use helisim_bemt::Config;
 use helisim_bms::ThermalEnvelope;
 use helisim_bms::components::cell_price;
-use helisim_cell::{Cell, DegradationModel, max_charge_current, molicel_p50b};
+use helisim_cell::{CalendarLoad, Cell, DegradationModel, max_charge_current, molicel_p50b};
 use helisim_charging::{
     ChargeConfig, ChargeReport, ChargeSource, DcFastCharger, MainsCharger, SolarArray,
     cell_charge_power_ceiling_w, charge, charge_flight_ratio, flight_time_h,
@@ -169,9 +169,7 @@ fn daily_flying_section() {
             dod,
             c_rate,
             25.0,
-            LIFE_YEARS,
-            storage_temp,
-            1.0,
+            CalendarLoad { years: LIFE_YEARS, storage_temp_c: storage_temp, soc_factor: 1.0 },
         );
         let ok = fade <= model.eol_fade;
         if ok && sweet_f.is_none() {
@@ -252,9 +250,7 @@ fn years_to_eol(
             dod,
             c_rate,
             25.0,
-            y,
-            storage_temp,
-            1.0,
+            CalendarLoad { years: y, storage_temp_c: storage_temp, soc_factor: 1.0 },
         );
         if fade >= model.eol_fade {
             return y;
@@ -399,7 +395,12 @@ fn max_charge_c_for_life(model: &DegradationModel, disch_cr: f64, efc: f64) -> O
     let mut cr: f64 = 0.5;
     while cr <= 5.0 + 1e-9 {
         let eff = cr.max(disch_cr);
-        if model.meets_life(efc, eff, 25.0, LIFE_YEARS, 25.0, 1.0) {
+        if model.meets_life(
+            efc,
+            eff,
+            25.0,
+            CalendarLoad { years: LIFE_YEARS, storage_temp_c: 25.0, soc_factor: 1.0 },
+        ) {
             best = Some(cr);
         }
         cr += 0.25;

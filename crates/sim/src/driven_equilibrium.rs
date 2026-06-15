@@ -7,7 +7,7 @@
 use crate::control::Trim;
 use crate::coupled_march::solve_lin;
 use crate::driven_march::{Model11, State11, state_derivative11};
-use helisim_dynamics::{Inertia, hover_collective_for_weight, quasi_static_inflow};
+use helisim_dynamics::{Inertia, RotorAero, hover_collective_for_weight, quasi_static_inflow};
 use helisim_flapping::Controls;
 use helisim_trim::{Aircraft, NewtonConfig, TrimCondition, trim};
 
@@ -60,12 +60,14 @@ fn quasi_inflow(ac: &Aircraft, x: &[f64; 6], vel: [f64; 3]) -> [f64; 3] {
         theta_1s: x[3],
     };
     quasi_static_inflow(
-        &rotor,
-        &ac.main_op,
-        ac.main_airfoil.as_ref(),
-        &ac.flap,
-        ac.hub_height,
-        &controls,
+        &RotorAero {
+            rotor: &rotor,
+            op: &ac.main_op,
+            airfoil: ac.main_airfoil.as_ref(),
+            props: &ac.flap,
+            hub_height: ac.hub_height,
+            controls: &controls,
+        },
         vel,
         [0.0, 0.0],
     )

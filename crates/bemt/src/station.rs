@@ -26,20 +26,33 @@ pub struct Station {
     pub dcp_dx: f64,
 }
 
+/// Converged section state (no differential coefficients yet) — the inputs to
+/// [`Station::assemble`].
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct SectionState {
+    pub x: f64,
+    pub lambda: f64,
+    pub phi: f64,
+    pub alpha: f64,
+    pub cl: f64,
+    pub cd: f64,
+    pub tip_loss: f64,
+}
+
 impl Station {
     /// Assemble a station and its differential coefficients from converged
     /// section state. Centralises the `dCT/dx` and `dCP/dx` formulas so the
     /// solver and any future caller stay consistent.
-    pub(crate) fn assemble(
-        x: f64,
-        lambda: f64,
-        phi: f64,
-        alpha: f64,
-        cl: f64,
-        cd: f64,
-        tip_loss: f64,
-        rotor: &Rotor,
-    ) -> Self {
+    pub(crate) fn assemble(s: SectionState, rotor: &Rotor) -> Self {
+        let SectionState {
+            x,
+            lambda,
+            phi,
+            alpha,
+            cl,
+            cd,
+            tip_loss,
+        } = s;
         let u2 = x * x + lambda * lambda;
         let sigma = rotor.local_solidity(x);
         let dct_dx = 0.5 * sigma * u2 * (cl * phi.cos() - cd * phi.sin());
