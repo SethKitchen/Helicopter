@@ -5,6 +5,7 @@
 //! * the **motor**, through the ESC (the big load — continuous shaft power);
 //! * the **control-surface actuators** (swashplate cyclic + tail servos), through
 //!   an **HV BEC** (a small but real load that the pack must also carry).
+//!
 //! Plus a small **avionics** rail (flight controller / receiver / gyro).
 //!
 //! This module turns an [`ActuationPlan`] into the single number the battery
@@ -12,8 +13,8 @@
 //! run the motor AND the actuators, not the motor alone. It is pure arithmetic over
 //! the plan (no battery dependency); the CLI feeds the result into `bms` sizing.
 
+use crate::loads::{CELL_NOMINAL_V, pack_voltage_v};
 use crate::plan::ActuationPlan;
-use crate::loads::{pack_voltage_v, CELL_NOMINAL_V};
 
 /// Standard budgeting figure for a digital servo's peak current draw, A. Matches
 /// the figure used in [`ActuationPlan::power_and_connections`] (~1–2 A under load;
@@ -139,7 +140,7 @@ mod tests {
     use crate::plan::select_actuation;
     use helisim_airfoil::LinearAirfoil;
     use helisim_bemt::Config;
-    use helisim_design::{evaluate, DesignCandidate};
+    use helisim_design::{DesignCandidate, evaluate};
 
     fn model_budget() -> PowerBudget {
         let c = DesignCandidate::model();

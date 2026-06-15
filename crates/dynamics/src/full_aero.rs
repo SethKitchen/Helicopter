@@ -12,10 +12,8 @@
 //! Lateral velocity `v` rotates the advancing side 90°, so the flap response and
 //! its moment become lateral (roll) — the rotor is axisymmetric.
 
+use crate::context::RotorAero;
 use crate::flap_general::flap_coeffs;
-use helisim_airfoil::Airfoil;
-use helisim_flapping::{Controls, FlapProperties};
-use helisim_rotor::{Operating, Rotor};
 use std::f64::consts::PI;
 
 pub(crate) const N_AZ: usize = 36;
@@ -68,19 +66,17 @@ fn induced(ct: f64, mu: f64, lambda_c: f64) -> f64 {
 /// coefficients (∫dC_T·x·sinψ and ∫dC_T·x·cosψ) — the latter two are the forcing
 /// the Pitt–Peters inflow states respond to.
 fn loads(
-    rotor: &Rotor,
-    airfoil: &dyn Airfoil,
-    tip_mach: f64,
-    mu_u: f64,
-    mu_v: f64,
+    aero: &RotorAero,
+    mu: [f64; 2],
     inflow: [f64; 3],
-    controls: &Controls,
-    b0: f64,
-    b1c: f64,
-    b1s: f64,
-    p_bar: f64,
-    q_bar: f64,
+    flap: [f64; 3],
+    rates: [f64; 2],
 ) -> (f64, f64, f64, f64, f64, f64) {
+    let (rotor, airfoil, controls) = (aero.rotor, aero.airfoil, aero.controls);
+    let tip_mach = aero.op.tip_mach(rotor.radius);
+    let [mu_u, mu_v] = mu;
+    let [b0, b1c, b1s] = flap;
+    let [p_bar, q_bar] = rates;
     let x0 = rotor.root_cutout;
     let dx = (1.0 - x0) / N_R as f64;
     let dpsi = 2.0 * PI / N_AZ as f64;
@@ -124,86 +120,34 @@ fn loads(
 /// Full main-rotor body forces and moments at velocity `(u,v,w)` and rates
 /// `(p,q)`, with controls at trim. `hub_height` is the hub height above the CG.
 /// Yaw moment is the steady main-rotor torque reaction.
-pub fn main_rotor_full(
-    rotor: &Rotor,
-    op: &Operating,
-    airfoil: &dyn Airfoil,
-    props: &FlapProperties,
-    hub_height: f64,
-    controls: &Controls,
-    vel: [f64; 3],   // u, v, w
-    rates: [f64; 2], // p, q
-) -> Forces6 {
-    let li = uniform_inflow(rotor, op, airfoil, props, controls, vel, rates);
-    let vt = op.tip_speed(rotor.radius);
-    let (mu_u, mu_v) = (vel[0] / vt, vel[1] / vt);
-    let (p_bar, q_bar) = (rates[0] / op.omega, rates[1] / op.omega);
+pub fn main_rotor_full(aero: &RotorAero, vel: [f64; 3], rates: [f64; 2]) -> Forces6 {
+    let op = aero.op;
+    let li = uniform_inflow(aero, vel, rates);
+    let vt = op.tip_speed(aero.rotor.radius);
+    let mu = [vel[0] / vt, vel[1] / vt];
+    let rates_bar = [rates[0] / op.omega, rates[1] / op.omega];
     // Cyclic states zero, heave folded into the mean inflow: identical to
     // `main_rotor_with_inflow(.., [λ₀,0,0])` — the 5h τ→0 baseline gate.
-    assemble_forces(
-        rotor,
-        op,
-        airfoil,
-        props,
-        hub_height,
-        mu_u,
-        mu_v,
-        p_bar,
-        q_bar,
-        controls,
-        [li - vel[2] / vt, 0.0, 0.0],
-    )
-    .0
+    assemble_forces(aero, mu, rates_bar, [li - vel[2] / vt, 0.0, 0.0]).0
 }
 
 /// The converged **uniform** (Glauert) induced inflow `λ₀` — the quasi-static
 /// baseline through 5g, with cyclic inflow forced to zero. Exposed so the
 /// Pitt–Peters layer can recover the validated baseline exactly by passing
 /// `[λ₀, 0, 0]` to `main_rotor_with_inflow`.
-pub fn uniform_inflow(
-    rotor: &Rotor,
-    op: &Operating,
-    airfoil: &dyn Airfoil,
-    props: &FlapProperties,
-    controls: &Controls,
-    vel: [f64; 3],
-    rates: [f64; 2],
-) -> f64 {
-    let vt = op.tip_speed(rotor.radius);
-    let tip_mach = op.tip_mach(rotor.radius);
-    let (mu_u, mu_v) = (vel[0] / vt, vel[1] / vt);
+pub fn uniform_inflow(aero: &RotorAero, vel: [f64; 3], rates: [f64; 2]) -> f64 {
+    let op = aero.op;
+    let vt = op.tip_speed(aero.rotor.radius);
+    let mu = [vel[0] / vt, vel[1] / vt];
     let lambda_c = -vel[2] / vt;
-    let (p_bar, q_bar) = (rates[0] / op.omega, rates[1] / op.omega);
+    let rates_bar = [rates[0] / op.omega, rates[1] / op.omega];
 
     let mut li = 0.05_f64;
     for _ in 0..60 {
         let lam = lambda_c + li;
-        let b = flap_coeffs(
-            rotor,
-            controls,
-            mu_u,
-            mu_v,
-            [lam, 0.0, 0.0],
-            p_bar,
-            q_bar,
-            props,
-        );
-        let ct = loads(
-            rotor,
-            airfoil,
-            tip_mach,
-            mu_u,
-            mu_v,
-            [lam, 0.0, 0.0],
-            controls,
-            b.0,
-            b.1,
-            b.2,
-            p_bar,
-            q_bar,
-        )
-        .0;
-        let li_new = induced(ct.max(0.0), (mu_u * mu_u + mu_v * mu_v).sqrt(), lambda_c);
+        let b = flap_coeffs(aero, mu, [lam, 0.0, 0.0], rates_bar);
+        let ct = loads(aero, mu, [lam, 0.0, 0.0], [b.0, b.1, b.2], rates_bar).0;
+        let li_new = induced(ct.max(0.0), (mu[0] * mu[0] + mu[1] * mu[1]).sqrt(), lambda_c);
         let d = (li_new - li).abs();
         li = (li + 0.6 * (li_new - li)).clamp(1e-4, 0.5);
         if d < 1e-8 {
@@ -227,26 +171,17 @@ pub struct InflowAero {
 /// core used both by the uniform-inflow [`main_rotor_full`] and the inflow-input
 /// `main_rotor_with_inflow` (in `inflow_coupling`).
 pub(crate) fn assemble_forces(
-    rotor: &Rotor,
-    op: &Operating,
-    airfoil: &dyn Airfoil,
-    props: &FlapProperties,
-    hub_height: f64,
-    mu_u: f64,
-    mu_v: f64,
-    p_bar: f64,
-    q_bar: f64,
-    controls: &Controls,
+    aero: &RotorAero,
+    mu: [f64; 2],
+    rates: [f64; 2],
     inflow: [f64; 3],
 ) -> (Forces6, InflowAero) {
+    let (rotor, op, props, hub_height) = (aero.rotor, aero.op, aero.props, aero.hub_height);
     let omega = op.omega;
     let vt = op.tip_speed(rotor.radius);
-    let tip_mach = op.tip_mach(rotor.radius);
 
-    let (b0, b1c, b1s) = flap_coeffs(rotor, controls, mu_u, mu_v, inflow, p_bar, q_bar, props);
-    let (ct, cp, hx, hy, cl_a, cm_a) = loads(
-        rotor, airfoil, tip_mach, mu_u, mu_v, inflow, controls, b0, b1c, b1s, p_bar, q_bar,
-    );
+    let (b0, b1c, b1s) = flap_coeffs(aero, mu, inflow, rates);
+    let (ct, cp, hx, hy, cl_a, cm_a) = loads(aero, mu, inflow, [b0, b1c, b1s], rates);
 
     let qd = op.rho * rotor.disk_area() * vt * vt;
     let thrust = ct * qd;

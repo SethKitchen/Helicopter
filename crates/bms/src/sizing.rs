@@ -144,7 +144,12 @@ mod tests {
         let bak = size_for_target(&bak_45d(), tc("BAK 45D"), target);
         assert_eq!(eve.limiting, Limiting::Power);
         assert_eq!(bak.limiting, Limiting::Power);
-        assert!(eve.parallel < bak.parallel, "eve {} bak {}", eve.parallel, bak.parallel);
+        assert!(
+            eve.parallel < bak.parallel,
+            "eve {} bak {}",
+            eve.parallel,
+            bak.parallel
+        );
         assert!(eve.mass_kg < bak.mass_kg);
     }
 
@@ -160,7 +165,12 @@ mod tests {
         let p50 = size_for_target(&molicel_p50b(), tc("Molicel P50B"), target);
         let eve = size_for_target(&eve_40pl(), tc("EVE 40PL"), target);
         assert_eq!(p50.limiting, Limiting::Energy);
-        assert!(p50.parallel < eve.parallel, "p50 {} eve {}", p50.parallel, eve.parallel);
+        assert!(
+            p50.parallel < eve.parallel,
+            "p50 {} eve {}",
+            p50.parallel,
+            eve.parallel
+        );
         assert!(p50.mass_kg < eve.mass_kg);
     }
 }

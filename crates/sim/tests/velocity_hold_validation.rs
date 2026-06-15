@@ -19,7 +19,7 @@
 use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
     PiAttitudeHold, RateSas, Trim, VelocityHold, attitude_hold, equilibrium_state11,
-    equilibrium_state11_at, linearize15, simulate13, simulate15,
+    equilibrium_state11_at, linearize15, simulate13, simulate15, Sim11Setup,
 };
 use helisim_trim::Aircraft;
 
@@ -69,7 +69,7 @@ fn cascade_is_well_formed_off_seam() {
 }
 
 /// DOCUMENTED handling-qualities check (closes the "tuned gains, no published
-/// basis" gap from validation/ORACLE_COVERAGE.md). ADS-33E / MIL-F-9490D specify
+/// basis" gap). ADS-33E / MIL-F-9490D specify
 /// a **Level-1 minimum damping ratio ζ ≥ 0.35** for the closed-loop oscillatory
 /// modes. Computing ζ = −Re/|λ| from the validated off-seam 15-state closed loop:
 /// the **velocity/position-hold modes (|λ|<0.3) MEET Level 1** (ζ ≈ 0.45, 0.76),
@@ -128,20 +128,18 @@ fn velocity_hold_zeroes_the_drift_attitude_hold_left() {
         0.3,
         0.3,
     );
-    let att = simulate13(&ac, j, vel, &Trim, &pi, dist, [0.0; 11], dt, 14.0);
+    let setup = Sim11Setup { ac: &ac, j, vel };
+    let att = simulate13(&setup, &Trim, &pi, dist, [0.0; 11], [dt, 14.0]);
     let drift_5l = (att[(14.0 / dt) as usize][0] - eq[0]).abs();
 
     // 5m velocity hold: the same drift, now driven to ≈0 (settled by t=40 s).
     let vh = simulate15(
-        &ac,
-        j,
-        vel,
+        &setup,
         &VelocityHold::hover_hold(),
         [0.0, 0.0],
         dist,
         [0.0; 15],
-        dt,
-        40.0,
+        [dt, 40.0],
     );
     let drift_5m = (vh[(40.0 / dt) as usize][0] - eq[0]).abs();
 
@@ -173,15 +171,12 @@ fn hover_position_hold_is_the_capstone() {
     pert[0] = 0.5; // Δu = 0.5 m/s
 
     let h = simulate15(
-        &ac,
-        j,
-        [0.0, 0.0, 0.0],
+        &Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] },
         &VelocityHold::hover_hold(),
         [0.0, 0.0],
         [0.0; 3],
         pert,
-        dt,
-        t,
+        [dt, t],
     );
     let s = h[(t / dt) as usize];
     assert!(
@@ -217,15 +212,12 @@ fn commanded_attitudes_stay_modest_no_windup() {
     let vh = VelocityHold::hover_hold();
     let dt = 0.01;
     let d = simulate15(
-        &ac,
-        j,
-        [5.0, 0.0, 0.0],
+        &Sim11Setup { ac: &ac, j, vel: [5.0, 0.0, 0.0] },
         &vh,
         [0.0, 0.0],
         [0.0, 0.6, 0.0],
         [0.0; 15],
-        dt,
-        40.0,
+        [dt, 40.0],
     );
     // θ_cmd = k_u·u_err + ki_u·ζ_u; track its peak over the run.
     let eq = equilibrium_state11_at(&ac, [5.0, 0.0, 0.0]);

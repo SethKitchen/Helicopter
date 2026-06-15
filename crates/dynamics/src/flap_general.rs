@@ -4,24 +4,24 @@
 //! recovers the pre-5h behaviour exactly. Split out of `full_aero` so each file
 //! holds one concept; consumed by `full_aero::assemble_forces`.
 
-use helisim_flapping::{Controls, FlapProperties, solve3};
-use helisim_rotor::Rotor;
+use helisim_flapping::solve3;
 use std::f64::consts::PI;
 
+use crate::context::RotorAero;
 use crate::full_aero::{N_AZ, N_R};
 
-/// First-harmonic flap coefficients `(β₀, β₁c, β₁s)` for the given flow, rates,
-/// and linear inflow `inflow = [λ₀, λ₁s, λ₁c]` → `λ(x,ψ)=λ₀+λ₁c x cosψ+λ₁s x sinψ`.
+/// First-harmonic flap coefficients `(β₀, β₁c, β₁s)` for the given flow
+/// `mu = [μ_u, μ_v]`, rates `rates = [p̄, q̄]`, and linear inflow
+/// `inflow = [λ₀, λ₁s, λ₁c]` → `λ(x,ψ)=λ₀+λ₁c x cosψ+λ₁s x sinψ`.
 pub(crate) fn flap_coeffs(
-    rotor: &Rotor,
-    controls: &Controls,
-    mu_u: f64,
-    mu_v: f64,
+    aero: &RotorAero,
+    mu: [f64; 2],
     inflow: [f64; 3],
-    p_bar: f64,
-    q_bar: f64,
-    props: &FlapProperties,
+    rates: [f64; 2],
 ) -> (f64, f64, f64) {
+    let (rotor, controls, props) = (aero.rotor, aero.controls, aero.props);
+    let [mu_u, mu_v] = mu;
+    let [p_bar, q_bar] = rates;
     let dx = 1.0 / N_R as f64;
     let dpsi = 2.0 * PI / N_AZ as f64;
     let mut f = [0.0_f64; 3];
@@ -79,8 +79,8 @@ pub(crate) fn flap_coeffs(
         }
         a_row[r] += diag[r];
     }
-    // Gyroscopic ("rotor-follows-shaft") hub-rate→flap coupling (see aero.rs and
-    // MILESTONE6_FLAP_FIX_PREREG.md): q̄·sinψ → rhs[2] (→β1c, pitch damping),
+    // Gyroscopic ("rotor-follows-shaft") hub-rate→flap coupling (see aero.rs):
+    // q̄·sinψ → rhs[2] (→β1c, pitch damping),
     // p̄·cosψ → rhs[1] (→β1s, roll damping). Same coefficient/sign as the
     // longitudinal path, so the 5f rotation symmetry (Lp = Mq) is preserved.
     let mut rhs = [0.5 * gamma * f[0], 0.5 * gamma * f[1], 0.5 * gamma * f[2]];

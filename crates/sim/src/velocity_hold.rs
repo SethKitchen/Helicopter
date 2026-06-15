@@ -34,6 +34,7 @@ use crate::control::Channel;
 use crate::driven_equilibrium::{equilibrium_state11_at, model11_at};
 use crate::driven_march::{Model11, deriv11};
 use crate::rk4::rk4_step_t;
+use crate::sim_setup::Sim11Setup;
 use helisim_dynamics::Inertia;
 use helisim_trim::Aircraft;
 
@@ -120,16 +121,15 @@ pub fn deriv15(
 /// Integrate the 15-state hover/velocity-hold cascade about the equilibrium at
 /// body velocity `vel`, holding command `cmd`, under disturbance `disturb`.
 pub fn simulate15(
-    ac: &Aircraft,
-    j: Inertia,
-    vel: [f64; 3],
+    setup: &Sim11Setup,
     vh: &VelocityHold,
     cmd: [f64; 2],
     disturb: [f64; 3],
     perturbation: State15,
-    dt: f64,
-    t_end: f64,
+    span: [f64; 2],
 ) -> Vec<State15> {
+    let Sim11Setup { ac, j, vel } = *setup;
+    let [dt, t_end] = span;
     let m = model11_at(ac, j, vel);
     let eq = equilibrium_state11_at(ac, vel);
     let mut s: Vec<f64> = (0..15)

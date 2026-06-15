@@ -49,7 +49,7 @@ pub mod spl;
 pub mod thickness;
 
 pub use bessel::bessel_j;
-pub use rotational::{blade_passage_frequency, gutin_harmonic_pressure};
+pub use rotational::{blade_passage_frequency, gutin_harmonic_pressure, RotorNoise};
 pub use solution::{Harmonic, NoiseSpectrum};
 pub use spl::{P_REF, combine_rms, rotational_spectrum, spl_db};
 pub use thickness::{thickness_noise_db_delta, thickness_noise_index};

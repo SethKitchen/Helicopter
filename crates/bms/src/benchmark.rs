@@ -3,7 +3,7 @@
 //! comparison the user asked for lands — and it is *protection-aware*, sizing
 //! against each cell's TRUE continuous rating, not its flattering datasheet label.
 
-use crate::sizing::{size_for_target, PackSizing, Target};
+use crate::sizing::{PackSizing, Target, size_for_target};
 use helisim_cell::{benchmark_cells, true_continuous_current};
 
 /// One cell's result for a given target.
@@ -58,7 +58,11 @@ mod tests {
         for r in run_benchmark(target) {
             assert!(r.sizing.bus_nominal_v >= target.bus_voltage_v);
             assert!(r.sizing.energy_wh >= target.energy_wh - 1e-6);
-            assert!(r.sizing.current_utilisation <= 1.0 + 1e-9, "{} util", r.name);
+            assert!(
+                r.sizing.current_utilisation <= 1.0 + 1e-9,
+                "{} util",
+                r.name
+            );
         }
     }
 
@@ -88,7 +92,7 @@ mod tests {
     #[test]
     fn label_rating_would_underbuild() {
         use crate::sizing::size_for_target;
-        use helisim_cell::{bak_45d, Cell};
+        use helisim_cell::{Cell, bak_45d};
         let target = Target {
             bus_voltage_v: 200.0,
             peak_power_w: 100_000.0,

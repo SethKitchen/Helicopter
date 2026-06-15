@@ -26,8 +26,10 @@ pub mod electrical;
 pub mod endurance;
 pub mod hover_mission;
 pub mod hover_trim;
+pub mod scenario;
 
 pub use climb::{ClimbReport, analyze_climb};
+pub use scenario::MissionScenario;
 pub use electrical::{ElectricalState, solve_pack_current};
 pub use endurance::{
     EnduranceResult, MissionConfig, ThermalResult, simulate_discharge_thermal,

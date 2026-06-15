@@ -3,7 +3,9 @@
 //! aero. Gated against 5d (longitudinal) and the corrected lateral oracle.
 
 use crate::rk4::rk4_step;
-use helisim_dynamics::{Inertia, hover_collective_for_weight, main_rotor_full, tail_thrust};
+use helisim_dynamics::{
+    Inertia, RotorAero, hover_collective_for_weight, main_rotor_full, tail_thrust,
+};
 use helisim_flapping::Controls;
 use helisim_trim::{Aircraft, NewtonConfig, TrimCondition, trim};
 
@@ -30,12 +32,14 @@ pub fn state_derivative8(m: &Model8, s: &[f64]) -> Vec<f64> {
     let rotor = ac.main.with_collective(m.collective);
 
     let main = main_rotor_full(
-        &rotor,
-        &ac.main_op,
-        ac.main_airfoil.as_ref(),
-        &ac.flap,
-        ac.hub_height,
-        &m.controls,
+        &RotorAero {
+            rotor: &rotor,
+            op: &ac.main_op,
+            airfoil: ac.main_airfoil.as_ref(),
+            props: &ac.flap,
+            hub_height: ac.hub_height,
+            controls: &m.controls,
+        },
         [u, v, w],
         [p, q],
     );

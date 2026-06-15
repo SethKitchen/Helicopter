@@ -3,14 +3,10 @@
 
 use crate::G;
 use crate::electrical::solve_pack_current;
-use crate::endurance::{EnduranceResult, MissionConfig, simulate_discharge_thermal};
+use crate::endurance::{EnduranceResult, simulate_discharge_thermal};
 use crate::hover_trim::trim_hover_collective;
-use helisim_airfoil::Airfoil;
-use helisim_bemt::Config;
-use helisim_pack::Pack;
-use helisim_powertrain::Powertrain;
-use helisim_rotor::{Operating, Rotor};
-use helisim_thermal::{Cooling, ThermalLimits, ThermalStatus};
+use crate::scenario::MissionScenario;
+use helisim_thermal::ThermalStatus;
 
 /// Everything the end-to-end chain produces for one hover design point.
 #[derive(Clone, Debug)]
@@ -53,18 +49,18 @@ pub struct HoverReport {
 /// (collective is overwritten by trim); `op` sets RPM/air; `airfoil` the section
 /// aero; `pack`/`powertrain` the electrical side; `gross_mass_kg` the weight to
 /// support.
-pub fn analyze_hover(
-    rotor: &Rotor,
-    op: &Operating,
-    airfoil: &dyn Airfoil,
-    pack: &Pack,
-    powertrain: &dyn Powertrain,
-    gross_mass_kg: f64,
-    cooling: &dyn Cooling,
-    limits: ThermalLimits,
-    bemt_cfg: &Config,
-    mission_cfg: &MissionConfig,
-) -> HoverReport {
+pub fn analyze_hover(s: &MissionScenario, gross_mass_kg: f64) -> HoverReport {
+    let (rotor, op, airfoil, pack, powertrain, cooling, limits, bemt_cfg, mission_cfg) = (
+        s.rotor,
+        s.op,
+        s.airfoil,
+        s.pack,
+        s.powertrain,
+        s.cooling,
+        s.limits,
+        s.bemt_cfg,
+        s.mission_cfg,
+    );
     let required_thrust_n = gross_mass_kg * G;
     let pack_mass_kg = pack.mass_kg();
 

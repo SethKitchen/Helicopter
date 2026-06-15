@@ -1,5 +1,5 @@
 //! Milestone 6 — OH-6A cg-sweep: the GAIN DISCRIMINATOR for the UH-60 attitude over-response.
-//! Pre-registered: MILESTONE6_OH6A_GAIN_PREREG.md. CR-3144 gives the OH-6A at hover (0 kt,
+//! Pre-registered in this test before the run. CR-3144 gives the OH-6A at hover (0 kt,
 //! 1157 kg) at THREE cg positions (FWD CASE 13 / MID CASE 4 / AFT CASE 16), so the SLOPE
 //! dΘ/d(cg_offset) directly measures the cg→attitude gain — and the slope cancels shaft tilt
 //! and every other constant offset. H1 (gain too strong) predicts my slope is STEEPER than
@@ -83,7 +83,7 @@ fn oh6a_cg_sweep_gain_discriminator() {
     //  ⇒ the UH-60's 55% over-response is therefore NOT a model-general cg→attitude gain
     //     error; it re-localizes to a UH-60-specific factor (candidate: effective hub
     //     stiffness under-modeled by its sourced geometric hinge offset — the OH-6A itself
-    //     wanted e≈0.05, above a nominal 0.03). Documented in MILESTONE6_OH6A_GAIN_PREREG.md.
+    //     wanted e≈0.05, above a nominal 0.03). Documented in this test's pre-registration.
     let min_ratio = ratios.iter().cloned().fold(f64::INFINITY, f64::min);
     let max_ratio = ratios.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
     assert!(

@@ -35,17 +35,30 @@
 //! * [`power_budget`] — the pack electrical demand (motor + servos via BEC +
 //!   avionics) that feeds the battery/BMS sizing.
 
+pub mod control_surface;
 pub mod loads;
+pub mod material;
 pub mod motor;
 pub mod plan;
 pub mod power_budget;
 pub mod scaling;
 pub mod selectable;
+pub mod service;
+pub mod service_material;
 pub mod servo;
 
+pub use control_surface::{
+    BladeAnalysis, ControlMaterialReport, ControlPart, PartAnalysis, PartChoice, actuation_power_w,
+    analyze, analyze_blade, control_parts, recommend_materials,
+};
+pub use material::{PrintMaterial, onyx, onyx_fiberglass, onyx_pro_structural};
 pub use motor::{BldcMotor, scorpion_hk_catalogue};
 pub use plan::{ActuationConfig, ActuationPlan, select_actuation, select_actuation_with};
-pub use power_budget::{power_budget, PowerBudget};
+pub use power_budget::{PowerBudget, power_budget};
 pub use scaling::{Sized, size_or_extrapolate};
 pub use selectable::{Selectable, select_smallest_adequate};
+pub use service::{Service, services};
+pub use service_material::{
+    CostLevel, ServiceMaterial, manufacturing_options, options_as_materials, source_for,
+};
 pub use servo::{Servo, ServoRole, align_hv_catalogue, kgcm_to_nm};

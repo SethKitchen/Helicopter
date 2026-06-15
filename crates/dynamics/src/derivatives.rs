@@ -2,6 +2,7 @@
 //! main-rotor force/moment response about a trimmed hover.
 
 use crate::aero::longitudinal_main_aero;
+use crate::context::RotorAero;
 use helisim_flapping::Controls;
 use helisim_trim::Aircraft;
 
@@ -40,12 +41,14 @@ pub fn longitudinal_derivatives(
     let rotor = ac.main.with_collective(collective);
     let eval = |u: f64, w: f64, q: f64| {
         longitudinal_main_aero(
-            &rotor,
-            &ac.main_op,
-            ac.main_airfoil.as_ref(),
-            &ac.flap,
-            ac.hub_height,
-            &controls,
+            &RotorAero {
+                rotor: &rotor,
+                op: &ac.main_op,
+                airfoil: ac.main_airfoil.as_ref(),
+                props: &ac.flap,
+                hub_height: ac.hub_height,
+                controls: &controls,
+            },
             u,
             w,
             q,

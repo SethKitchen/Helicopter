@@ -2,7 +2,7 @@
 
 use crate::config::Config;
 use crate::solution::HoverSolution;
-use crate::station::Station;
+use crate::station::{SectionState, Station};
 use crate::tip_loss::prandtl_tip_loss;
 use helisim_airfoil::Airfoil;
 use helisim_rotor::{Operating, Rotor};
@@ -71,13 +71,15 @@ fn solve_station(
     let lo_eval = eval(lo);
     if lo_eval.residual <= 0.0 {
         return Station::assemble(
-            x,
-            lo,
-            lo_eval.phi,
-            lo_eval.alpha,
-            lo_eval.cl,
-            lo_eval.cd,
-            lo_eval.tip_loss,
+            SectionState {
+                x,
+                lambda: lo,
+                phi: lo_eval.phi,
+                alpha: lo_eval.alpha,
+                cl: lo_eval.cl,
+                cd: lo_eval.cd,
+                tip_loss: lo_eval.tip_loss,
+            },
             rotor,
         );
     }
@@ -111,7 +113,18 @@ fn solve_station(
     }
 
     let e = eval(lambda);
-    Station::assemble(x, lambda, e.phi, e.alpha, e.cl, e.cd, e.tip_loss, rotor)
+    Station::assemble(
+        SectionState {
+            x,
+            lambda,
+            phi: e.phi,
+            alpha: e.alpha,
+            cl: e.cl,
+            cd: e.cd,
+            tip_loss: e.tip_loss,
+        },
+        rotor,
+    )
 }
 
 /// Run the hover BEMT solve for `rotor` at operating point `op` with sectional

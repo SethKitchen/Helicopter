@@ -1,7 +1,7 @@
 //! The flap↔inflow fixed-point solve.
 
 use crate::config::CoupledConfig;
-use crate::loads::integrate_with_flap;
+use crate::loads::{Flow, integrate_with_flap};
 use crate::solution::CoupledSolution;
 use helisim_airfoil::Airfoil;
 use helisim_flapping::{Controls, FlapProperties, solve_flapping_with_inflow};
@@ -39,15 +39,10 @@ pub fn solve_coupled(
         let loads = integrate_with_flap(
             rotor,
             airfoil,
-            tip_mach,
-            mu,
-            lambda,
+            Flow { tip_mach, mu, lambda },
             controls,
-            fl.beta0,
-            fl.beta1c,
-            fl.beta1s,
-            cfg.n_azimuth,
-            cfg.n_radial,
+            [fl.beta0, fl.beta1c, fl.beta1s],
+            [cfg.n_azimuth, cfg.n_radial],
         );
         // Clamp to a physical band so the fixed point stays bounded if the
         // high-μ loads misbehave.
@@ -66,15 +61,10 @@ pub fn solve_coupled(
     let loads = integrate_with_flap(
         rotor,
         airfoil,
-        tip_mach,
-        mu,
-        lambda,
+        Flow { tip_mach, mu, lambda },
         controls,
-        fl.beta0,
-        fl.beta1c,
-        fl.beta1s,
-        cfg.n_azimuth,
-        cfg.n_radial,
+        [fl.beta0, fl.beta1c, fl.beta1s],
+        [cfg.n_azimuth, cfg.n_radial],
     );
 
     CoupledSolution {

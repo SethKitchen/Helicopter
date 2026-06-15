@@ -12,10 +12,10 @@
 //! representative-price caveat from [`crate::components`].
 
 use crate::components::{
-    cell_price, BomLine, Buildability, UnitPrice, BALANCE_CHARGER, BALANCE_LEAD_KIT, BMS_MASTER,
-    BMS_SLAVE_MODULE, CELL_HOLDER_EACH, CONTACTOR, COPPER_BUSBAR_SET, CURRENT_SENSOR,
-    FISH_PAPER_ROLL, FUSE_AND_HOLDER, KAPTON_ROLL, MAIN_LEAD_HEAVY, MAIN_LEAD_XT90, MULTIMETER,
-    NICKEL_ROLL_5M, SMART_BMS, SPOT_WELDER,
+    BALANCE_CHARGER, BALANCE_LEAD_KIT, BMS_MASTER, BMS_SLAVE_MODULE, BomLine, Buildability,
+    CELL_HOLDER_EACH, CONTACTOR, COPPER_BUSBAR_SET, CURRENT_SENSOR, FISH_PAPER_ROLL,
+    FUSE_AND_HOLDER, KAPTON_ROLL, MAIN_LEAD_HEAVY, MAIN_LEAD_XT90, MULTIMETER, NICKEL_ROLL_5M,
+    SMART_BMS, SPOT_WELDER, UnitPrice, cell_price,
 };
 use helisim_cell::Cell;
 
@@ -66,7 +66,14 @@ const NICKEL_MAX_PACK_A: f64 = 120.0;
 /// heavy cable + high-current connector.
 const XT90_MAX_A: f64 = 90.0;
 
-fn line(item: impl Into<String>, qty: f64, unit: &'static str, p: UnitPrice, b: Buildability, note: impl Into<String>) -> BomLine {
+fn line(
+    item: impl Into<String>,
+    qty: f64,
+    unit: &'static str,
+    p: UnitPrice,
+    b: Buildability,
+    note: impl Into<String>,
+) -> BomLine {
     BomLine {
         item: item.into(),
         qty,
@@ -81,7 +88,10 @@ fn line(item: impl Into<String>, qty: f64, unit: &'static str, p: UnitPrice, b: 
 fn bms_lines(series: usize, peak_current_a: f64) -> Vec<BomLine> {
     if series <= MAX_INTEGRATED_SERIES {
         vec![line(
-            format!("Smart BMS, {series}S Li-ion, ≥{:.0} A", peak_current_a.ceil()),
+            format!(
+                "Smart BMS, {series}S Li-ion, ≥{:.0} A",
+                peak_current_a.ceil()
+            ),
             1.0,
             "ea",
             SMART_BMS,
@@ -97,11 +107,34 @@ fn bms_lines(series: usize, peak_current_a: f64) -> Vec<BomLine> {
                 "ea",
                 BMS_SLAVE_MODULE,
                 Buildability::Purchased,
-                format!("{slaves} modules cover {series}S; one per ~{SERIES_PER_SLAVE} series groups"),
+                format!(
+                    "{slaves} modules cover {series}S; one per ~{SERIES_PER_SLAVE} series groups"
+                ),
             ),
-            line("BMS master controller", 1.0, "ea", BMS_MASTER, Buildability::Purchased, "aggregates slaves; runs protection/contactor logic"),
-            line(format!("Main HV contactor, ≥{:.0} A", peak_current_a.ceil()), 1.0, "ea", CONTACTOR, Buildability::Purchased, "main disconnect commanded by the BMS"),
-            line("Hall current sensor", 1.0, "ea", CURRENT_SENSOR, Buildability::Purchased, "pack current feedback for the master"),
+            line(
+                "BMS master controller",
+                1.0,
+                "ea",
+                BMS_MASTER,
+                Buildability::Purchased,
+                "aggregates slaves; runs protection/contactor logic",
+            ),
+            line(
+                format!("Main HV contactor, ≥{:.0} A", peak_current_a.ceil()),
+                1.0,
+                "ea",
+                CONTACTOR,
+                Buildability::Purchased,
+                "main disconnect commanded by the BMS",
+            ),
+            line(
+                "Hall current sensor",
+                1.0,
+                "ea",
+                CURRENT_SENSOR,
+                Buildability::Purchased,
+                "pack current feedback for the master",
+            ),
         ]
     }
 }
@@ -140,7 +173,9 @@ pub fn build_pack(
             "roll",
             NICKEL_ROLL_5M,
             Buildability::RawStock,
-            format!("≈{nickel_m:.1} m needed; stack/parallel strips for current (1P strip ≈ 25–30 A)"),
+            format!(
+                "≈{nickel_m:.1} m needed; stack/parallel strips for current (1P strip ≈ 25–30 A)"
+            ),
         ));
     } else {
         lines.push(line(
@@ -152,22 +187,95 @@ pub fn build_pack(
             format!("series links carry the full {:.0} A pack current — 0.15 mm nickel cannot; use busbar/laser-weld", peak_current_a),
         ));
     }
-    lines.push(line("Balance-lead wiring kit", balance_kits, "kit", BALANCE_LEAD_KIT, Buildability::RawStock, format!("{} balance taps (B0..B{series})", series + 1)));
+    lines.push(line(
+        "Balance-lead wiring kit",
+        balance_kits,
+        "kit",
+        BALANCE_LEAD_KIT,
+        Buildability::RawStock,
+        format!("{} balance taps (B0..B{series})", series + 1),
+    ));
     // Main lead scales with current: XT90/12 AWG up to ~90 A, heavy gauge above.
     if peak_current_a <= XT90_MAX_A {
-        lines.push(line("Main lead: 12 AWG silicone wire + XT90", 1.0, "set", MAIN_LEAD_XT90, Buildability::RawStock, "XT90 ≈ 90 A continuous; size gauge to peak current"));
+        lines.push(line(
+            "Main lead: 12 AWG silicone wire + XT90",
+            1.0,
+            "set",
+            MAIN_LEAD_XT90,
+            Buildability::RawStock,
+            "XT90 ≈ 90 A continuous; size gauge to peak current",
+        ));
     } else {
-        lines.push(line(format!("Heavy main cable + HV connector (≥{:.0} A)", peak_current_a.ceil()), 1.0, "set", MAIN_LEAD_HEAVY, Buildability::RawStock, "e.g. 2 AWG + Anderson/HV connector — XT90/12 AWG cannot carry this"));
+        lines.push(line(
+            format!(
+                "Heavy main cable + HV connector (≥{:.0} A)",
+                peak_current_a.ceil()
+            ),
+            1.0,
+            "set",
+            MAIN_LEAD_HEAVY,
+            Buildability::RawStock,
+            "e.g. 2 AWG + Anderson/HV connector — XT90/12 AWG cannot carry this",
+        ));
     }
-    lines.push(line(format!("Inline fuse + holder, ≥{:.0} A", peak_current_a.ceil()), 1.0, "ea", FUSE_AND_HOLDER, Buildability::Purchased, "on the positive output, between pack and load"));
-    lines.push(line("Fish/barley paper insulation roll", 1.0, "roll", FISH_PAPER_ROLL, Buildability::RawStock, "positive-end insulator rings + layer between groups"));
-    lines.push(line("Kapton tape roll", 1.0, "roll", KAPTON_ROLL, Buildability::RawStock, "secure leads, insulate nickel edges"));
-    lines.push(line("21700 cell holder / spacer", cell_count as f64, "ea", CELL_HOLDER_EACH, Buildability::Purchased, "fixes cell pitch; keeps cans from shorting"));
+    lines.push(line(
+        format!("Inline fuse + holder, ≥{:.0} A", peak_current_a.ceil()),
+        1.0,
+        "ea",
+        FUSE_AND_HOLDER,
+        Buildability::Purchased,
+        "on the positive output, between pack and load",
+    ));
+    lines.push(line(
+        "Fish/barley paper insulation roll",
+        1.0,
+        "roll",
+        FISH_PAPER_ROLL,
+        Buildability::RawStock,
+        "positive-end insulator rings + layer between groups",
+    ));
+    lines.push(line(
+        "Kapton tape roll",
+        1.0,
+        "roll",
+        KAPTON_ROLL,
+        Buildability::RawStock,
+        "secure leads, insulate nickel edges",
+    ));
+    lines.push(line(
+        "21700 cell holder / spacer",
+        cell_count as f64,
+        "ea",
+        CELL_HOLDER_EACH,
+        Buildability::Purchased,
+        "fixes cell pitch; keeps cans from shorting",
+    ));
 
     let tools = vec![
-        line("Battery spot welder", 1.0, "ea", SPOT_WELDER, Buildability::Tool, "weld nickel — do NOT solder directly to cans (heat damages cells)"),
-        line("Smart balance charger", 1.0, "ea", BALANCE_CHARGER, Buildability::Tool, "first charge + balancing at low current"),
-        line("Multimeter", 1.0, "ea", MULTIMETER, Buildability::Tool, "cell matching and per-tap voltage checks"),
+        line(
+            "Battery spot welder",
+            1.0,
+            "ea",
+            SPOT_WELDER,
+            Buildability::Tool,
+            "weld nickel — do NOT solder directly to cans (heat damages cells)",
+        ),
+        line(
+            "Smart balance charger",
+            1.0,
+            "ea",
+            BALANCE_CHARGER,
+            Buildability::Tool,
+            "first charge + balancing at low current",
+        ),
+        line(
+            "Multimeter",
+            1.0,
+            "ea",
+            MULTIMETER,
+            Buildability::Tool,
+            "cell matching and per-tap voltage checks",
+        ),
     ];
 
     let instructions = assembly_steps(cell_name, series, parallel, peak_current_a);
@@ -244,26 +352,34 @@ fn assembly_steps(cell_name: &str, series: usize, parallel: usize, peak_a: f64) 
                 the heavy main cable + HV connector. Fuse rating ≥ peak current, < cable/busbar limit."
             .to_string());
     } else {
-        s.push("7. Connect the smart BMS: B− to pack negative FIRST, then the balance connector \
+        s.push(
+            "7. Connect the smart BMS: B− to pack negative FIRST, then the balance connector \
                 (B1..Bn in order), then P+/C+ to pack positive last. Use the Li-ion variant."
-            .to_string());
+                .to_string(),
+        );
         s.push(format!(
             "8. Install the inline fuse (≥{:.0} A) on the positive output and solder the XT90 to \
              the 12 AWG main leads (off-pack, so cell heat is never an issue).",
             peak_a.ceil()
         ));
     }
-    s.push("9. Insulate & secure: cover exposed nickel/series links with kapton, layer fish paper \
+    s.push(
+        "9. Insulate & secure: cover exposed nickel/series links with kapton, layer fish paper \
             between groups, fix all leads, then close the enclosure."
-        .to_string());
-    s.push("10. First-power checks: confirm pack voltage = nominal; verify each balance tap rises \
+            .to_string(),
+    );
+    s.push(
+        "10. First-power checks: confirm pack voltage = nominal; verify each balance tap rises \
             monotonically (B0<B1<...<Bn); balance-charge at LOW current; confirm the BMS trips on \
             over-current and over-temperature before field use."
-        .to_string());
-    s.push("11. Aircraft integration: wire automatic power-loss detection + instant collective \
+            .to_string(),
+    );
+    s.push(
+        "11. Aircraft integration: wire automatic power-loss detection + instant collective \
             drop — the model rotor's stored energy gives only ~0.5 s of usable RPM after power \
             loss (see the autorotation track), far faster than a human can react."
-        .to_string());
+            .to_string(),
+    );
     s
 }
 
@@ -302,7 +418,14 @@ mod tests {
     fn small_pack_uses_integrated_bms_large_uses_distributed() {
         let small = build_pack("EVE 40PL", &eve_40pl(), 7, 2, 60.0);
         assert!(!small.is_distributed_bms());
-        assert_eq!(small.lines.iter().filter(|l| l.item.contains("BMS")).count(), 1);
+        assert_eq!(
+            small
+                .lines
+                .iter()
+                .filter(|l| l.item.contains("BMS"))
+                .count(),
+            1
+        );
 
         let big = build_pack("Molicel P50B", &molicel_p50b(), 195, 15, 290.0);
         assert!(big.is_distributed_bms());
@@ -310,9 +433,14 @@ mod tests {
         let bms_related = big
             .lines
             .iter()
-            .filter(|l| l.item.contains("BMS") || l.item.contains("contactor") || l.item.contains("sensor"))
+            .filter(|l| {
+                l.item.contains("BMS") || l.item.contains("contactor") || l.item.contains("sensor")
+            })
             .count();
-        assert!(bms_related >= 4, "distributed BMS should have ≥4 lines, got {bms_related}");
+        assert!(
+            bms_related >= 4,
+            "distributed BMS should have ≥4 lines, got {bms_related}"
+        );
         // 195S needs ceil(195/16)=13 slave modules.
         let slaves = big.lines.iter().find(|l| l.item.contains("slave")).unwrap();
         assert_eq!(slaves.qty as usize, 13);
@@ -327,7 +455,11 @@ mod tests {
         // Human (285 A): copper busbar + heavy cable, NOT nickel/XT90.
         let big = build_pack("Molicel P50B", &molicel_p50b(), 195, 15, 285.0);
         assert!(big.lines.iter().any(|l| l.item.contains("busbar")));
-        assert!(big.lines.iter().any(|l| l.item.contains("Heavy main cable")));
+        assert!(
+            big.lines
+                .iter()
+                .any(|l| l.item.contains("Heavy main cable"))
+        );
         assert!(!big.lines.iter().any(|l| l.item.contains("XT90")));
         assert!(!big.lines.iter().any(|l| l.item.contains("nickel strip")));
     }
@@ -338,7 +470,11 @@ mod tests {
         assert!(b.instructions.len() >= 10);
         assert!(b.instructions[0].contains("SAFETY"));
         // The balance-tap-order warning must be present (a destroy-the-BMS hazard).
-        assert!(b.instructions.iter().any(|s| s.contains("balance") && s.contains("order")));
+        assert!(
+            b.instructions
+                .iter()
+                .any(|s| s.contains("balance") && s.contains("order"))
+        );
         // The model-heli power-loss safety tie-in is included.
         assert!(b.instructions.iter().any(|s| s.contains("power-loss")));
     }

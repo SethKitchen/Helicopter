@@ -3,11 +3,31 @@
 //! cyclic inflow flips the sign of the off-axis (pitch↔roll) cyclic response.
 
 use helisim_dynamics::{
-    gravest_time_constant, hover_collective_for_weight, main_rotor_with_inflow, march_inflow,
-    quasi_static_inflow, uniform_inflow,
+    RotorAero, gravest_time_constant, hover_collective_for_weight, main_rotor_with_inflow,
+    march_inflow, quasi_static_inflow, uniform_inflow,
 };
 use helisim_flapping::Controls;
 use helisim_trim::Aircraft;
+
+/// Build the main-rotor context from the (rotor, op, airfoil, flap, hub-height)
+/// pieces destructured in `run`, for a given control setting.
+fn ctx<'a>(
+    rotor: &'a helisim_rotor::Rotor,
+    op: &'a helisim_rotor::Operating,
+    af: &'a dyn helisim_airfoil::Airfoil,
+    fl: &'a helisim_flapping::FlapProperties,
+    hh: f64,
+    controls: &'a Controls,
+) -> RotorAero<'a> {
+    RotorAero {
+        rotor,
+        op,
+        airfoil: af,
+        props: fl,
+        hub_height: hh,
+        controls,
+    }
+}
 
 pub fn run() {
     let ac = Aircraft::demo();
@@ -28,14 +48,17 @@ pub fn run() {
 
     // Gravest-mode time constant (a literature-checkable number).
     let li = uniform_inflow(
-        &rotor,
-        op,
-        af,
-        fl,
-        &Controls {
-            theta_1c: 0.0,
-            theta_1s: 0.0,
-        },
+        &ctx(
+            &rotor,
+            op,
+            af,
+            fl,
+            hh,
+            &Controls {
+                theta_1c: 0.0,
+                theta_1s: 0.0,
+            },
+        ),
         [0.0; 3],
         [0.0; 2],
     );
@@ -54,14 +77,9 @@ pub fn run() {
         theta_1s: 0.0,
     };
     let (f_qs, nu_qs, _) =
-        quasi_static_inflow(&rotor, op, af, fl, hh, &c, [4.0, 0.0, 0.0], [0.0; 2]);
+        quasi_static_inflow(&ctx(&rotor, op, af, fl, hh, &c), [4.0, 0.0, 0.0], [0.0; 2]);
     let (nu_dyn, f_dyn) = march_inflow(
-        &rotor,
-        op,
-        af,
-        fl,
-        hh,
-        &c,
+        &ctx(&rotor, op, af, fl, hh, &c),
         [4.0, 0.0, 0.0],
         [0.0; 2],
         [0.02, 0.02, -0.02],
@@ -90,43 +108,50 @@ pub fn run() {
     // Gate 2: off-axis sign flip.
     let d = 0.01;
     let li0 = uniform_inflow(
-        &rotor,
-        op,
-        af,
-        fl,
-        &Controls {
-            theta_1c: 0.0,
-            theta_1s: 0.0,
-        },
-        [0.0; 3],
-        [0.0; 2],
-    );
-    let off_frozen = {
-        let p = main_rotor_with_inflow(
+        &ctx(
             &rotor,
             op,
             af,
             fl,
             hh,
             &Controls {
-                theta_1c: d,
+                theta_1c: 0.0,
                 theta_1s: 0.0,
             },
+        ),
+        [0.0; 3],
+        [0.0; 2],
+    );
+    let off_frozen = {
+        let p = main_rotor_with_inflow(
+            &ctx(
+                &rotor,
+                op,
+                af,
+                fl,
+                hh,
+                &Controls {
+                    theta_1c: d,
+                    theta_1s: 0.0,
+                },
+            ),
             [0.0; 3],
             [0.0; 2],
             [li0, 0.0, 0.0],
         )
         .0;
         let m = main_rotor_with_inflow(
-            &rotor,
-            op,
-            af,
-            fl,
-            hh,
-            &Controls {
-                theta_1c: -d,
-                theta_1s: 0.0,
-            },
+            &ctx(
+                &rotor,
+                op,
+                af,
+                fl,
+                hh,
+                &Controls {
+                    theta_1c: -d,
+                    theta_1s: 0.0,
+                },
+            ),
             [0.0; 3],
             [0.0; 2],
             [li0, 0.0, 0.0],
@@ -136,29 +161,33 @@ pub fn run() {
     };
     let off_inflow = {
         let p = quasi_static_inflow(
-            &rotor,
-            op,
-            af,
-            fl,
-            hh,
-            &Controls {
-                theta_1c: d,
-                theta_1s: 0.0,
-            },
+            &ctx(
+                &rotor,
+                op,
+                af,
+                fl,
+                hh,
+                &Controls {
+                    theta_1c: d,
+                    theta_1s: 0.0,
+                },
+            ),
             [0.0; 3],
             [0.0; 2],
         )
         .0;
         let m = quasi_static_inflow(
-            &rotor,
-            op,
-            af,
-            fl,
-            hh,
-            &Controls {
-                theta_1c: -d,
-                theta_1s: 0.0,
-            },
+            &ctx(
+                &rotor,
+                op,
+                af,
+                fl,
+                hh,
+                &Controls {
+                    theta_1c: -d,
+                    theta_1s: 0.0,
+                },
+            ),
             [0.0; 3],
             [0.0; 2],
         )

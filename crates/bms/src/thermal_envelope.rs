@@ -77,7 +77,12 @@ impl ThermalEnvelope {
     /// Steady-state surface temperature for a constant discharge at `current_a`,
     /// with the temperature-dependent `R` resolved as a fixed point (warmer cell →
     /// lower `R` → less heat).
-    pub fn steady_surface_temp(&self, cell: &dyn Cell, cooling: &dyn Cooling, current_a: f64) -> f64 {
+    pub fn steady_surface_temp(
+        &self,
+        cell: &dyn Cell,
+        cooling: &dyn Cooling,
+        current_a: f64,
+    ) -> f64 {
         let two = self.two_node(cell);
         let mut t = self.ambient_c;
         for _ in 0..40 {
@@ -175,7 +180,7 @@ impl ThermalEnvelope {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use helisim_cell::{ampace_jp40, molicel_p50b, TheveninCell};
+    use helisim_cell::{TheveninCell, ampace_jp40, molicel_p50b};
     use helisim_thermal::Convective;
 
     fn ocv() -> Vec<(f64, f64)> {
@@ -219,7 +224,10 @@ mod tests {
         let tabless = TheveninCell::new(&ocv(), 0.005, 4.0, 3.6, 2.5, 60.0, 0.070);
         let i_tabbed = env.steady_continuous(&tabbed, &cooling);
         let i_tabless = env.steady_continuous(&tabless, &cooling);
-        assert!(i_tabless > i_tabbed, "tabless {i_tabless} tabbed {i_tabbed}");
+        assert!(
+            i_tabless > i_tabbed,
+            "tabless {i_tabless} tabbed {i_tabbed}"
+        );
     }
 
     /// The two-node core runs hotter than the surface during a hard discharge, so

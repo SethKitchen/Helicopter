@@ -42,7 +42,7 @@
 //! in clean numeric form (About:Energy/Voltt is login-gated; datasheet discharge
 //! curves are published only as graphs), so the shared curve is retained. The API
 //! already supports per-cell curves — [`TheveninCell::new`] takes one — so this is
-//! a sourcing gap, not a structural one. See `validation/BATTERY_EXTERNAL_RESULTS.md`.
+//! a sourcing gap, not a structural one. See `crates/bms/tests/battery_external_validation.rs`.
 
 use crate::cell::Cell;
 use crate::thevenin::TheveninCell;
@@ -76,7 +76,15 @@ pub fn representative_nmc_ocv() -> Vec<(f64, f64)> {
 /// four, but it holds the steadiest voltage at extreme power and has the longest
 /// high-power cycle life. Released 2024 (Taiwan).
 pub fn molicel_p50b() -> TheveninCell {
-    TheveninCell::new(&representative_nmc_ocv(), 0.0095, 5.0, 3.6, 2.5, 60.0, 0.070)
+    TheveninCell::new(
+        &representative_nmc_ocv(),
+        0.0095,
+        5.0,
+        3.6,
+        2.5,
+        60.0,
+        0.070,
+    )
 }
 
 /// **Ampace INR21700-JP40** — one of the highest power-density cells available.
@@ -86,7 +94,15 @@ pub fn molicel_p50b() -> TheveninCell {
 /// continuous per bench testing), 140 A / 5 s pulse, 70 g, 215 Wh/kg, AC-1 kHz
 /// impedance <4 mΩ. Measured DCIR ≈ **5.4 mΩ** (Battery Mooch).
 pub fn ampace_jp40() -> TheveninCell {
-    TheveninCell::new(&representative_nmc_ocv(), 0.0054, 4.0, 3.6, 2.5, 60.0, 0.070)
+    TheveninCell::new(
+        &representative_nmc_ocv(),
+        0.0054,
+        4.0,
+        3.6,
+        2.5,
+        60.0,
+        0.070,
+    )
 }
 
 /// **BAK N21700-45D** — mid-capacity, weakest *true* continuous rating of the set.
@@ -96,7 +112,15 @@ pub fn ampace_jp40() -> TheveninCell {
 /// datasheet states both — true continuous ≈ 30 A), ≤69 g, AC-1 kHz ≤5 mΩ.
 /// Measured DCIR ≈ **6.0 mΩ** (5.6 & 6.3 mΩ, two cells, Battery Mooch).
 pub fn bak_45d() -> TheveninCell {
-    TheveninCell::new(&representative_nmc_ocv(), 0.0060, 4.5, 3.6, 2.5, 60.0, 0.069)
+    TheveninCell::new(
+        &representative_nmc_ocv(),
+        0.0060,
+        4.5,
+        3.6,
+        2.5,
+        60.0,
+        0.069,
+    )
 }
 
 /// **EVE INR21700-40PL** — lowest impedance / highest label current of the set.
@@ -105,7 +129,15 @@ pub fn bak_45d() -> TheveninCell {
 /// continuous (80 °C cutoff), ~67 g, 215–218 Wh/kg, AC-1 kHz ≤5 mΩ. Measured DCIR
 /// ≈ **5.1 mΩ** (Battery Mooch) — the lowest of the four. Released 2023 (China).
 pub fn eve_40pl() -> TheveninCell {
-    TheveninCell::new(&representative_nmc_ocv(), 0.0051, 4.0, 3.6, 2.5, 70.0, 0.067)
+    TheveninCell::new(
+        &representative_nmc_ocv(),
+        0.0051,
+        4.0,
+        3.6,
+        2.5,
+        70.0,
+        0.067,
+    )
 }
 
 /// True (de-rated) continuous current ratings, amps — the honest number behind
@@ -124,6 +156,23 @@ pub fn true_continuous_current(name: &str) -> Option<f64> {
         "Ampace JP40" => Some(45.0),
         "BAK 45D" => Some(30.0),
         "EVE 40PL" => Some(70.0),
+        _ => None,
+    }
+}
+
+/// Manufacturer **maximum continuous charge current**, A (datasheets) — the BMS
+/// charge ceiling. Standard/recommended charge is gentler (≈0.5C, longer life);
+/// charging to these caps is fast-charge territory that needs cooling.
+/// * P50B  25 A (Molicel — also 5C fast-charge capable)
+/// * JP40   8 A (Ampace, 2C rated charge)
+/// * BAK45D 13.2 A (BAK datasheet; standard 2.2 A)
+/// * 40PL  15 A (EVE datasheet; standard 2 A)
+pub fn max_charge_current(name: &str) -> Option<f64> {
+    match name {
+        "Molicel P50B" => Some(25.0),
+        "Ampace JP40" => Some(8.0),
+        "BAK 45D" => Some(13.2),
+        "EVE 40PL" => Some(15.0),
         _ => None,
     }
 }
@@ -149,8 +198,8 @@ mod tests {
     /// the constructor's doc comment.
     #[test]
     fn documented_datasheet_numbers() {
-        // (cap_ah, v_nom, v_cut, i_label, mass_kg, r_ohm)
-        let rows: &[(&str, TheveninCell, f64, f64, f64, f64, f64, f64)] = &[
+        // (tag, cell, cap_ah, v_nom, v_cut, i_label, mass_kg, r_ohm)
+        let rows = [
             ("P50B", molicel_p50b(), 5.0, 3.6, 2.5, 60.0, 0.070, 0.0095),
             ("JP40", ampace_jp40(), 4.0, 3.6, 2.5, 60.0, 0.070, 0.0054),
             ("BAK45D", bak_45d(), 4.5, 3.6, 2.5, 60.0, 0.069, 0.0060),
@@ -212,7 +261,10 @@ mod tests {
     fn true_continuous_at_most_label() {
         for (name, c) in benchmark_cells() {
             let truec = true_continuous_current(name).unwrap();
-            assert!(truec <= c.max_continuous_current() + 1e-9, "{name} true<=label");
+            assert!(
+                truec <= c.max_continuous_current() + 1e-9,
+                "{name} true<=label"
+            );
         }
         assert!(true_continuous_current("Ampace JP40").unwrap() < 60.0);
         assert!(true_continuous_current("BAK 45D").unwrap() < 60.0);
@@ -227,5 +279,21 @@ mod tests {
         assert!((c.internal_resistance_at(0.5, 25.0) - r25).abs() < 1e-12);
         assert!(c.internal_resistance_at(0.5, -20.0) > 5.0 * r25);
         assert!(c.internal_resistance_at(0.5, 45.0) < r25);
+    }
+
+    /// Charge-current ratings are sourced and never exceed the (higher) discharge
+    /// label — charge is the gentler direction.
+    #[test]
+    fn charge_ratings_present_and_below_discharge_label() {
+        for (name, c) in benchmark_cells() {
+            let chg = max_charge_current(name).unwrap();
+            assert!(chg > 0.0, "{name} charge rating");
+            assert!(
+                chg <= c.max_continuous_current(),
+                "{name} charge ≤ discharge label"
+            );
+        }
+        assert_eq!(max_charge_current("Molicel P50B"), Some(25.0));
+        assert_eq!(max_charge_current("Ampace JP40"), Some(8.0));
     }
 }

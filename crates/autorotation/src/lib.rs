@@ -87,7 +87,7 @@ pub use index::{autorotation_index, flare_height_equivalent, rotor_kinetic_energ
 pub use inflow::{descent_inflow_ratio, hover_induced_velocity, windmill_brake_inflow_ratio};
 pub use rotor_decay::{decay_time_constant_power, simulate_decay, time_to_min_rpm};
 pub use solution::AutorotationSolution;
-pub use survivability::{FlareAssessment, assess_vertical};
+pub use survivability::{FlareAssessment, FlareParams, assess_vertical};
 
 /// Standard gravity, m/s². Weight `W = m g`.
 pub const G: f64 = 9.80665;

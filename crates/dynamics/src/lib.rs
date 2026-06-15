@@ -47,6 +47,7 @@
 
 pub mod aero;
 pub mod complex;
+pub mod context;
 pub mod coupled8;
 pub mod derivatives;
 pub mod eigen;
@@ -59,6 +60,7 @@ pub mod pitt_peters;
 pub mod schur;
 
 pub use complex::Complex;
+pub use context::RotorAero;
 pub use coupled8::{CoupledModal, Inertia, analyze_coupled_hover};
 pub use derivatives::{LongitudinalDerivatives, longitudinal_derivatives};
 pub use eigen::{char_poly, eigenvalues, eigenvalues_via_char_poly, roots};

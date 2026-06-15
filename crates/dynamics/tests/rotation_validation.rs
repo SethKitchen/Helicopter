@@ -8,7 +8,9 @@
 
 use helisim_dynamics::derivatives::longitudinal_derivatives;
 use helisim_dynamics::model::hover_collective_for_weight;
-use helisim_dynamics::{main_rollrate_response, main_rotor_full, main_velocity_response, rotate6};
+use helisim_dynamics::{
+    RotorAero, main_rollrate_response, main_rotor_full, main_velocity_response, rotate6,
+};
 use helisim_flapping::Controls;
 use helisim_trim::Aircraft;
 
@@ -90,18 +92,16 @@ fn full_aero_is_equivariant_for_combined_states() {
     // where naive rotation-composition could hide a nonlinear-inflow error.
     let ac = Aircraft::demo();
     let rotor = ac.main.with_collective(hover_collective_for_weight(&ac));
-    let f = |vel: [f64; 3], rates: [f64; 2]| {
-        main_rotor_full(
-            &rotor,
-            &ac.main_op,
-            ac.main_airfoil.as_ref(),
-            &ac.flap,
-            ac.hub_height,
-            &Controls::none(),
-            vel,
-            rates,
-        )
+    let controls = Controls::none();
+    let aero = RotorAero {
+        rotor: &rotor,
+        op: &ac.main_op,
+        airfoil: ac.main_airfoil.as_ref(),
+        props: &ac.flap,
+        hub_height: ac.hub_height,
+        controls: &controls,
     };
+    let f = |vel: [f64; 3], rates: [f64; 2]| main_rotor_full(&aero, vel, rates);
     // A genuinely off-axis combined state.
     let (u, v, w, p, q) = (0.3_f64, 0.4, -0.2, 0.04, 0.03);
     let base = f([u, v, w], [p, q]);

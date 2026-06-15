@@ -54,7 +54,7 @@ pub struct FlareAssessment {
     pub critical_hover_height_m: f64,
 }
 
-/// Assess vertical-autorotation flare survivability for a rotor.
+/// Rotor + scenario parameters for an autorotation flare assessment.
 ///
 /// * `weight_n` = gross weight (= hover thrust); `mass_kg` its mass.
 /// * `inertia`, `omega0` = rotor polar inertia and nominal speed.
@@ -63,18 +63,34 @@ pub struct FlareAssessment {
 /// * `rho`, `disk_area_m2`, `profile_power_w` feed the steady descent rate.
 /// * `reaction_delay_s` = pilot/sensor delay before the flare; `safe_touchdown_ms`
 ///   = acceptable touchdown descent rate.
-pub fn assess_vertical(
-    weight_n: f64,
-    mass_kg: f64,
-    inertia: f64,
-    omega0: f64,
-    omega_min_frac: f64,
-    rho: f64,
-    disk_area_m2: f64,
-    profile_power_w: f64,
-    reaction_delay_s: f64,
-    safe_touchdown_ms: f64,
-) -> FlareAssessment {
+#[derive(Clone, Copy, Debug)]
+pub struct FlareParams {
+    pub weight_n: f64,
+    pub mass_kg: f64,
+    pub inertia: f64,
+    pub omega0: f64,
+    pub omega_min_frac: f64,
+    pub rho: f64,
+    pub disk_area_m2: f64,
+    pub profile_power_w: f64,
+    pub reaction_delay_s: f64,
+    pub safe_touchdown_ms: f64,
+}
+
+/// Assess vertical-autorotation flare survivability for a rotor.
+pub fn assess_vertical(p: &FlareParams) -> FlareAssessment {
+    let &FlareParams {
+        weight_n,
+        mass_kg,
+        inertia,
+        omega0,
+        omega_min_frac,
+        rho,
+        disk_area_m2,
+        profile_power_w,
+        reaction_delay_s,
+        safe_touchdown_ms,
+    } = p;
     let descent = steady_autorotation(weight_n, rho, disk_area_m2, profile_power_w);
     let v_d = descent.descent_rate_ms;
 
@@ -114,42 +130,51 @@ mod tests {
     use crate::descent::profile_power;
     use std::f64::consts::PI;
 
-    fn rep() -> (f64, f64, f64, f64, f64, f64, f64) {
+    fn rep() -> FlareParams {
         // Light helicopter: 1000 kg, R=4 m, V_tip=190, σ=0.07, C_d0=0.01,
-        // I≈1500 kg·m². Returns (weight, mass, inertia, omega0, rho, area, p0).
+        // I≈1500 kg·m².
         let (mass, r, rho, vt, sigma, cd0) = (1000.0, 4.0, 1.225, 190.0, 0.07, 0.010);
         let area = PI * r * r;
-        let omega0 = vt / r;
-        let p0 = profile_power(rho, area, vt, sigma, cd0);
-        (mass * G, mass, 1500.0, omega0, rho, area, p0)
+        FlareParams {
+            weight_n: mass * G,
+            mass_kg: mass,
+            inertia: 1500.0,
+            omega0: vt / r,
+            omega_min_frac: 0.7,
+            rho,
+            disk_area_m2: area,
+            profile_power_w: profile_power(rho, area, vt, sigma, cd0),
+            reaction_delay_s: 1.0,
+            safe_touchdown_ms: 2.0,
+        }
     }
 
     #[test]
     fn adequate_rotor_can_flare_with_margin() {
-        let (w, m, i, om, rho, a, p0) = rep();
-        let f = assess_vertical(w, m, i, om, 0.7, rho, a, p0, 1.0, 2.0);
+        let p = rep();
+        let f = assess_vertical(&p);
         assert!(f.can_flare);
         assert!(f.flare_margin > 1.0);
         // The descent KE it removes is the steady-descent rate (composition).
-        let v_d = steady_autorotation(w, rho, a, p0).descent_rate_ms;
+        let v_d =
+            steady_autorotation(p.weight_n, p.rho, p.disk_area_m2, p.profile_power_w).descent_rate_ms;
         assert!((f.descent_rate_ms - v_d).abs() < 1e-12);
     }
 
     #[test]
     fn an_underspun_low_inertia_rotor_cannot_flare() {
-        let (w, m, _i, om, rho, a, p0) = rep();
         // A tenth the inertia: not enough stored energy to arrest the descent.
-        let f = assess_vertical(w, m, 150.0, om, 0.7, rho, a, p0, 1.0, 2.0);
+        let f = assess_vertical(&FlareParams { inertia: 150.0, ..rep() });
         assert!(!f.can_flare);
         assert!(f.flare_margin < 1.0);
     }
 
     #[test]
     fn flare_margin_grows_with_inertia_and_rpm() {
-        let (w, m, i, om, rho, a, p0) = rep();
-        let base = assess_vertical(w, m, i, om, 0.7, rho, a, p0, 1.0, 2.0).flare_margin;
-        let more_i = assess_vertical(w, m, 2.0 * i, om, 0.7, rho, a, p0, 1.0, 2.0).flare_margin;
-        let more_rpm = assess_vertical(w, m, i, 1.2 * om, 0.7, rho, a, p0, 1.0, 2.0).flare_margin;
+        let p = rep();
+        let base = assess_vertical(&p).flare_margin;
+        let more_i = assess_vertical(&FlareParams { inertia: 2.0 * p.inertia, ..p }).flare_margin;
+        let more_rpm = assess_vertical(&FlareParams { omega0: 1.2 * p.omega0, ..p }).flare_margin;
         assert!(more_i > base);
         assert!(more_rpm > base);
     }
@@ -158,8 +183,7 @@ mod tests {
     fn safe_touchdown_above_descent_gives_infinite_margin() {
         // If the acceptable touchdown rate exceeds the steady descent, there is no
         // descent KE to remove → the flare margin is unbounded.
-        let (w, m, i, om, rho, a, p0) = rep();
-        let f = assess_vertical(w, m, i, om, 0.7, rho, a, p0, 1.0, 100.0);
+        let f = assess_vertical(&FlareParams { safe_touchdown_ms: 100.0, ..rep() });
         assert!(f.flare_margin.is_infinite());
         assert!(f.can_flare);
         assert_eq!(f.descent_ke_j, 0.0);
@@ -167,9 +191,8 @@ mod tests {
 
     #[test]
     fn critical_height_grows_with_delay() {
-        let (w, m, i, om, rho, a, p0) = rep();
-        let quick = assess_vertical(w, m, i, om, 0.7, rho, a, p0, 0.5, 2.0).critical_hover_height_m;
-        let slow = assess_vertical(w, m, i, om, 0.7, rho, a, p0, 2.0, 2.0).critical_hover_height_m;
+        let quick = assess_vertical(&FlareParams { reaction_delay_s: 0.5, ..rep() }).critical_hover_height_m;
+        let slow = assess_vertical(&FlareParams { reaction_delay_s: 2.0, ..rep() }).critical_hover_height_m;
         assert!(slow > quick);
     }
 }

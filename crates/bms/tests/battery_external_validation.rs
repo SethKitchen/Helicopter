@@ -1,5 +1,5 @@
 //! EXTERNAL validation of the cell + thermal model on the four 21700 benchmark
-//! cells — predictions LOCKED in `validation/BATTERY_EXTERNAL_PREREG.md` before the
+//! cells — predictions LOCKED below (this comment is the pre-registration) before the
 //! oracle was sourced. The `TheveninCell` model was built/fitted only on the
 //! Samsung 25R, so applying it to these cells is a genuine external test.
 //!
@@ -15,7 +15,7 @@
 //! only as datasheet graphs, so P2/P3 are checked by DIRECTION, not exact numbers.
 
 use helisim_bms::ThermalEnvelope;
-use helisim_cell::{ampace_jp40, bak_45d, eve_40pl, molicel_p50b, true_continuous_current, Cell};
+use helisim_cell::{Cell, ampace_jp40, bak_45d, eve_40pl, molicel_p50b, true_continuous_current};
 use helisim_thermal::Convective;
 
 /// Constant-current discharge to cut-off; returns delivered capacity (Ah).
@@ -106,9 +106,15 @@ fn p4_core_limit_tracks_rating_surface_does_not() {
              core(forced) {core_forced:.0} A | surface(nat) {surf_nat:.0} A | rating {rating:.0} A"
         );
         // The falsified prereg finding, asserted: the surface limit is far too lenient.
-        assert!(surf_nat > 2.0 * rating, "{name} surface {surf_nat:.0} not >> rating");
+        assert!(
+            surf_nat > 2.0 * rating,
+            "{name} surface {surf_nat:.0} not >> rating"
+        );
         // The CORE limit is the binding, safety-relevant one (lower than surface).
-        assert!(core_nat < surf_nat, "{name} core {core_nat:.0} not < surface {surf_nat:.0}");
+        assert!(
+            core_nat < surf_nat,
+            "{name} core {core_nat:.0} not < surface {surf_nat:.0}"
+        );
         // Forced cooling still raises the core-limited current.
         assert!(core_forced > core_nat, "{name} forced not > natural");
         // The steady-state still-air surface limit lands in the right ORDER of the

@@ -4,7 +4,7 @@
 
 use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
-    VelocityHold, equilibrium_state11, equilibrium_state11_at, linearize15, simulate15,
+    Sim11Setup, VelocityHold, equilibrium_state11, equilibrium_state11_at, linearize15, simulate15,
 };
 use helisim_trim::Aircraft;
 
@@ -57,15 +57,12 @@ pub fn run() {
     let eqf = equilibrium_state11_at(&ac, vel);
     let dt = 0.01;
     let d = simulate15(
-        &ac,
-        j,
-        vel,
+        &Sim11Setup { ac: &ac, j, vel },
         &vh,
         [0.0, 0.0],
         [0.0, 0.6, 0.0],
         [0.0; 15],
-        dt,
-        40.0,
+        [dt, 40.0],
     );
     println!("Pre-computed target — the ~1.6 m/s drift attitude hold (5l) left under 0.6 N·m:");
     println!(
@@ -78,15 +75,12 @@ pub fn run() {
     let mut pert = [0.0; 15];
     pert[0] = 0.5;
     let h = simulate15(
-        &ac,
-        j,
-        [0.0, 0.0, 0.0],
+        &Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] },
         &vh,
         [0.0, 0.0],
         [0.0; 3],
         pert,
-        dt,
-        40.0,
+        [dt, 40.0],
     );
     println!("CAPSTONE — hover position hold across the seam, from a Δu=0.5 m/s kick:");
     println!(

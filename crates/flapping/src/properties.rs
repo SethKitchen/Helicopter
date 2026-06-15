@@ -16,8 +16,9 @@ pub struct FlapProperties {
     /// pitch/roll rate, hence the rotor's contribution to rate damping (Mq, Lp).
     /// **Default 0** (the pre-Milestone-6 behaviour, so every prior milestone's
     /// validated dynamics are unchanged). The physically-correct, externally-
-    /// validated value is **−2** (see `validation/MILESTONE6_FLAP_FIX_PREREG.md`):
-    /// magnitude 2 is textbook, sign mandated by gyroscopic damping. Set it on real
+    /// validated value is **−2** (derivation in the dynamics flap code + the UH-60
+    /// external-validation test): magnitude 2 is textbook, sign mandated by
+    /// gyroscopic damping. Set it on real
     /// aircraft; adopting −2 as the universal default requires revalidating the
     /// 5c–5m control stack (its own step), so it stays opt-in for now.
     pub gyro_rate: f64,

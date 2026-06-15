@@ -6,6 +6,8 @@ pub mod attitude_cli;
 pub mod battery_build_cli;
 pub mod bms_cli;
 pub mod build_cli;
+pub mod charge_build_cli;
+pub mod charging_cli;
 pub mod design_cli;
 pub mod dynamics_cli;
 pub mod flapping_cli;
@@ -45,6 +47,8 @@ pub fn dispatch(mode: &str) {
         "mission" => mission_cli::run(),
         "bms" | "battery" => bms_cli::run(),
         "battery-build" => battery_build_cli::run(),
+        "charging" => charging_cli::run(),
+        "charge-build" => charge_build_cli::run(),
         "design" => design_cli::run(),
         "build" => build_cli::run(),
         "harrington" => harrington_sweep(&cfg),

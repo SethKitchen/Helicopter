@@ -12,9 +12,9 @@
 //! harmonic balance carries the cyclic and the pitch-rate forcing. This is the
 //! function the stability derivatives differentiate.
 
-use helisim_airfoil::Airfoil;
+use crate::context::RotorAero;
 use helisim_flapping::{Controls, FlapProperties, solve3};
-use helisim_rotor::{Operating, Rotor};
+use helisim_rotor::Rotor;
 use std::f64::consts::PI;
 
 const N_AZ: usize = 36;
@@ -120,7 +120,7 @@ fn flap_coeffs(
     // Gyroscopic ("rotor-follows-shaft") coupling of hub pitch rate into flap: the
     // q̄·sinψ inertial forcing (from Ω_f×(Ω_f×r), the spin–hub-rate cross term) that
     // feeds the IN-PHASE β1c — the pitch-damping flap the aero-only forcing leaves
-    // ~14× short (Milestone-6 finding; derivation in MILESTONE6_FLAP_FIX_PREREG.md).
+    // ~14× short (Milestone-6 finding; derivation below + in the UH-60 ext-val test).
     // Standard coefficient 2; sign set so the induced β1c opposes q (adds damping),
     // not fitted. (sinψ harmonic → rhs index 2.)
     let mut rhs = [0.5 * gamma * f[0], 0.5 * gamma * f[1], 0.5 * gamma * f[2]];
@@ -131,18 +131,10 @@ fn flap_coeffs(
 
 /// Thrust coefficient and rearward in-plane force coefficient (H), with flapping
 /// and pitch rate in `u_P`.
-fn loads(
-    rotor: &Rotor,
-    airfoil: &dyn Airfoil,
-    tip_mach: f64,
-    mu: f64,
-    lambda: f64,
-    controls: &Controls,
-    b0: f64,
-    b1c: f64,
-    b1s: f64,
-    q_bar: f64,
-) -> (f64, f64) {
+fn loads(aero: &RotorAero, mu: f64, lambda: f64, flap: [f64; 3], q_bar: f64) -> (f64, f64) {
+    let (rotor, airfoil, controls) = (aero.rotor, aero.airfoil, aero.controls);
+    let tip_mach = aero.op.tip_mach(rotor.radius);
+    let [b0, b1c, b1s] = flap;
     let x0 = rotor.root_cutout;
     let dx = (1.0 - x0) / N_R as f64;
     let dpsi = 2.0 * PI / N_AZ as f64;
@@ -178,20 +170,10 @@ fn loads(
 
 /// Main-rotor longitudinal forces/moments at body state (u, w, q) with controls
 /// held at trim. `hub_height` is the hub height above the CG.
-pub fn longitudinal_main_aero(
-    rotor: &Rotor,
-    op: &Operating,
-    airfoil: &dyn Airfoil,
-    props: &FlapProperties,
-    hub_height: f64,
-    controls: &Controls,
-    u: f64,
-    w: f64,
-    q: f64,
-) -> LongAero {
+pub fn longitudinal_main_aero(aero: &RotorAero, u: f64, w: f64, q: f64) -> LongAero {
+    let (rotor, op, props, hub_height) = (aero.rotor, aero.op, aero.props, aero.hub_height);
     let omega = op.omega;
     let vt = op.tip_speed(rotor.radius);
-    let tip_mach = op.tip_mach(rotor.radius);
     let mu = u / vt;
     let lambda_c = -w / vt; // descent (w>0 down) reduces inflow
     let q_bar = q / omega;
@@ -203,12 +185,10 @@ pub fn longitudinal_main_aero(
     let mut ch = 0.0;
     for _ in 0..60 {
         let lam = lambda_c + li;
-        let (b0, b1c_k, b1s_k) = flap_coeffs(rotor, controls, mu, lam, q_bar, props);
+        let (b0, b1c_k, b1s_k) = flap_coeffs(rotor, aero.controls, mu, lam, q_bar, props);
         b1c = b1c_k;
         b1s = b1s_k;
-        let l = loads(
-            rotor, airfoil, tip_mach, mu, lam, controls, b0, b1c, b1s, q_bar,
-        );
+        let l = loads(aero, mu, lam, [b0, b1c, b1s], q_bar);
         ct = l.0;
         ch = l.1;
         let li_new = induced(ct.max(0.0), mu, lambda_c);

@@ -31,6 +31,7 @@ members = [
     "crates/cell",
     "crates/pack",
     "crates/bms",
+    "crates/charging",
     "crates/powertrain",
     "crates/thermal",
     "crates/mission",

@@ -2,7 +2,7 @@
 //!
 //! The cross-aircraft test. Oracle: CR-3144 Vol 1, Table III-3, CASE 29 (0 KT, sea level,
 //! 2096 kg, mid CG), body-fixed FRL axis, SI units, inertia/mass-normalized. Aircraft:
-//! `Aircraft::bo105()`, built strictly from the locked mapping (MILESTONE6_BO105_PREREG.md);
+//! `Aircraft::bo105()`, built strictly from a mapping locked before this run;
 //! no parameter tuned to this comparison. Predictions locked before the run in that file.
 //!
 //! HEADLINE (P1): does the gyroscopic flap-damping term `gyro_rate=−2`, derived & validated

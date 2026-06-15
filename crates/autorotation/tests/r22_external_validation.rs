@@ -2,8 +2,8 @@
 //! R22** autorotation reference speeds.
 //!
 //! Predictions and the (assumption-laden) parameter mapping were LOCKED before the
-//! oracle was sourced — see `validation/AUTOROTATION_EXTERNAL_PREREG.md` and the
-//! results in `validation/AUTOROTATION_EXTERNAL_RESULTS.md`.
+//! oracle was sourced — this comment block IS the pre-registration, and the results
+//! are encoded as the test's expectations below.
 //!
 //! Oracle (Robinson R22 POH / type literature):
 //!   * best glide (max distance): **75 KIAS**, glide ratio ≈ **4:1**

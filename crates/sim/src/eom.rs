@@ -17,6 +17,7 @@
 
 use helisim_airfoil::Airfoil;
 use helisim_dynamics::aero::longitudinal_main_aero;
+use helisim_dynamics::RotorAero;
 use helisim_flapping::Controls;
 use helisim_flapping::FlapProperties;
 use helisim_rotor::{Operating, Rotor};
@@ -50,12 +51,14 @@ pub struct LongModel<'a> {
 pub fn state_derivative(m: &LongModel, s: &[f64]) -> Vec<f64> {
     let (u, w, q, theta) = (s[0], s[1], s[2], s[3]);
     let aero = longitudinal_main_aero(
-        &m.rotor,
-        &m.op,
-        m.airfoil,
-        &m.flap,
-        m.hub_height,
-        &m.controls,
+        &RotorAero {
+            rotor: &m.rotor,
+            op: &m.op,
+            airfoil: m.airfoil,
+            props: &m.flap,
+            hub_height: m.hub_height,
+            controls: &m.controls,
+        },
         u,
         w,
         q,

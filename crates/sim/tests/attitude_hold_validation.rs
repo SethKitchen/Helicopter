@@ -17,7 +17,7 @@ use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
     RateSas, Trim, attitude_hold, closed_loop_matrix, control_matrix11, control_matrix11_at,
     equilibrium_state11, equilibrium_state11_at, linearize11, linearize11_at, simulate11_sas,
-    simulate11_sas_dist,
+    simulate11_sas_dist, Sim11Setup,
 };
 use helisim_trim::Aircraft;
 
@@ -99,8 +99,9 @@ fn off_seam_nonlinear_returns_to_trim() {
     let mut pert = [0.0; 11];
     pert[3] = 5f64.to_radians(); // θ = 5°
 
-    let damp = simulate11_sas(&ac, j, vel, &Trim, &rate_damper(), pert, dt, t_end);
-    let held = simulate11_sas(&ac, j, vel, &Trim, &hold(), pert, dt, t_end);
+    let setup = Sim11Setup { ac: &ac, j, vel };
+    let damp = simulate11_sas(&setup, &Trim, &rate_damper(), pert, [dt, t_end]);
+    let held = simulate11_sas(&setup, &Trim, &hold(), pert, [dt, t_end]);
 
     let late = |tr: &[[f64; 11]]| -> f64 {
         tr.iter()
@@ -140,17 +141,9 @@ fn hover_attitude_hold_beats_damper_but_a_seam_residual_remains() {
     let mut pert = [0.0; 11];
     pert[3] = 5f64.to_radians();
 
-    let damp = simulate11_sas(
-        &ac,
-        j,
-        [0.0, 0.0, 0.0],
-        &Trim,
-        &rate_damper(),
-        pert,
-        dt,
-        t_end,
-    );
-    let held = simulate11_sas(&ac, j, [0.0, 0.0, 0.0], &Trim, &hold(), pert, dt, t_end);
+    let setup = Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] };
+    let damp = simulate11_sas(&setup, &Trim, &rate_damper(), pert, [dt, t_end]);
+    let held = simulate11_sas(&setup, &Trim, &hold(), pert, [dt, t_end]);
 
     let att = |s: &[f64; 11]| (s[3] - eq[3]).abs().max((s[7] - eq[7]).abs());
     let damp_div = damp.iter().any(|s| !s[3].is_finite() || att(s) > 0.5);
@@ -189,28 +182,9 @@ fn sustained_disturbance_is_regulated_to_a_bounded_offset() {
     let t_end = 12.0;
     let dist = [0.0, 0.8, 0.0]; // [L, M, N] N·m
 
-    let damp = simulate11_sas_dist(
-        &ac,
-        j,
-        [0.0, 0.0, 0.0],
-        &Trim,
-        &rate_damper(),
-        dist,
-        [0.0; 11],
-        dt,
-        t_end,
-    );
-    let held = simulate11_sas_dist(
-        &ac,
-        j,
-        [0.0, 0.0, 0.0],
-        &Trim,
-        &hold(),
-        dist,
-        [0.0; 11],
-        dt,
-        t_end,
-    );
+    let setup = Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] };
+    let damp = simulate11_sas_dist(&setup, &Trim, &rate_damper(), dist, [0.0; 11], [dt, t_end]);
+    let held = simulate11_sas_dist(&setup, &Trim, &hold(), dist, [0.0; 11], [dt, t_end]);
 
     let damp_div = damp
         .iter()

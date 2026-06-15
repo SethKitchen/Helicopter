@@ -6,7 +6,7 @@
 use helisim_airfoil::LinearAirfoil;
 use helisim_bemt::Config;
 use helisim_cell::TheveninCell;
-use helisim_mission::{MissionConfig, analyze_climb, analyze_hover};
+use helisim_mission::{MissionConfig, MissionScenario, analyze_climb, analyze_hover};
 use helisim_pack::Pack;
 use helisim_powertrain::ConstantEfficiency;
 use helisim_rotor::{Operating, Rotor};
@@ -29,18 +29,18 @@ fn hover_is_feasible_and_within_rating() {
     let (rotor, op, af) = rotor_op_air();
     let pack = pack_6s3p();
     let pt = ConstantEfficiency::typical_electric_heli();
-    let rep = analyze_hover(
-        &rotor,
-        &op,
-        &af,
-        &pack,
-        &pt,
-        3.0,
-        &Convective::natural_air(),
-        ThermalLimits::default(),
-        &Config::default(),
-        &MissionConfig::default(),
-    );
+    let scen = MissionScenario {
+        rotor: &rotor,
+        op: &op,
+        airfoil: &af,
+        pack: &pack,
+        powertrain: &pt,
+        cooling: &Convective::natural_air(),
+        limits: ThermalLimits::default(),
+        bemt_cfg: &Config::default(),
+        mission_cfg: &MissionConfig::default(),
+    };
+    let rep = analyze_hover(&scen, 3.0);
 
     assert!(rep.hover_feasible, "should trim to hover");
     assert!(rep.mech_power_w > 0.0 && rep.elec_power_w > rep.mech_power_w);
@@ -58,34 +58,21 @@ fn design_tension_heavier_costs_power_and_endurance() {
     let (rotor, op, af) = rotor_op_air();
     let pt = ConstantEfficiency::typical_electric_heli();
     let cool = Convective::natural_air();
-    let lim = ThermalLimits::default();
-    let cfg = Config::default();
-    let mcfg = MissionConfig::default();
+    let pack = pack_6s3p();
+    let scen = MissionScenario {
+        rotor: &rotor,
+        op: &op,
+        airfoil: &af,
+        pack: &pack,
+        powertrain: &pt,
+        cooling: &cool,
+        limits: ThermalLimits::default(),
+        bemt_cfg: &Config::default(),
+        mission_cfg: &MissionConfig::default(),
+    };
 
-    let light = analyze_hover(
-        &rotor,
-        &op,
-        &af,
-        &pack_6s3p(),
-        &pt,
-        2.5,
-        &cool,
-        lim,
-        &cfg,
-        &mcfg,
-    );
-    let heavy = analyze_hover(
-        &rotor,
-        &op,
-        &af,
-        &pack_6s3p(),
-        &pt,
-        4.0,
-        &cool,
-        lim,
-        &cfg,
-        &mcfg,
-    );
+    let light = analyze_hover(&scen, 2.5);
+    let heavy = analyze_hover(&scen, 4.0);
 
     assert!(light.hover_feasible && heavy.hover_feasible);
     // More weight → more collective, power, current, C-rate; less endurance.
@@ -110,40 +97,27 @@ fn hover_stays_cool_but_sustained_climb_overheats() {
         ambient_c: 30.0,
         ..MissionConfig::default()
     };
-    let pack = || Pack::new(Box::new(TheveninCell::samsung_25r()), 6, 2);
+    let pack = Pack::new(Box::new(TheveninCell::samsung_25r()), 6, 2);
     let mass = 5.0;
+    let scen = MissionScenario {
+        rotor: &rotor,
+        op: &op,
+        airfoil: &af,
+        pack: &pack,
+        powertrain: &pt,
+        cooling: &cool,
+        limits: lim,
+        bemt_cfg: &cfg,
+        mission_cfg: &mcfg,
+    };
 
-    let h = analyze_hover(
-        &rotor,
-        &op,
-        &af,
-        &pack(),
-        &pt,
-        mass,
-        &cool,
-        lim,
-        &cfg,
-        &mcfg,
-    );
+    let h = analyze_hover(&scen, mass);
     assert!(
         h.hover_feasible && h.hover_peak_temp_c < lim.max_c,
         "hover should stay under limit"
     );
 
-    let c = analyze_climb(
-        &rotor,
-        &op,
-        &af,
-        &pack(),
-        &pt,
-        mass,
-        6.0,
-        360.0,
-        &cool,
-        lim,
-        &cfg,
-        &mcfg,
-    );
+    let c = analyze_climb(&scen, mass, 6.0, 360.0);
     assert!(c.feasible);
     assert!(
         c.peak_temp_c > lim.max_c,
@@ -168,35 +142,27 @@ fn forced_cooling_helps() {
         ambient_c: 30.0,
         ..MissionConfig::default()
     };
-    let pack = || Pack::new(Box::new(TheveninCell::samsung_25r()), 6, 2);
-
-    let natural = analyze_climb(
-        &rotor,
-        &op,
-        &af,
-        &pack(),
-        &pt,
-        5.0,
-        6.0,
-        360.0,
-        &Convective::natural_air(),
-        lim,
-        &cfg,
-        &mcfg,
-    );
+    let pack = Pack::new(Box::new(TheveninCell::samsung_25r()), 6, 2);
+    let base = MissionScenario {
+        rotor: &rotor,
+        op: &op,
+        airfoil: &af,
+        pack: &pack,
+        powertrain: &pt,
+        cooling: &Convective::natural_air(),
+        limits: lim,
+        bemt_cfg: &cfg,
+        mission_cfg: &mcfg,
+    };
+    let natural = analyze_climb(&base, 5.0, 6.0, 360.0);
     let forced = analyze_climb(
-        &rotor,
-        &op,
-        &af,
-        &pack(),
-        &pt,
+        &MissionScenario {
+            cooling: &Convective::forced_air(),
+            ..base
+        },
         5.0,
         6.0,
         360.0,
-        &Convective::forced_air(),
-        lim,
-        &cfg,
-        &mcfg,
     );
     assert!(
         forced.peak_temp_c < natural.peak_temp_c,
@@ -211,16 +177,18 @@ fn overload_is_reported_not_panicked() {
     let pt = ConstantEfficiency::typical_electric_heli();
     // Far beyond what a 0.5 m rotor at 2200 RPM can lift.
     let rep = analyze_hover(
-        &rotor,
-        &op,
-        &af,
-        &pack,
-        &pt,
+        &MissionScenario {
+            rotor: &rotor,
+            op: &op,
+            airfoil: &af,
+            pack: &pack,
+            powertrain: &pt,
+            cooling: &Convective::natural_air(),
+            limits: ThermalLimits::default(),
+            bemt_cfg: &Config::default(),
+            mission_cfg: &MissionConfig::default(),
+        },
         50.0,
-        &Convective::natural_air(),
-        ThermalLimits::default(),
-        &Config::default(),
-        &MissionConfig::default(),
     );
     assert!(!rep.hover_feasible);
     assert!(!rep.endurance.feasible);
@@ -233,34 +201,22 @@ fn infeasible_mass_reports_not_feasible_without_panicking() {
     let (rotor, op, af) = rotor_op_air();
     let pt = ConstantEfficiency::typical_electric_heli();
     let huge = 1000.0; // kg — impossible for a 0.5 m model rotor
-    let h = analyze_hover(
-        &rotor,
-        &op,
-        &af,
-        &pack_6s3p(),
-        &pt,
-        huge,
-        &Convective::natural_air(),
-        ThermalLimits::default(),
-        &Config::default(),
-        &MissionConfig::default(),
-    );
+    let pack = pack_6s3p();
+    let scen = MissionScenario {
+        rotor: &rotor,
+        op: &op,
+        airfoil: &af,
+        pack: &pack,
+        powertrain: &pt,
+        cooling: &Convective::natural_air(),
+        limits: ThermalLimits::default(),
+        bemt_cfg: &Config::default(),
+        mission_cfg: &MissionConfig::default(),
+    };
+    let h = analyze_hover(&scen, huge);
     assert!(!h.hover_feasible);
     assert!(h.collective_deg.is_nan());
 
-    let c = analyze_climb(
-        &rotor,
-        &op,
-        &af,
-        &pack_6s3p(),
-        &pt,
-        huge,
-        5.0,
-        60.0,
-        &Convective::natural_air(),
-        ThermalLimits::default(),
-        &Config::default(),
-        &MissionConfig::default(),
-    );
+    let c = analyze_climb(&scen, huge, 5.0, 60.0);
     assert!(!c.feasible);
 }

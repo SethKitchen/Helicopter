@@ -46,7 +46,7 @@ pub struct Aircraft {
     /// milestone & the demo aircraft unchanged); set to the sourced 3° on the real
     /// aircraft (Milestone 6). Added to TEST the pre-registered backward-reaching claim
     /// that the UH-60 `cg_offset` was over-attributing the missing shaft-tilt nose-up
-    /// (`validation/MILESTONE6_SHAFT_TILT_PREREG.md`).
+    /// (pre-registered in `crates/trim/tests/uh60_trim_validation.rs`).
     pub shaft_tilt: f64,
 }
 
@@ -79,7 +79,7 @@ impl Aircraft {
     }
 
     /// The UH-60A Black Hawk, built **strictly** from the Milestone-6 locked
-    /// parameter mapping (`crates/validation/MILESTONE6_PARAMETER_MAPPING.md`),
+    /// parameter mapping (decided on physics and locked before the comparison),
     /// sourced from NASA TM 85890 (GENHEL). No value here may be tuned toward the
     /// comparison oracle — every number is the report's, converted to SI, or a
     /// documented physics-based mapping decision.
@@ -125,14 +125,14 @@ impl Aircraft {
             cg_offset: 0.488,
             parasite_area: 3.25,
             // Sourced 3° fwd shaft tilt (TM 85890 Table 1, 0.05236 rad). Set to TEST the
-            // pre-registered claim (MILESTONE6_SHAFT_TILT_PREREG.md) that cg_offset=0.488
+            // pre-registered claim (in the uh60 trim test) that cg_offset=0.488
             // was over-attributing this missing nose-up term. NOT re-tuned to hit +5.05°.
             shaft_tilt: 0.05236,
         }
     }
 
     /// The Boeing-Vertol BO-105C, the **second** external-validation airframe, built
-    /// **strictly** from the locked mapping (`MILESTONE6_BO105_PREREG.md`), sourced
+    /// **strictly** from the locked mapping (pre-registered before the run), sourced
     /// from NASA CR-3144 (Heffley). The point: a **hingeless** rotor — an adversarial
     /// test of whether the gyroscopic flap-damping term (`gyro_rate=−2`, derived on the
     /// *articulated* UH-60) generalizes to completely different hub mechanics with
@@ -186,7 +186,7 @@ impl Aircraft {
     }
 
     /// The Hughes OH-6A — the **third** external airframe, built as the GAIN DISCRIMINATOR
-    /// (MILESTONE6_OH6A_GAIN_PREREG.md) for the UH-60 attitude over-response. CR-3144 gives
+    /// (pre-registered in `oh6a_gain_discriminator.rs`) for the UH-60 attitude over-response. CR-3144 gives
     /// it at hover at three cg positions (FWD/MID/AFT), so dΘ/d(cg_offset) directly measures
     /// the cg→attitude gain (shaft tilt cancels in the slope). Strictly from CR-3144, no
     /// tuning. `cg_offset` is the SWEEP variable — set per case by the discriminator test.

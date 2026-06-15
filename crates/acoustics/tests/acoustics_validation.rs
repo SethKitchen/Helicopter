@@ -15,18 +15,21 @@ use helisim_acoustics::*;
 
 /// Representative rotor: 2 blades, Ω = 50 rad/s, R_e = 3.2 m (≈0.8·4 m),
 /// T = 9810 N, Q = 4000 N·m, observer 50 m away.
+fn src(omega: f64, theta_deg: f64) -> RotorNoise {
+    RotorNoise {
+        blades: 2,
+        omega,
+        sound_speed: 340.0,
+        distance: 50.0,
+        thrust: 9810.0,
+        torque: 4000.0,
+        r_eff: 3.2,
+        theta: theta_deg.to_radians(),
+    }
+}
+
 fn spectrum_at(theta_deg: f64) -> NoiseSpectrum {
-    rotational_spectrum(
-        6,
-        2,
-        50.0,
-        340.0,
-        50.0,
-        9810.0,
-        4000.0,
-        3.2,
-        theta_deg.to_radians(),
-    )
+    rotational_spectrum(6, &src(50.0, theta_deg))
 }
 
 #[test]
@@ -54,9 +57,8 @@ fn fundamental_frequency_tracks_blade_count_and_rpm() {
 #[test]
 fn faster_tip_is_louder_loading_noise() {
     // Raising Ω (tip speed) at the same observer raises the loading-noise level.
-    let theta = 80f64.to_radians();
-    let slow = rotational_spectrum(6, 2, 45.0, 340.0, 50.0, 9810.0, 4000.0, 3.2, theta);
-    let fast = rotational_spectrum(6, 2, 55.0, 340.0, 50.0, 9810.0, 4000.0, 3.2, theta);
+    let slow = rotational_spectrum(6, &src(45.0, 80.0));
+    let fast = rotational_spectrum(6, &src(55.0, 80.0));
     assert!(fast.oaspl_db > slow.oaspl_db);
 }
 
