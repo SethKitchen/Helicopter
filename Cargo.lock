@@ -53,6 +53,10 @@ name = "helisim-cell"
 version = "0.1.0"
 
 [[package]]
+name = "helisim-cfd"
+version = "0.1.0"
+
+[[package]]
 name = "helisim-charging"
 version = "0.1.0"
 dependencies = [
@@ -71,6 +75,7 @@ dependencies = [
  "helisim-bemt",
  "helisim-bms",
  "helisim-cell",
+ "helisim-cfd",
  "helisim-charging",
  "helisim-cost",
  "helisim-design",
