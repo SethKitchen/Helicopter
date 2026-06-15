@@ -4,9 +4,9 @@
 
 use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
-    PiAttitudeHold, RateSas, Trim, attitude_hold, augmented_matrix, closed_loop_matrix,
+    PiAttitudeHold, RateSas, Sim11Setup, Trim, attitude_hold, augmented_matrix, closed_loop_matrix,
     control_matrix11, control_matrix11_at, equilibrium_state11, equilibrium_state11_at,
-    linearize11, linearize11_at, simulate11_sas, simulate13, Sim11Setup,
+    linearize11, linearize11_at, simulate11_sas, simulate13,
 };
 use helisim_trim::Aircraft;
 
@@ -65,8 +65,18 @@ pub fn run() {
     pert[3] = 5f64.to_radians();
     let eqf = equilibrium_state11_at(&ac, vel);
     let eqh = equilibrium_state11(&ac);
-    let off = simulate11_sas(&Sim11Setup { ac: &ac, j, vel }, &Trim, &hold, pert, [dt, 16.0]);
-    let hov_setup = Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] };
+    let off = simulate11_sas(
+        &Sim11Setup { ac: &ac, j, vel },
+        &Trim,
+        &hold,
+        pert,
+        [dt, 16.0],
+    );
+    let hov_setup = Sim11Setup {
+        ac: &ac,
+        j,
+        vel: [0.0, 0.0, 0.0],
+    };
     let hov = simulate11_sas(&hov_setup, &Trim, &hold, pert, [dt, 16.0]);
     let hov_d = simulate11_sas(&hov_setup, &Trim, &rate, pert, [dt, 16.0]);
 

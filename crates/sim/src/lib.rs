@@ -49,7 +49,6 @@ pub mod simulate;
 pub mod velocity_hold;
 
 pub use analysis::{ModeFit, fit_growing_oscillation};
-pub use sim_setup::Sim11Setup;
 pub use attitude_hold::attitude_hold;
 pub use control::{Channel, ControlSchedule, Pulse, Step, Trim};
 pub use coupled_march::{
@@ -67,5 +66,6 @@ pub use eom::{LongState, state_derivative};
 pub use pi_attitude::{PiAttitudeHold, State13, augmented_matrix, simulate13};
 pub use rk4::{rk4_step, rk4_step_t};
 pub use sas::{RateSas, closed_loop_matrix, simulate11_sas, simulate11_sas_dist};
+pub use sim_setup::Sim11Setup;
 pub use simulate::{Trajectory, simulate_hover_longitudinal, simulate_linear, simulate_linear_nd};
 pub use velocity_hold::{State15, VelocityHold, deriv15, linearize15, simulate15};

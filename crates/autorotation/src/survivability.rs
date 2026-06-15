@@ -156,15 +156,18 @@ mod tests {
         assert!(f.can_flare);
         assert!(f.flare_margin > 1.0);
         // The descent KE it removes is the steady-descent rate (composition).
-        let v_d =
-            steady_autorotation(p.weight_n, p.rho, p.disk_area_m2, p.profile_power_w).descent_rate_ms;
+        let v_d = steady_autorotation(p.weight_n, p.rho, p.disk_area_m2, p.profile_power_w)
+            .descent_rate_ms;
         assert!((f.descent_rate_ms - v_d).abs() < 1e-12);
     }
 
     #[test]
     fn an_underspun_low_inertia_rotor_cannot_flare() {
         // A tenth the inertia: not enough stored energy to arrest the descent.
-        let f = assess_vertical(&FlareParams { inertia: 150.0, ..rep() });
+        let f = assess_vertical(&FlareParams {
+            inertia: 150.0,
+            ..rep()
+        });
         assert!(!f.can_flare);
         assert!(f.flare_margin < 1.0);
     }
@@ -173,8 +176,16 @@ mod tests {
     fn flare_margin_grows_with_inertia_and_rpm() {
         let p = rep();
         let base = assess_vertical(&p).flare_margin;
-        let more_i = assess_vertical(&FlareParams { inertia: 2.0 * p.inertia, ..p }).flare_margin;
-        let more_rpm = assess_vertical(&FlareParams { omega0: 1.2 * p.omega0, ..p }).flare_margin;
+        let more_i = assess_vertical(&FlareParams {
+            inertia: 2.0 * p.inertia,
+            ..p
+        })
+        .flare_margin;
+        let more_rpm = assess_vertical(&FlareParams {
+            omega0: 1.2 * p.omega0,
+            ..p
+        })
+        .flare_margin;
         assert!(more_i > base);
         assert!(more_rpm > base);
     }
@@ -183,7 +194,10 @@ mod tests {
     fn safe_touchdown_above_descent_gives_infinite_margin() {
         // If the acceptable touchdown rate exceeds the steady descent, there is no
         // descent KE to remove → the flare margin is unbounded.
-        let f = assess_vertical(&FlareParams { safe_touchdown_ms: 100.0, ..rep() });
+        let f = assess_vertical(&FlareParams {
+            safe_touchdown_ms: 100.0,
+            ..rep()
+        });
         assert!(f.flare_margin.is_infinite());
         assert!(f.can_flare);
         assert_eq!(f.descent_ke_j, 0.0);
@@ -191,8 +205,16 @@ mod tests {
 
     #[test]
     fn critical_height_grows_with_delay() {
-        let quick = assess_vertical(&FlareParams { reaction_delay_s: 0.5, ..rep() }).critical_hover_height_m;
-        let slow = assess_vertical(&FlareParams { reaction_delay_s: 2.0, ..rep() }).critical_hover_height_m;
+        let quick = assess_vertical(&FlareParams {
+            reaction_delay_s: 0.5,
+            ..rep()
+        })
+        .critical_hover_height_m;
+        let slow = assess_vertical(&FlareParams {
+            reaction_delay_s: 2.0,
+            ..rep()
+        })
+        .critical_hover_height_m;
         assert!(slow > quick);
     }
 }

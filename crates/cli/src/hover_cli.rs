@@ -75,7 +75,11 @@ pub fn run() {
     let mut pert = [0.0; 15];
     pert[0] = 0.5;
     let h = simulate15(
-        &Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] },
+        &Sim11Setup {
+            ac: &ac,
+            j,
+            vel: [0.0, 0.0, 0.0],
+        },
         &vh,
         [0.0, 0.0],
         [0.0; 3],

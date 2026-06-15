@@ -39,7 +39,11 @@ pub fn solve_coupled(
         let loads = integrate_with_flap(
             rotor,
             airfoil,
-            Flow { tip_mach, mu, lambda },
+            Flow {
+                tip_mach,
+                mu,
+                lambda,
+            },
             controls,
             [fl.beta0, fl.beta1c, fl.beta1s],
             [cfg.n_azimuth, cfg.n_radial],
@@ -61,7 +65,11 @@ pub fn solve_coupled(
     let loads = integrate_with_flap(
         rotor,
         airfoil,
-        Flow { tip_mach, mu, lambda },
+        Flow {
+            tip_mach,
+            mu,
+            lambda,
+        },
         controls,
         [fl.beta0, fl.beta1c, fl.beta1s],
         [cfg.n_azimuth, cfg.n_radial],

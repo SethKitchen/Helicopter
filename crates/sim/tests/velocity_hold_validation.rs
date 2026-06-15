@@ -18,8 +18,8 @@
 
 use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
-    PiAttitudeHold, RateSas, Trim, VelocityHold, attitude_hold, equilibrium_state11,
-    equilibrium_state11_at, linearize15, simulate13, simulate15, Sim11Setup,
+    PiAttitudeHold, RateSas, Sim11Setup, Trim, VelocityHold, attitude_hold, equilibrium_state11,
+    equilibrium_state11_at, linearize15, simulate13, simulate15,
 };
 use helisim_trim::Aircraft;
 
@@ -171,7 +171,11 @@ fn hover_position_hold_is_the_capstone() {
     pert[0] = 0.5; // Δu = 0.5 m/s
 
     let h = simulate15(
-        &Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] },
+        &Sim11Setup {
+            ac: &ac,
+            j,
+            vel: [0.0, 0.0, 0.0],
+        },
         &VelocityHold::hover_hold(),
         [0.0, 0.0],
         [0.0; 3],
@@ -212,7 +216,11 @@ fn commanded_attitudes_stay_modest_no_windup() {
     let vh = VelocityHold::hover_hold();
     let dt = 0.01;
     let d = simulate15(
-        &Sim11Setup { ac: &ac, j, vel: [5.0, 0.0, 0.0] },
+        &Sim11Setup {
+            ac: &ac,
+            j,
+            vel: [5.0, 0.0, 0.0],
+        },
         &vh,
         [0.0, 0.0],
         [0.0, 0.6, 0.0],

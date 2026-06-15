@@ -5,7 +5,7 @@
 //! (mean-square) basis, so the overall level uses
 //! `p_total = √(Σ p_m²)`.
 
-use crate::rotational::{gutin_harmonic_pressure, RotorNoise};
+use crate::rotational::{RotorNoise, gutin_harmonic_pressure};
 use crate::solution::{Harmonic, NoiseSpectrum};
 
 /// Reference acoustic pressure, Pa (20 µPa).

@@ -181,7 +181,11 @@ fn years_to_eol(deg: &DegradationModel, c_rate: f64, _flight_time_h: f64) -> f64
             1.0,
             c_rate,
             25.0,
-            CalendarLoad { years: y, storage_temp_c: STORAGE_TEMP_C, soc_factor: 1.0 },
+            CalendarLoad {
+                years: y,
+                storage_temp_c: STORAGE_TEMP_C,
+                soc_factor: 1.0,
+            },
         );
         if fade >= deg.eol_fade {
             return y;

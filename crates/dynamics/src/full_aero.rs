@@ -147,7 +147,11 @@ pub fn uniform_inflow(aero: &RotorAero, vel: [f64; 3], rates: [f64; 2]) -> f64 {
         let lam = lambda_c + li;
         let b = flap_coeffs(aero, mu, [lam, 0.0, 0.0], rates_bar);
         let ct = loads(aero, mu, [lam, 0.0, 0.0], [b.0, b.1, b.2], rates_bar).0;
-        let li_new = induced(ct.max(0.0), (mu[0] * mu[0] + mu[1] * mu[1]).sqrt(), lambda_c);
+        let li_new = induced(
+            ct.max(0.0),
+            (mu[0] * mu[0] + mu[1] * mu[1]).sqrt(),
+            lambda_c,
+        );
         let d = (li_new - li).abs();
         li = (li + 0.6 * (li_new - li)).clamp(1e-4, 0.5);
         if d < 1e-8 {

@@ -223,7 +223,11 @@ mod tests {
             "50% DoD eff EFC {half} should be < 50 (throughput)"
         );
         // Same flight count at lower depth → less total fade.
-        let cal = CalendarLoad { years: 5.0, storage_temp_c: 25.0, soc_factor: 1.0 };
+        let cal = CalendarLoad {
+            years: 5.0,
+            storage_temp_c: 25.0,
+            soc_factor: 1.0,
+        };
         let full = m.fade_over_life(1000.0, 1.0, 2.0, 25.0, cal);
         let shallow = m.fade_over_life(1000.0, 0.5, 2.0, 25.0, cal);
         assert!(shallow < full);

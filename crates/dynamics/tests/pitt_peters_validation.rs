@@ -51,8 +51,7 @@ fn zeroing_cyclic_inflow_recovers_baseline_exactly() {
 
     let baseline = main_rotor_full(&aero(&ac, &rotor, &c), vel, rates);
     let li = uniform_inflow(&aero(&ac, &rotor, &c), vel, rates);
-    let (recovered, _) =
-        main_rotor_with_inflow(&aero(&ac, &rotor, &c), vel, rates, [li, 0.0, 0.0]);
+    let (recovered, _) = main_rotor_with_inflow(&aero(&ac, &rotor, &c), vel, rates, [li, 0.0, 0.0]);
 
     for (a, b) in [
         (baseline.fx, recovered.fx),
@@ -132,8 +131,7 @@ fn cyclic_inflow_shifts_off_axis_response() {
 
     let off_axis = |c: &Controls, frozen: bool| -> f64 {
         if frozen {
-            let (f, _) =
-                main_rotor_with_inflow(&aero(&ac, &rotor, c), vel, rates, [li, 0.0, 0.0]);
+            let (f, _) = main_rotor_with_inflow(&aero(&ac, &rotor, c), vel, rates, [li, 0.0, 0.0]);
             f.my // off-axis (pitch) moment for a lateral-cyclic (roll) input
         } else {
             let (f, _, _) = quasi_static_inflow(&aero(&ac, &rotor, c), vel, rates);

@@ -46,7 +46,11 @@ pub fn size_for_life(
     pack_specific_energy_wh_per_kg: f64,
 ) -> LifeSizing {
     let n = flights_per_year * life_years;
-    let cal = CalendarLoad { years: life_years, storage_temp_c, soc_factor: 1.0 };
+    let cal = CalendarLoad {
+        years: life_years,
+        storage_temp_c,
+        soc_factor: 1.0,
+    };
     // Lower DoD ⇒ lower C-rate and lower effective throughput ⇒ less fade (monotone),
     // so scan DoD from full down and take the FIRST (largest) depth that meets EOL.
     let mut chosen: Option<f64> = None;

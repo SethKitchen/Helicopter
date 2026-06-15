@@ -50,7 +50,11 @@ pub fn integrate_with_flap(
     flap: [f64; 3],
     grid: [usize; 2],
 ) -> Loads {
-    let Flow { tip_mach, mu, lambda } = flow;
+    let Flow {
+        tip_mach,
+        mu,
+        lambda,
+    } = flow;
     let [beta0, beta1c, beta1s] = flap;
     let [n_azimuth, n_radial] = grid;
     let x0 = rotor.root_cutout;

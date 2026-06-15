@@ -49,8 +49,8 @@ pub fn gutin_harmonic_pressure(m: usize, src: &RotorNoise) -> f64 {
     let mb = (m * src.blades) as f64;
     let amp = mb * src.omega
         / (2.0 * std::f64::consts::SQRT_2 * std::f64::consts::PI * src.sound_speed * src.distance);
-    let bracket =
-        src.thrust * src.theta.cos() - src.sound_speed * src.torque / (src.omega * src.r_eff * src.r_eff);
+    let bracket = src.thrust * src.theta.cos()
+        - src.sound_speed * src.torque / (src.omega * src.r_eff * src.r_eff);
     let arg = mb * src.omega * src.r_eff * src.theta.sin() / src.sound_speed;
     amp * bracket * bessel_j(m * src.blades, arg)
 }

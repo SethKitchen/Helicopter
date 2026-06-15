@@ -5,8 +5,8 @@
 
 use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
-    Channel, Pulse, RateSas, closed_loop_matrix, control_matrix11, control_matrix11_at,
-    equilibrium_state11, linearize11, linearize11_at, simulate11, simulate11_sas, Sim11Setup,
+    Channel, Pulse, RateSas, Sim11Setup, closed_loop_matrix, control_matrix11, control_matrix11_at,
+    equilibrium_state11, linearize11, linearize11_at, simulate11, simulate11_sas,
 };
 use helisim_trim::Aircraft;
 
@@ -75,7 +75,11 @@ pub fn run() {
     };
     let open = simulate11(&ac, j, &pulse, [0.0; 11], dt, 8.0);
     let aug = simulate11_sas(
-        &Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] },
+        &Sim11Setup {
+            ac: &ac,
+            j,
+            vel: [0.0, 0.0, 0.0],
+        },
         &pulse,
         &sas,
         [0.0; 11],

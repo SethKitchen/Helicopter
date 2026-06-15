@@ -15,9 +15,9 @@
 
 use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
-    RateSas, Trim, attitude_hold, closed_loop_matrix, control_matrix11, control_matrix11_at,
-    equilibrium_state11, equilibrium_state11_at, linearize11, linearize11_at, simulate11_sas,
-    simulate11_sas_dist, Sim11Setup,
+    RateSas, Sim11Setup, Trim, attitude_hold, closed_loop_matrix, control_matrix11,
+    control_matrix11_at, equilibrium_state11, equilibrium_state11_at, linearize11, linearize11_at,
+    simulate11_sas, simulate11_sas_dist,
 };
 use helisim_trim::Aircraft;
 
@@ -141,7 +141,11 @@ fn hover_attitude_hold_beats_damper_but_a_seam_residual_remains() {
     let mut pert = [0.0; 11];
     pert[3] = 5f64.to_radians();
 
-    let setup = Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] };
+    let setup = Sim11Setup {
+        ac: &ac,
+        j,
+        vel: [0.0, 0.0, 0.0],
+    };
     let damp = simulate11_sas(&setup, &Trim, &rate_damper(), pert, [dt, t_end]);
     let held = simulate11_sas(&setup, &Trim, &hold(), pert, [dt, t_end]);
 
@@ -182,7 +186,11 @@ fn sustained_disturbance_is_regulated_to_a_bounded_offset() {
     let t_end = 12.0;
     let dist = [0.0, 0.8, 0.0]; // [L, M, N] N·m
 
-    let setup = Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] };
+    let setup = Sim11Setup {
+        ac: &ac,
+        j,
+        vel: [0.0, 0.0, 0.0],
+    };
     let damp = simulate11_sas_dist(&setup, &Trim, &rate_damper(), dist, [0.0; 11], [dt, t_end]);
     let held = simulate11_sas_dist(&setup, &Trim, &hold(), dist, [0.0; 11], [dt, t_end]);
 

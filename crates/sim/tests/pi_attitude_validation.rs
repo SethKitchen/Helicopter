@@ -18,8 +18,8 @@
 
 use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
-    PiAttitudeHold, RateSas, Trim, attitude_hold, augmented_matrix, control_matrix11_at,
-    equilibrium_state11_at, linearize11_at, simulate13, Sim11Setup,
+    PiAttitudeHold, RateSas, Sim11Setup, Trim, attitude_hold, augmented_matrix,
+    control_matrix11_at, equilibrium_state11_at, linearize11_at, simulate13,
 };
 use helisim_trim::Aircraft;
 
@@ -122,7 +122,14 @@ fn attitude_hold_zeroes_attitude_but_leaves_a_velocity_drift() {
     let dt = 0.01;
     let dist = [0.0, 0.6, 0.0];
     let t = 14.0;
-    let d = simulate13(&Sim11Setup { ac: &ac, j, vel }, &Trim, &pi(), dist, [0.0; 11], [dt, t]);
+    let d = simulate13(
+        &Sim11Setup { ac: &ac, j, vel },
+        &Trim,
+        &pi(),
+        dist,
+        [0.0; 11],
+        [dt, t],
+    );
     let k = (t / dt) as usize;
     let theta = (d[k][3] - eq[3]).to_degrees().abs();
     let u_drift = (d[k][0] - eq[0]).abs();

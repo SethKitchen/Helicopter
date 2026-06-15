@@ -169,7 +169,11 @@ fn daily_flying_section() {
             dod,
             c_rate,
             25.0,
-            CalendarLoad { years: LIFE_YEARS, storage_temp_c: storage_temp, soc_factor: 1.0 },
+            CalendarLoad {
+                years: LIFE_YEARS,
+                storage_temp_c: storage_temp,
+                soc_factor: 1.0,
+            },
         );
         let ok = fade <= model.eol_fade;
         if ok && sweet_f.is_none() {
@@ -250,7 +254,11 @@ fn years_to_eol(
             dod,
             c_rate,
             25.0,
-            CalendarLoad { years: y, storage_temp_c: storage_temp, soc_factor: 1.0 },
+            CalendarLoad {
+                years: y,
+                storage_temp_c: storage_temp,
+                soc_factor: 1.0,
+            },
         );
         if fade >= model.eol_fade {
             return y;
@@ -399,7 +407,11 @@ fn max_charge_c_for_life(model: &DegradationModel, disch_cr: f64, efc: f64) -> O
             efc,
             eff,
             25.0,
-            CalendarLoad { years: LIFE_YEARS, storage_temp_c: 25.0, soc_factor: 1.0 },
+            CalendarLoad {
+                years: LIFE_YEARS,
+                storage_temp_c: 25.0,
+                soc_factor: 1.0,
+            },
         ) {
             best = Some(cr);
         }
@@ -511,10 +523,7 @@ fn ratio_ladder(
             "cells CANNOT (cell-limited even with an infinite source)"
         }
     );
-    println!(
-        "  {:<42} {:>10} {:>10}  limit",
-        "source", "charge", "ratio"
-    );
+    println!("  {:<42} {:>10} {:>10}  limit", "source", "charge", "ratio");
     for s in sources {
         let r: ChargeReport = charge(pack, s.as_ref(), cell_max_charge_a, cfg);
         let ratio = charge_flight_ratio(r.total_time_h, t_flight);

@@ -16,8 +16,8 @@
 //! time-march must reproduce the 5c eigenvalues.
 
 use helisim_airfoil::Airfoil;
-use helisim_dynamics::aero::longitudinal_main_aero;
 use helisim_dynamics::RotorAero;
+use helisim_dynamics::aero::longitudinal_main_aero;
 use helisim_flapping::Controls;
 use helisim_flapping::FlapProperties;
 use helisim_rotor::{Operating, Rotor};

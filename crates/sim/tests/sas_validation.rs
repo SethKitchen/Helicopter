@@ -17,9 +17,9 @@
 
 use helisim_dynamics::{Inertia, eigenvalues};
 use helisim_sim::{
-    Channel, Pulse, RateSas, Trim, closed_loop_matrix, control_matrix11, control_matrix11_at,
-    equilibrium_state11, equilibrium_state11_at, linearize11, linearize11_at, rk4_step_t,
-    simulate11, simulate11_sas, Sim11Setup,
+    Channel, Pulse, RateSas, Sim11Setup, Trim, closed_loop_matrix, control_matrix11,
+    control_matrix11_at, equilibrium_state11, equilibrium_state11_at, linearize11, linearize11_at,
+    rk4_step_t, simulate11, simulate11_sas,
 };
 use helisim_trim::Aircraft;
 
@@ -80,7 +80,13 @@ fn off_seam_design_is_trustworthy() {
     let dt = 0.005;
     let mut ic = [0.0; 11];
     ic[2] = 0.05; // pitch-rate kick
-    let nl = simulate11_sas(&Sim11Setup { ac: &ac, j, vel }, &Trim, &sas(), ic, [dt, 2.0]);
+    let nl = simulate11_sas(
+        &Sim11Setup { ac: &ac, j, vel },
+        &Trim,
+        &sas(),
+        ic,
+        [dt, 2.0],
+    );
     let li = lin_cl(&acl, ic, dt, 2.0);
     let k = (1.0 / dt) as usize;
     let rel = ((nl[k][2] - eq[2]) - li[k][2]).abs() / li[k][2].abs().max(1e-9);
@@ -136,7 +142,11 @@ fn nonlinear_hover_holds_attitude_across_the_seam() {
 
     let open = simulate11(&ac, j, &pulse, [0.0; 11], dt, t_end);
     let aug = simulate11_sas(
-        &Sim11Setup { ac: &ac, j, vel: [0.0, 0.0, 0.0] },
+        &Sim11Setup {
+            ac: &ac,
+            j,
+            vel: [0.0, 0.0, 0.0],
+        },
         &pulse,
         &sas(),
         [0.0; 11],

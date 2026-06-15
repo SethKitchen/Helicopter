@@ -29,7 +29,6 @@ pub mod hover_trim;
 pub mod scenario;
 
 pub use climb::{ClimbReport, analyze_climb};
-pub use scenario::MissionScenario;
 pub use electrical::{ElectricalState, solve_pack_current};
 pub use endurance::{
     EnduranceResult, MissionConfig, ThermalResult, simulate_discharge_thermal,
@@ -37,6 +36,7 @@ pub use endurance::{
 };
 pub use hover_mission::{HoverReport, analyze_hover};
 pub use hover_trim::trim_hover_collective;
+pub use scenario::MissionScenario;
 
 /// Standard gravity, m/s^2.
 pub const G: f64 = 9.80665;
