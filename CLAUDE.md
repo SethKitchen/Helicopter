@@ -482,6 +482,27 @@ powered-flight stack omitted; built off the validated cores, never modifies them
   with scale as self-made structure/rotor grow against ~flat avionics. `helisim
   design` (cost section).
 
+CFD track — **active (`cfd` crate)**: the first solve of the *actual* Navier-Stokes
+equations on a grid (the rest of the aero stack is reduced-order BEMT/momentum/
+finite-state). Std-only, zero deps, every operator hand-rolled; built validate-core-
+then-apply like `fea`. **(1)** Lid-driven cavity (vorticity-streamfunction + SOR +
+Thom wall vorticity) — EXTERNAL vs **Ghia et al. (1982)** Re=100 to ~1% (u/v/vortex/ψ),
+converging under refinement. **(2)** Pressure recovery (pressure-Poisson from the
+velocity field, 2nd-order Neumann) — the field the streamfunction form drops, needed
+for forces; manufactured-solution validated. **(3)** Taylor-Green vortex — exact
+unsteady-NS solution, validates the time-marcher (energy decays at e^(-4νt) to 0.2%).
+**(4) Body in the flow:** steady viscous flow past a circular cylinder on a body-fitted
+log-polar grid (cylinder = coordinate line, exact no-slip; local time-stepping dt∝e^{2ξ}
+removes the metric stiffness). Forces TWO independent ways — local **surface integral**
+(friction from wall ω + pressure from ∂p/∂η=(2/Re)∂ω/∂ξ) and whole-field **dissipation**
+C_D=(2/Re)∫ω² — that agree ~13% (★ cross-check). EXTERNAL vs **Tritton 1959 / Dennis &
+Chang 1970 / Coutanceau-Bouard 1977 / Le / Calhoun** at Re_D=40: C_D 1.35 vs 1.48-1.66
+(11%), L_wake/D 2.21 vs 2.18-2.35 (spot on), θ_sep 52.9° vs 53.5-54.2° (<2%); residual
+owned (1st-order upwind + finite domain blockage/truncation + resolution). `helisim cfd`.
+**Next (named, not done):** a Joukowski conformal map of the cylinder solver → airfoil
+at incidence → sectional Cl/Cd → feed the rotor `Airfoil` trait (honest caveat: laminar
+low-Re, valid for small model-scale blades, NOT the high-Re analytic NACA0012 regime).
+
 Each milestone is added as new crate(s); never break the existing cores.
 
 ## Hard rules (always follow)
@@ -783,6 +804,18 @@ crates/
     cst.rs        plane-stress constant-strain triangle (2-D continuum FE)
     tests/beam_validation.rs  cantilever PL³/3EI (exact) + string limit qL²/8T + distributed
     tests/cst_validation.rs   FE patch test + uniaxial bar (σ=F/A, δ=FL/AE exact)
+  cfd/          from-scratch viscous 2-D incompressible Navier-Stokes (std-only, zero deps)
+    grid.rs       uniform unit-square grid (lid-driven cavity)
+    poisson.rs    SOR ∇²φ=rhs (validated vs manufactured solution)
+    cavity.rs     lid-driven cavity, vorticity-streamfunction + Thom wall vorticity
+    solution.rs   CavitySolution + Ghia-comparison diagnostics (+ recovered pressure)
+    pressure.rs   pressure recovery: ∇²p=-(u_x²+2u_yv_x+v_y²), 2nd-order Neumann (toward forces)
+    taylor_green.rs exact unsteady-NS validation: periodic TG vortex decay e^(-4νt)
+    polar_grid.rs body-fitted log-polar grid r=e^ξ (cylinder = coordinate line, no staircase)
+    cylinder.rs   steady flow past a cylinder, vort-streamfn + LOCAL time-stepping (dt∝e^{2ξ})
+    cylinder_solution.rs  drag TWO ways (surface integral + dissipation ∫ω²), wake, separation
+    tests/ghia_validation.rs      EXTERNAL: Ghia 1982 cavity Re=100 (u/v/vortex/ψ ~1%)
+    tests/cylinder_validation.rs  EXTERNAL: Tritton/Dennis-Chang Re=40 cylinder (Cd/L_wake/θ_sep)
   cost/         parametric cost + buildability (priorities #2 vert-integ, #3 cost)
     component.rs  Component + Buildability taxonomy (raw-stock/fabricated/assembled/purchased)
     costs.rs      UnitCosts — named, overridable cost inputs (representative defaults)
