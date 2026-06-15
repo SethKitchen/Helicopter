@@ -19,11 +19,14 @@
 //!
 //! * **Validated core, then application.** The steady solver is validated on the
 //!   canonical Ghia benchmark; the *unsteady* solver against the exact Taylor–Green
-//!   vortex ([`taylor_green`]); and the **pressure field** — the quantity the
-//!   streamfunction form drops, and the one forces need — is recovered from the
-//!   velocity via the pressure-Poisson equation ([`pressure`]), validated by a
-//!   manufactured solution. The remaining step toward airfoil `Cl/Cd` is an
-//!   immersed/body-fitted boundary so a section sits in the flow — named, not done.
+//!   vortex ([`taylor_green`]); the **pressure field** — the quantity the
+//!   streamfunction form drops, and the one forces need — is recovered via the
+//!   pressure-Poisson equation ([`pressure`]); and a **body sits in the flow** —
+//!   steady viscous flow past a circular cylinder on a body-fitted log-polar grid
+//!   ([`cylinder`]), whose drag, wake length and separation angle match the
+//!   Tritton/Dennis–Chang benchmark, with the forces from a surface integral. The
+//!   remaining step toward airfoil `Cl/Cd` is a Joukowski conformal map of the same
+//!   solver to an airfoil at incidence — named, not done.
 //! * **First-order upwinding + uniform grid.** Accurate and robust; the absolute
 //!   match to Ghia tightens with grid refinement (and a higher-order convection
 //!   scheme), so the validation tolerances are honest about resolution.
@@ -37,15 +40,21 @@
 //! * [`solution`]    — the flow field + Ghia-comparison diagnostics.
 
 pub mod cavity;
+pub mod cylinder;
+pub mod cylinder_solution;
 pub mod grid;
 pub mod poisson;
+pub mod polar_grid;
 pub mod pressure;
 pub mod solution;
 pub mod taylor_green;
 
 pub use cavity::{CavityConfig, solve_cavity};
+pub use cylinder::{CylinderConfig, solve_cylinder};
+pub use cylinder_solution::CylinderSolution;
 pub use grid::Grid;
 pub use poisson::{optimal_omega, sor_solve};
+pub use polar_grid::PolarGrid;
 pub use pressure::{pressure_source, recover_pressure, solve_pressure};
 pub use solution::CavitySolution;
 pub use taylor_green::TaylorGreen;
