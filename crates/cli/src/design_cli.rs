@@ -3,9 +3,10 @@
 //! then sweeps rotor radius at fixed tip speed to surface the central disk-loading
 //! trade and recommend a point from the priority *ordering*.
 
+use helisim_actuation::select_actuation;
 use helisim_airfoil::LinearAirfoil;
 use helisim_bemt::Config;
-use helisim_cost::{AircraftSpec, UnitCosts, build_bom, summarize};
+use helisim_cost::{AircraftSpec, Buildability, Component, UnitCosts, build_bom, summarize};
 use helisim_design::{
     DesignCandidate, DesignReport, DesignSpace, evaluate, recommend, sweep_radius,
 };
@@ -50,6 +51,16 @@ pub fn run() {
                 );
             }
             emit_blade_build(&rec.best.candidate);
+            let act = select_actuation(&rec.best.candidate, &rec.best.report);
+            println!("  [actuation]  {}", act.summary());
+            for n in &act.notes {
+                println!("               {n}");
+            }
+            println!("  [buy]        specific parts (price + direct link):");
+            for line in act.purchase_lines() {
+                println!("               {line}");
+            }
+            println!("               (run `helisim build` for install & use steps)");
         }
         None => {
             println!("  No design met the constraints; relax the safety floor or widen the grid.")
@@ -200,20 +211,54 @@ fn print_cost(c: &DesignCandidate, r: &DesignReport) {
         return;
     }
     // Documented mass split of the gross mass + installed power = 2× hover (climb
-    // margin). Override-able; representative, not authoritative.
+    // margin). Override-able; representative, not authoritative. The motor mass is
+    // now the SELECTED motor (not a guess), and servos are added as a real line.
     let m = c.gross_mass_kg;
+    let act = select_actuation(c, r);
+    let motor_mass = act.motor_mass_kg();
     let spec = AircraftSpec {
         n_blades: c.n_blades,
         blade_mass_kg: 0.03 * m / c.n_blades as f64,
         hub_mass_kg: 0.05 * m,
         structure_mass_kg: 0.40 * m,
-        powertrain_mass_kg: 0.12 * m,
+        // Powertrain mass = selected motor (+ESC ≈ ⅓ motor), falling back to the
+        // old split only if the demand is beyond the catalogue (no real motor).
+        powertrain_mass_kg: if motor_mass > 0.0 {
+            motor_mass * 1.33
+        } else {
+            0.12 * m
+        },
         motor_power_kw: 2.0 * r.hover_shaft_power_w / 1000.0,
         pack_energy_wh: c.pack_energy_wh,
         pack_mass_kg: 0.25 * m,
     };
     let costs = UnitCosts::default();
-    let cr = summarize(&build_bom(&spec, &costs));
+    let mut bom = build_bom(&spec, &costs);
+    // Replace the parametric motor line with the SELECTED buyable motor's real
+    // price + name (if a real part was found), and add the SELECTED servos as a
+    // real Purchased line at their sourced prices — specific parts, real money.
+    let motor_price = act.motor.part.map(|m| m.price_usd).unwrap_or(0.0);
+    if let Some(m) = &act.motor.part {
+        for it in bom.items.iter_mut() {
+            if it.subsystem == "powertrain" && it.name.starts_with("motor") {
+                it.name = m.name; // both &'static str
+                it.cost = m.price_usd;
+            }
+        }
+    }
+    // Only add the servo line when a real, priced part was selected; beyond the
+    // hobby catalogue (human scale) servos become EHA actuators — not a $0 line.
+    if act.cyclic_servo.part.is_some() && act.tail_servo.part.is_some() {
+        let servo_cost = (act.total_price_usd - motor_price).max(0.0);
+        bom.items.push(Component {
+            name: "control servos (swashplate + tail)",
+            subsystem: "avionics",
+            mass_kg: act.servo_mass_kg(),
+            cost: servo_cost,
+            buildability: Buildability::Purchased,
+        });
+    }
+    let cr = summarize(&bom);
     println!(
         "  [cost/build] total ≈ ${:.0} (PARAMETRIC — representative unit costs, override w/ quotes)",
         cr.total_cost

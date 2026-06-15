@@ -3,6 +3,7 @@
 //! STL/DXF geometry files. The end-to-end realisation of the project's goal:
 //! physics → recommended design → "make exactly this".
 
+use helisim_actuation::select_actuation;
 use helisim_airfoil::LinearAirfoil;
 use helisim_bemt::Config;
 use helisim_design::{DesignCandidate, DesignSpace, recommend};
@@ -114,6 +115,91 @@ pub fn run() {
     println!("\n=== Hardware schedule (standard parts selected by load) ===");
     for h in hardware_schedule(&c, &report) {
         println!("  {:<24} {:<6} — {}", h.joint, h.part, h.detail);
+    }
+
+    // Actuation: real motor + swashplate/tail servos selected by design load.
+    println!("\n=== Actuation (motor + servos selected by load) ===");
+    let act = select_actuation(&c, &report);
+    match &act.motor.part {
+        Some(m) => println!(
+            "  motor      {:<14} {:>4} Kv, {:>4.0} g — cont {:>4.0} W ≥ demand {:>4.0} W; \
+             {:.0} A on {}S (≤ {:.0} A), gear {:.0}:1",
+            m.name,
+            m.kv as i64,
+            m.mass_g,
+            m.max_cont_power_w,
+            act.motor_power_demand_w,
+            act.motor_current_a,
+            act.cells,
+            m.max_cont_current_a,
+            act.gear_ratio,
+        ),
+        None => println!(
+            "  motor      beyond catalogue — demand {:.0} W; est. {:.0} g",
+            act.motor_power_demand_w, act.motor.mass_g
+        ),
+    }
+    if let Some(s) = &act.cyclic_servo.part {
+        println!(
+            "  cyclic     {}× {:<8} {:>5.2} N·m ≥ demand {:.2} N·m (propeller moment), {:.0} g ea, {:.3} s/60°",
+            act.n_cyclic_servos,
+            s.name,
+            s.stall_torque_nm,
+            act.servo_demand_nm,
+            s.mass_g,
+            s.speed_s_per_60
+        );
+    }
+    if let Some(s) = &act.tail_servo.part {
+        println!(
+            "  tail       1× {:<8} {:>5.2} N·m ≥ demand {:.2} N·m, {:.0} g, {:.3} s/60°",
+            s.name, s.stall_torque_nm, act.tail_demand_nm, s.mass_g, s.speed_s_per_60
+        );
+    }
+    println!(
+        "  → total actuation mass {:.2} kg (motor {:.2} + servos {:.2})",
+        act.total_mass_kg,
+        act.motor_mass_kg(),
+        act.servo_mass_kg()
+    );
+    for n in &act.notes {
+        println!("  {n}");
+    }
+
+    // Purchasable parts: specific part, price, and direct purchase link.
+    println!("\n  Purchase list (specific buyable parts — price + direct link):");
+    for line in act.purchase_lines() {
+        println!("    {line}");
+    }
+
+    // Power & connections: pack/ESC/BEC, connectors, signal wiring.
+    println!("\n  Power & connections:");
+    for step in act.power_and_connections() {
+        if step.starts_with('—') {
+            println!("    {step}");
+        } else {
+            println!("      {step}");
+        }
+    }
+
+    // Connect to structure: which heli structure each part mounts to and how.
+    println!("\n  Connect to structure:");
+    for step in act.structural_connections() {
+        if step.starts_with('—') {
+            println!("    {step}");
+        } else {
+            println!("      {step}");
+        }
+    }
+
+    // Setup & use: install / centre / endpoint / run-in sequence.
+    println!("\n  Setup & use:");
+    for step in act.build_instructions() {
+        if step.starts_with('—') {
+            println!("    {step}");
+        } else {
+            println!("      {step}");
+        }
     }
 
     // Export geometry files.
