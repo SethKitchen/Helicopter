@@ -156,7 +156,15 @@ fn hqr(a: &mut [Vec<f64>]) -> Vec<Complex> {
                 break;
             }
             if its >= 60 {
-                // Non-convergence safety: emit the diagonal entry and deflate.
+                // Non-convergence: emit the diagonal entry and deflate. This may be
+                // a WRONG eigenvalue (the exact "silently wrong at scale" trap that
+                // bit the char-poly route), so assert in debug/test builds — a real
+                // non-converging matrix is caught, not silently mis-solved.
+                debug_assert!(
+                    false,
+                    "QR (hqr) failed to converge on a {n}×{n} matrix at index {nu}; \
+                     the returned eigenvalue may be wrong"
+                );
                 wr[nu] = x + t;
                 wi[nu] = 0.0;
                 nn -= 1;

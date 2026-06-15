@@ -47,7 +47,7 @@ impl DesignCandidate {
     /// A starting model-scale electric helicopter: ~3.5 kg, 0.6 m rotor, 2 blades,
     /// ~125 m/s tip speed. A concrete point to sweep around, not a recommendation.
     pub fn model() -> Self {
-        DesignCandidate {
+        let mut c = DesignCandidate {
             gross_mass_kg: 3.5,
             n_blades: 2,
             radius_m: 0.6,
@@ -57,13 +57,19 @@ impl DesignCandidate {
             blade_cd0: 0.011,
             flat_plate_area_m2: 0.02,
             blade_areal_density_kg_m2: 2.5,
-            rotor_inertia: 0.012,
+            rotor_inertia: 0.0, // set below
             pack_energy_wh: 120.0,
             usable_fraction: 0.8,
             powertrain_eta: 0.85,
             observer_distance_m: 10.0,
             observer_angle_deg: 45.0,
-        }
+        };
+        // Derive inertia from the geometry with the SAME estimator the recommender
+        // uses for every grid candidate ([`Self::with_geometry`]) — so comparing the
+        // recommended design's flare margin against this baseline is apples-to-apples,
+        // not an artifact of two different inertia conventions.
+        c.rotor_inertia = c.estimate_rotor_inertia();
+        c
     }
 
     /// Rotational speed, rad/s (`Ω = V_tip / R`).

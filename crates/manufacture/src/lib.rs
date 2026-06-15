@@ -46,9 +46,11 @@ pub mod mast;
 pub mod materials;
 pub mod mesh;
 pub mod mount;
+pub mod naca_section;
 pub mod part;
 pub mod print_plan;
 pub mod root_fitting;
+pub mod sizing;
 pub mod split;
 pub mod split_geometry;
 pub mod step_brep;
@@ -89,8 +91,8 @@ pub use split_geometry::{
     annular_boss, blade_piece_tris, blade_splice_plate, blade_split_meshes, splice_plate,
 };
 pub use step_brep::{
-    assembly_to_step_ap203, blade_to_step_brep, is_closed_manifold, mesh_to_step_brep,
-    mesh_topology,
+    assembly_to_step_ap203, blade_to_step_brep, is_closed_manifold, is_oriented_manifold,
+    mesh_to_step_brep, mesh_topology,
 };
 pub use structural::{MarginItem, StructuralReport, check_structure};
 pub use swashplate::{SwashplateSpec, swashplate_for};

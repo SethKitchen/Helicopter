@@ -2,14 +2,13 @@
 //! integrated with both rotors in the loop, on the now-validated general-state
 //! aero. Gated against 5d (longitudinal) and the corrected lateral oracle.
 
+use crate::rigid_body::rigid_body_rates;
 use crate::rk4::rk4_step;
 use helisim_dynamics::{
     Inertia, RotorAero, hover_collective_for_weight, main_rotor_full, tail_thrust,
 };
 use helisim_flapping::Controls;
 use helisim_trim::{Aircraft, NewtonConfig, TrimCondition, trim};
-
-const G: f64 = 9.80665;
 
 /// State `[u, w, q, θ, v, p, r, φ]` (same order as the coupled linear model).
 pub type State8 = [f64; 8];
@@ -53,23 +52,13 @@ pub fn state_derivative8(m: &Model8, s: &[f64]) -> Vec<f64> {
     let mm = main.my;
     let nm = main.mz - ac.tail.arm * t_tr;
 
-    let (mass, ixx, iyy, izz) = (ac.mass, m.j.i_xx, m.j.i_yy, m.j.i_zz);
-    let (gx, gy, gz) = (
-        -G * theta.sin(),
-        G * theta.cos() * phi.sin(),
-        G * theta.cos() * phi.cos(),
-    );
-
-    let udot = -(q * w - r * v) + gx + xf / mass;
-    let vdot = -(r * u - p * w) + gy + yf / mass;
-    let wdot = -(p * v - q * u) + gz + zf / mass;
-    let pdot = (lm + (iyy - izz) * q * r) / ixx;
-    let qdot = (mm + (izz - ixx) * r * p) / iyy;
-    let rdot = (nm + (ixx - iyy) * p * q) / izz;
-    let thetadot = q * phi.cos() - r * phi.sin();
-    let phidot = p + (q * phi.sin() + r * phi.cos()) * theta.tan();
-
-    vec![udot, wdot, qdot, thetadot, vdot, pdot, rdot, phidot]
+    rigid_body_rates(
+        [u, w, q, theta, v, p, r, phi],
+        [xf, yf, zf, lm, mm, nm],
+        ac.mass,
+        [m.j.i_xx, m.j.i_yy, m.j.i_zz],
+    )
+    .to_vec()
 }
 
 /// The hover equilibrium for the 8-state EOM, as

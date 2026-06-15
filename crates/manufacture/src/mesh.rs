@@ -93,10 +93,12 @@ pub fn ellipsoid(a: f64, b: f64, c: f64, n_lat: usize, n_long: usize) -> Vec<Tri
     let bot = Vec3::new(0.0, 0.0, -c);
     let mut tris = Vec::new();
     for j in 0..n_long {
-        // Top cap fan.
-        tris.push(Tri(top, p(1, j), p(1, j + 1)));
-        // Bottom cap fan.
-        tris.push(Tri(bot, p(n_lat - 1, j + 1), p(n_lat - 1, j)));
+        // Top cap fan — wound so its shared row-1 edge runs OPPOSITE the body row
+        // below (consistent outward orientation; the naive same-sense winding made
+        // the poles back-facing, caught by `is_oriented_manifold`).
+        tris.push(Tri(top, p(1, j + 1), p(1, j)));
+        // Bottom cap fan — likewise opposite the body's last row.
+        tris.push(Tri(bot, p(n_lat - 1, j), p(n_lat - 1, j + 1)));
     }
     for i in 1..n_lat - 1 {
         for j in 0..n_long {

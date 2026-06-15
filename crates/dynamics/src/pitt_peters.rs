@@ -107,6 +107,35 @@ mod tests {
         );
     }
 
+    /// Numeric oracle for the **off-axis wake-skew coupling** the hover test can't
+    /// see (at μ=0 it vanishes). In forward flight the wake skews (χ>0) and the
+    /// Pitt–Peters `[L]` couples `λ₀ ↔ λ₁c` through `±(15π/64)·tan(χ/2)/V`. We check
+    /// (a) the matrix entries match that closed form, and (b) the *behaviour* it
+    /// produces: a pure pitch-moment forcing drives a non-zero coning inflow `λ₀`
+    /// at μ>0 but exactly zero at μ=0.
+    #[test]
+    fn off_axis_wake_skew_coupling_matches_pitt_peters() {
+        let (mu, lambda) = (0.2_f64, 0.05_f64);
+        let v = (mu * mu + lambda * lambda).sqrt();
+        let chi = mu.atan2(lambda);
+        let coupling = (15.0 * PI / 64.0) * (0.5 * chi).tan() / v; // the analytic term
+        assert!(coupling > 0.1, "coupling is substantial at μ=0.2");
+
+        let l = l_matrix(mu, lambda);
+        assert!((l[2][0] - coupling).abs() < 1e-9, "λ₀→λ₁c coupling L[2][0]");
+        assert!(
+            (l[0][2] + coupling).abs() < 1e-9,
+            "λ₁c→λ₀ coupling (opposite sign)"
+        );
+
+        // Behaviour: a pure pitch moment couples into the coning inflow λ₀ at μ>0…
+        let nu_fwd = steady_inflow_for([0.0, 0.0, 1e-3], mu, lambda);
+        assert!((nu_fwd[0] - (-coupling * 1e-3)).abs() < 1e-12 && nu_fwd[0] != 0.0);
+        // …but not at hover, where the wake is unskewed.
+        let nu_hover = steady_inflow_for([0.0, 0.0, 1e-3], 0.0, lambda);
+        assert!(nu_hover[0].abs() < 1e-15);
+    }
+
     #[test]
     fn steady_is_a_fixed_point_of_the_dynamics() {
         let (mu, lambda, omega) = (0.1, 0.05, 150.0);

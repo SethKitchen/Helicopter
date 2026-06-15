@@ -2,7 +2,7 @@
 //! resistance. The two parameters (the OCV curve and `r_internal`) are exactly
 //! what get fitted to a datasheet; everything else is predicted.
 
-use crate::cell::Cell;
+use crate::cell::{Cell, SURFACE_AREA_18650_M2};
 
 /// Thévenin (Rint) cell model. `ocv_curve` is `(soc, ocv)` sorted by ascending
 /// `soc`; OCV is linearly interpolated between points and held at the ends.
@@ -15,6 +15,8 @@ pub struct TheveninCell {
     cutoff_voltage: f64,
     max_continuous_current: f64,
     mass_kg: f64,
+    surface_area_m2: f64,
+    entropic_coeff_v_per_k: f64,
 }
 
 impl TheveninCell {
@@ -39,7 +41,24 @@ impl TheveninCell {
             cutoff_voltage,
             max_continuous_current,
             mass_kg,
+            surface_area_m2: SURFACE_AREA_18650_M2, // default 18650; override per form factor
+            entropic_coeff_v_per_k: 0.0, // Joule-only until a measured coefficient is set
         }
+    }
+
+    /// Set the convecting skin area (m²) — e.g. [`crate::cell::SURFACE_AREA_21700_M2`]
+    /// for a 21700 cell, so the thermal model uses the right geometry.
+    pub fn with_surface_area(mut self, surface_area_m2: f64) -> Self {
+        self.surface_area_m2 = surface_area_m2;
+        self
+    }
+
+    /// Set a (measured) entropic coefficient `∂OCV/∂T`, V/K, enabling reversible
+    /// (entropic) heat in the thermal model. A constant approximation of the
+    /// SoC-varying coefficient; left 0 (Joule-only) unless sourced.
+    pub fn with_entropic_coefficient(mut self, dudt_v_per_k: f64) -> Self {
+        self.entropic_coeff_v_per_k = dudt_v_per_k;
+        self
     }
 
     /// Samsung INR18650-25R — the validated oracle cell.
@@ -110,6 +129,12 @@ impl Cell for TheveninCell {
     fn mass_kg(&self) -> f64 {
         self.mass_kg
     }
+    fn surface_area(&self) -> f64 {
+        self.surface_area_m2
+    }
+    fn entropic_coefficient(&self, _soc: f64) -> f64 {
+        self.entropic_coeff_v_per_k
+    }
 }
 
 #[cfg(test)]
@@ -136,5 +161,22 @@ mod tests {
         assert!(c.terminal_voltage(0.5, 20.0) < c.ocv(0.5));
         let expected_sag = 20.0 * c.internal_resistance(0.5);
         assert!((c.ocv(0.5) - c.terminal_voltage(0.5, 20.0) - expected_sag).abs() < 1e-9);
+    }
+
+    /// Entropic heat defaults OFF (Joule-only preserved), and when a measured
+    /// ∂OCV/∂T is supplied it follows Bernardi `Q_rev = −I·T·∂OCV/∂T`: a negative
+    /// coefficient (typical at high SoC) HEATS on discharge.
+    #[test]
+    fn entropic_heat_is_bernardi_and_off_by_default() {
+        let base = TheveninCell::samsung_25r();
+        assert_eq!(base.entropic_coefficient(0.5), 0.0);
+        assert_eq!(base.reversible_heat(0.5, 20.0, 25.0), 0.0); // Joule-only by default
+
+        let dudt = -3.0e-4; // V/K — a representative high-SoC NMC value
+        let c = TheveninCell::samsung_25r().with_entropic_coefficient(dudt);
+        let (i, t_c) = (20.0, 25.0);
+        let q = c.reversible_heat(0.5, i, t_c);
+        assert!((q - (-i * (t_c + 273.15) * dudt)).abs() < 1e-12);
+        assert!(q > 0.0, "negative ∂OCV/∂T heats on discharge");
     }
 }

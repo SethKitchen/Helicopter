@@ -15,12 +15,11 @@
 
 use crate::control::{ControlSchedule, Trim};
 use crate::driven_equilibrium::{equilibrium_state11, equilibrium_state11_at, model11, model11_at};
+use crate::rigid_body::rigid_body_rates;
 use crate::rk4::rk4_step_t;
 use helisim_dynamics::{Inertia, RotorAero, inflow_rate, tail_thrust};
 use helisim_flapping::Controls;
 use helisim_trim::Aircraft;
-
-const G: f64 = 9.80665;
 
 /// State `[u, w, q, θ, v, p, r, φ, λ₀, λ₁s, λ₁c]`.
 pub type State11 = [f64; 11];
@@ -80,24 +79,15 @@ pub fn deriv11(m: &Model11, d: [f64; 4], s: &[f64]) -> Vec<f64> {
     let mm = main.my;
     let nm = main.mz - ac.tail.arm * t_tr;
 
-    let (mass, ixx, iyy, izz) = (ac.mass, m.j.i_xx, m.j.i_yy, m.j.i_zz);
-    let (gx, gy, gz) = (
-        -G * theta.sin(),
-        G * theta.cos() * phi.sin(),
-        G * theta.cos() * phi.cos(),
+    let rb = rigid_body_rates(
+        [u, w, q, theta, v, p, r, phi],
+        [xf, yf, zf, lm, mm, nm],
+        ac.mass,
+        [m.j.i_xx, m.j.i_yy, m.j.i_zz],
     );
 
-    let udot = -(q * w - r * v) + gx + xf / mass;
-    let vdot = -(r * u - p * w) + gy + yf / mass;
-    let wdot = -(p * v - q * u) + gz + zf / mass;
-    let pdot = (lm + (iyy - izz) * q * r) / ixx;
-    let qdot = (mm + (izz - ixx) * r * p) / iyy;
-    let rdot = (nm + (ixx - iyy) * p * q) / izz;
-    let thetadot = q * phi.cos() - r * phi.sin();
-    let phidot = p + (q * phi.sin() + r * phi.cos()) * theta.tan();
-
     vec![
-        udot, wdot, qdot, thetadot, vdot, pdot, rdot, phidot, nu_dot[0], nu_dot[1], nu_dot[2],
+        rb[0], rb[1], rb[2], rb[3], rb[4], rb[5], rb[6], rb[7], nu_dot[0], nu_dot[1], nu_dot[2],
     ]
 }
 

@@ -7,7 +7,7 @@
 //! into the lumped thermal balance. The loop runs to the cut-off voltage (or an
 //! optional time cap, for a fixed-duration climb).
 
-use crate::electrical::solve_pack_current;
+use crate::electrical::{solve_pack_current, solve_pack_current_at};
 use helisim_pack::Pack;
 use helisim_thermal::{Cooling, LumpedThermalCell, ThermalLimits};
 
@@ -22,6 +22,12 @@ pub struct MissionConfig {
     pub cutoff_margin: f64,
     /// Ambient temperature for the thermal model, °C.
     pub ambient_c: f64,
+    /// Use the tracked cell temperature for pack resistance (closing the
+    /// temperature→R→sag→heat→temperature loop). **Default `false`** — the default
+    /// thermal/safety check uses the conservative 25 °C resistance (warming a cell
+    /// LOWERS its R, which would *under*-predict self-heating, an optimistic bias
+    /// not wanted in an overheat check). Enable to analyse a hot/cold pack.
+    pub temp_dependent_resistance: bool,
 }
 
 impl Default for MissionConfig {
@@ -31,6 +37,7 @@ impl Default for MissionConfig {
             start_soc: 1.0,
             cutoff_margin: 1.0,
             ambient_c: 25.0,
+            temp_dependent_resistance: false,
         }
     }
 }
@@ -101,22 +108,42 @@ fn run_discharge(
     let mut time_to_warn = None;
     let mut time_to_over = None;
 
-    while let Some(state) = solve_pack_current(pack, soc, p_elec) {
+    loop {
+        // When a thermal model is tracking cell temperature, solve the current at
+        // the CURRENT temperature (cold pack ⇒ higher R ⇒ more sag/current) — this
+        // closes the temperature→resistance→sag→heat→temperature loop. Without a
+        // thermal model, fall back to the 25 °C solve (unchanged behaviour).
+        let state = if cfg.temp_dependent_resistance && thermal.is_some() {
+            solve_pack_current_at(pack, soc, p_elec, temp)
+        } else {
+            solve_pack_current(pack, soc, p_elec)
+        };
+        let Some(state) = state else { break };
         if state.terminal_voltage <= stop_v || soc <= 0.0 || time_s >= cap_time {
             break;
         }
 
         let i = state.pack_current;
         peak_current = peak_current.max(i);
+        let soc_at_solve = soc; // resistance evaluated at the SoC the current was solved at
         let dq = i * dt_h;
         current_integral += i * cfg.dt_seconds;
         energy_wh += state.terminal_voltage * i * dt_h;
         soc -= dq / capacity_ah;
 
-        // Thermal step (per-cell I²R into the lumped balance).
+        // Thermal step (per-cell I²R into the lumped balance), with the resistance
+        // at the tracked temperature so warming reduces R (self-limiting heating).
         if let Some(th) = thermal.as_ref() {
             let i_cell = pack.cell_current(i);
-            let q_gen = i_cell * i_cell * pack.cell_resistance(soc);
+            let r_cell = if cfg.temp_dependent_resistance {
+                pack.cell_resistance_at(soc_at_solve, temp)
+            } else {
+                pack.cell_resistance(soc_at_solve)
+            };
+            // Joule (I²R) + reversible (entropic) heat; the latter is 0 unless the
+            // cell carries a measured ∂OCV/∂T.
+            let q_gen =
+                i_cell * i_cell * r_cell + pack.cell_reversible_heat(soc_at_solve, i_cell, temp);
             temp = th.lump.step(temp, q_gen, th.cooling, cfg.dt_seconds);
             peak_temp = peak_temp.max(temp);
             if time_to_warn.is_none() && temp > th.limits.warn_c {

@@ -53,7 +53,7 @@ impl ThermalEnvelope {
             ambient_c,
             t_limit_c,
             length_m: 0.070,
-            surface_area_m2: 5.34e-3,
+            surface_area_m2: helisim_cell::SURFACE_AREA_21700_M2,
             core_fraction: 0.9,
         }
     }

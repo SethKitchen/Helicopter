@@ -138,8 +138,9 @@ pub fn control_parts(c: &DesignCandidate, control_moment_nm: f64) -> Vec<Control
     let pitch_link = ControlPart {
         name: "pitch link/pushrod",
         length_m: 0.08 * r,
-        area_m2: link_d * link_d,
-        i_m4: link_d.powi(4) / 12.0,
+        // Round 4 mm pushrod: circular section (A=πd²/4, I=πd⁴/64), not square.
+        area_m2: PI * link_d * link_d / 4.0,
+        i_m4: PI * link_d.powi(4) / 64.0,
         c_m: link_d / 2.0,
         transverse_n: 0.0,
         axial_n: link_force,
@@ -185,7 +186,10 @@ pub fn analyze_blade(
     let span = r - root_r;
     let chord = c.chord_m;
     let t = 0.12 * chord; // NACA 0012 max thickness
-    let area = 0.0822 * chord * chord; // NACA 0012 section area
+    // Full NACA 0012 section area. NB: the manufacture structural-margin checks use
+    // a conservative HALF of this (a load-bearing fraction); here we want the true
+    // nominal stress because this analysis compares materials by ratio, not margin.
+    let area = 0.0822 * chord * chord;
     let i_flap = chord * t.powi(3) / 12.0;
     let z = i_flap / (t / 2.0);
     let mu = c.blade_areal_density_kg_m2 * chord; // mass per unit span

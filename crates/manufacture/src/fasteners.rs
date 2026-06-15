@@ -11,7 +11,6 @@
 //! centrifugal force; bearings are chosen by the shaft bore they must fit.
 
 use helisim_design::{DesignCandidate, DesignReport};
-use std::f64::consts::PI;
 
 /// A standard metric bolt (class 8.8).
 #[derive(Clone, Copy, Debug)]
@@ -140,8 +139,10 @@ pub fn hardware_schedule(c: &DesignCandidate, report: &DesignReport) -> Vec<Hard
     } else {
         1.0
     };
-    let mast_d_mm = (16.0 * torque / (PI * 55.0e6)).cbrt() * 1000.0;
-    let mast_d_mm = mast_d_mm.ceil();
+    let mast_d_mm = crate::sizing::round_up_mm(crate::sizing::mast_min_dia_for_torsion(
+        torque,
+        crate::materials::TAU_ALLOW_AL,
+    )) * 1000.0;
     let weight = c.gross_mass_kg * 9.80665;
     if let Some(brg) = select_bearing(mast_d_mm, weight, 2.0) {
         items.push(HardwareItem {

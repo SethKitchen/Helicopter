@@ -152,3 +152,28 @@ fn recommender_returns_none_when_nothing_meets_the_floor() {
     space.min_flare_margin = 1.0e6; // impossible safety floor
     assert!(recommend(&space, &base, &af, &Config::default()).is_none());
 }
+
+#[test]
+fn best_glide_is_interior_not_edge_clamped() {
+    // The speed grid is scaled to the candidate (≈8·v_h), so best-glide is found
+    // INTERIOR to the grid, not pinned to its top. Verified for a high-disk-loading
+    // case (human-scale with a small rotor) where a fixed 40 m/s ceiling would clamp.
+    let mut c = DesignCandidate::human_scale_2pax();
+    c.radius_m = 2.5; // raise disk loading → best-glide speed climbs past 40 m/s
+    let r = evaluate(&c, &LinearAirfoil::naca0012(), &Config::default());
+    let area = c.disk_area();
+    let v_h = (c.gross_mass_kg * 9.80665 / (2.0 * 1.225 * area)).sqrt();
+    let v_max = (8.0 * v_h).max(40.0);
+    assert!(r.best_glide_speed_ms.is_finite() && r.best_glide_angle_deg > 0.0);
+    assert!(
+        r.best_glide_speed_ms < v_max - 0.4,
+        "best-glide {} must be interior to the {v_max:.1} m/s grid, not edge-clamped",
+        r.best_glide_speed_ms
+    );
+    // ...and it exceeds the old fixed 40 m/s ceiling, which would have clamped it.
+    assert!(
+        r.best_glide_speed_ms > 40.0,
+        "got {}",
+        r.best_glide_speed_ms
+    );
+}

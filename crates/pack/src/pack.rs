@@ -53,6 +53,36 @@ impl Pack {
         (self.s() / self.p()) * self.cell.internal_resistance(soc)
     }
 
+    /// Pack internal resistance at `soc` and cell temperature `temp_c`, ohms — the
+    /// 25 °C value scaled by the cell's Arrhenius factor (cold ⇒ higher R ⇒ more
+    /// sag, less endurance, more self-heat). Closes the temp→R loop end-to-end.
+    pub fn internal_resistance_at(&self, soc: f64, temp_c: f64) -> f64 {
+        (self.s() / self.p()) * self.cell.internal_resistance_at(soc, temp_c)
+    }
+
+    /// Per-cell internal resistance at `soc` and `temp_c`, ohms (for per-cell heat).
+    pub fn cell_resistance_at(&self, soc: f64, temp_c: f64) -> f64 {
+        self.cell.internal_resistance_at(soc, temp_c)
+    }
+
+    /// Per-cell reversible (entropic) heat at `soc`, cell current `i_cell` (A) and
+    /// `temp_c` (W) — Bernardi `−I·T·∂OCV/∂T`. Zero unless the cell carries an
+    /// entropic coefficient.
+    pub fn cell_reversible_heat(&self, soc: f64, i_cell: f64, temp_c: f64) -> f64 {
+        self.cell.reversible_heat(soc, i_cell, temp_c)
+    }
+
+    /// Pack terminal voltage under `pack_current` (A) at `soc` and `temp_c`.
+    pub fn terminal_voltage_at(&self, soc: f64, pack_current: f64, temp_c: f64) -> f64 {
+        self.ocv(soc) - pack_current * self.internal_resistance_at(soc, temp_c)
+    }
+
+    /// Max matched-load power at `soc` and `temp_c`, watts.
+    pub fn max_power_at(&self, soc: f64, temp_c: f64) -> f64 {
+        let v = self.ocv(soc);
+        v * v / (4.0 * self.internal_resistance_at(soc, temp_c))
+    }
+
     /// Pack terminal voltage under a `pack_current` (A) at `soc`.
     pub fn terminal_voltage(&self, soc: f64, pack_current: f64) -> f64 {
         self.ocv(soc) - pack_current * self.internal_resistance(soc)

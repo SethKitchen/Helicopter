@@ -59,9 +59,15 @@ pub fn evaluate(c: &DesignCandidate, airfoil: &dyn Airfoil, cfg: &Config) -> Des
         safe_touchdown_ms: SAFE_TOUCHDOWN_MS,
     });
 
-    // Forward-flight glide polar (the realistic, gentler case). Speeds 0.5..40 m/s
-    // span the bucket for model through light-helicopter scales.
-    let speeds: Vec<f64> = (1..=80).map(|i| i as f64 * 0.5).collect();
+    // Forward-flight glide polar (the realistic, gentler case). The best-glide
+    // speed scales with disk loading (∝ hover induced velocity v_h), so the speed
+    // grid top is scaled to ≈8·v_h (≥40 m/s) — otherwise a high-disk-loading
+    // (human-scale) candidate's best-glide speed falls past a fixed 40 m/s ceiling
+    // and silently edge-clamps. Resolution held at ~0.5 m/s.
+    let v_h = (weight / (2.0 * op.rho * area)).sqrt();
+    let v_max = (8.0 * v_h).max(40.0);
+    let n_steps = (v_max / 0.5).ceil() as usize;
+    let speeds: Vec<f64> = (1..=n_steps).map(|i| i as f64 * 0.5).collect();
     let polar = glide_polar(weight, op.rho, area, p0, c.flat_plate_area_m2, &speeds);
 
     let mut report = DesignReport {

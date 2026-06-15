@@ -21,10 +21,11 @@
 //!
 //! # Deliberate limitations (documented, per project habit)
 //!
-//! * **Tonal loading noise only** for the absolute SPL. Broadband noise
-//!   (turbulence ingestion, trailing-edge), blade–vortex interaction "slap", and
-//!   the full thickness integral are named and omitted — each would be its own
-//!   module.
+//! * **Broadband floor** ([`broadband`]) — the random trailing-edge/vortex noise
+//!   is now modelled by its **scaling laws** (6th-power tip-speed lever, blade
+//!   area, distance), with the *absolute* anchor a required measured input, not a
+//!   fabricated constant. Blade–vortex "slap" and the full thickness integral are
+//!   still named and omitted — each would be its own module.
 //! * **Compact source.** Gutin treats the loading as concentrated at an effective
 //!   radius `R_e ≈ 0.8 R`; good for the low harmonics that dominate a subsonic
 //!   rotor, degrading as the tip nears sonic.
@@ -43,12 +44,14 @@
 //! * [`solution`]   — [`NoiseSpectrum`] / [`Harmonic`].
 
 pub mod bessel;
+pub mod broadband;
 pub mod rotational;
 pub mod solution;
 pub mod spl;
 pub mod thickness;
 
 pub use bessel::bessel_j;
+pub use broadband::{BroadbandRef, broadband_oaspl_db, broadband_peak_hz, combined_oaspl_db};
 pub use rotational::{RotorNoise, blade_passage_frequency, gutin_harmonic_pressure};
 pub use solution::{Harmonic, NoiseSpectrum};
 pub use spl::{P_REF, combine_rms, rotational_spectrum, spl_db};

@@ -1,5 +1,13 @@
 //! The [`Cell`] trait — the polymorphism boundary for cell models.
 
+/// Convecting skin area of an 18650 cylinder (18 mm × 65 mm): lateral + two end
+/// caps ≈ 4.09e-3 m². The single shared value used by the trait default and any
+/// 18650 cell, so geometry never drifts between crates.
+pub const SURFACE_AREA_18650_M2: f64 = 4.09e-3;
+/// Convecting skin area of a 21700 cylinder (21.1 mm × 70 mm): `π·D·L` + two end
+/// caps ≈ 5.34e-3 m². Shared with `helisim_bms`'s thermal envelope.
+pub const SURFACE_AREA_21700_M2: f64 = 5.34e-3;
+
 /// A single battery cell modelled as an equivalent circuit. State of charge
 /// `soc` is in `[0, 1]`; discharge current is positive.
 pub trait Cell {
@@ -41,14 +49,31 @@ pub trait Cell {
     }
 
     /// External surface area available for convective cooling, m². Default: an
-    /// 18650 cylinder (18 mm × 65 mm): lateral + two end caps ≈ 4.09e-3 m².
+    /// 18650 cylinder ([`SURFACE_AREA_18650_M2`]); cells with other form factors
+    /// (e.g. 21700) override this.
     fn surface_area(&self) -> f64 {
-        4.09e-3
+        SURFACE_AREA_18650_M2
     }
 
     /// Lumped heat capacity `m · c_p`, J/K.
     fn heat_capacity(&self) -> f64 {
         self.mass_kg() * self.specific_heat()
+    }
+
+    /// Entropic coefficient `∂OCV/∂T` at `soc`, V/K — the driver of reversible
+    /// (entropic) heat. **Default 0** ⇒ the thermal model is Joule-only (`I²R`);
+    /// supply a *measured* coefficient to include reversible heat. It is chemistry-
+    /// and SoC-specific (NMC: a few ×0.1 mV/K, sign-changing with SoC), so a value
+    /// is only baked in where it can be sourced — never fabricated.
+    fn entropic_coefficient(&self, _soc: f64) -> f64 {
+        0.0
+    }
+
+    /// Reversible (entropic) heat at `soc` under discharge current `i` (A, positive)
+    /// and cell temperature `temp_c`: Bernardi `Q_rev = −I·T·(∂OCV/∂T)`, watts
+    /// (positive = heating). Zero unless an entropic coefficient is supplied.
+    fn reversible_heat(&self, soc: f64, i: f64, temp_c: f64) -> f64 {
+        -i * (temp_c + 273.15) * self.entropic_coefficient(soc)
     }
 
     /// Terminal voltage under a load `current` (A, discharge positive) at `soc`.

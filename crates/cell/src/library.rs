@@ -44,7 +44,7 @@
 //! already supports per-cell curves — [`TheveninCell::new`] takes one — so this is
 //! a sourcing gap, not a structural one. See `crates/bms/tests/battery_external_validation.rs`.
 
-use crate::cell::Cell;
+use crate::cell::{Cell, SURFACE_AREA_21700_M2};
 use crate::thevenin::TheveninCell;
 
 /// Representative NMC/NCM-graphite OCV-SoC curve, `(soc, ocv)` ascending, anchored
@@ -85,6 +85,7 @@ pub fn molicel_p50b() -> TheveninCell {
         60.0,
         0.070,
     )
+    .with_surface_area(SURFACE_AREA_21700_M2)
 }
 
 /// **Ampace INR21700-JP40** — one of the highest power-density cells available.
@@ -103,6 +104,7 @@ pub fn ampace_jp40() -> TheveninCell {
         60.0,
         0.070,
     )
+    .with_surface_area(SURFACE_AREA_21700_M2)
 }
 
 /// **BAK N21700-45D** — mid-capacity, weakest *true* continuous rating of the set.
@@ -121,6 +123,7 @@ pub fn bak_45d() -> TheveninCell {
         60.0,
         0.069,
     )
+    .with_surface_area(SURFACE_AREA_21700_M2)
 }
 
 /// **EVE INR21700-40PL** — lowest impedance / highest label current of the set.
@@ -138,6 +141,7 @@ pub fn eve_40pl() -> TheveninCell {
         70.0,
         0.067,
     )
+    .with_surface_area(SURFACE_AREA_21700_M2)
 }
 
 /// True (de-rated) continuous current ratings, amps — the honest number behind
