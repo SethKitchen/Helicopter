@@ -503,10 +503,18 @@ the **Joukowski conformal map** (ζ=z+c²/z) carries the circle flow into a lift
 integrating the surface pressure recovers the **exact** Kutta-Joukowski `Cl=2π(1+ε/c)sinα`
 to 4 digits AND returns zero drag (d'Alembert) — two independent checks. Connects CFD back
 to the rotor: the inviscid lift slope 2π(1+ε/c) bounds the `LinearAirfoil` 5.73/rad≈0.91·2π.
-`helisim cfd`. **Next (named, not done):** the *viscous* NS solve past the Joukowski airfoil
-(the cylinder solver carrying the conformal metric h²(ξ,η), Kármán-Trefftz TE to avoid the
-cusp singularity) → low-Re drag + lift reduction → feed the rotor `Airfoil` trait (honest
-caveat: laminar low-Re, valid for small model-scale blades Re~1e4-1e5, NOT high-Re NACA0012).
+**(6) Viscous airfoil:** the cylinder solver carrying the Joukowski **conformal metric**
+h²=|dζ/dz|²e^{2ξ} (the e^{2ξ} cylinder metric is the c=0 special case), **rounded TE** (circle
+ENCLOSES the critical point z=c by margin δ → dζ/dz≠0 on the surface → no cusp singularity,
+simpler than Kármán-Trefftz). Validated as response: Cl(α=0)=0 (symmetry), positive PROFILE
+drag Cd~0.23 at Re_c=200 (the inviscid map gives Cd=0 — genuinely viscous), lift positive &
+linear in α (both surface-integral + circulation routes same sign). **Honest scope:** the
+lift MAGNITUDE is finite-domain-suppressed (a lifting flow's far field decays only ~Γ/2πr, so
+a uniform-flow outer BC under-predicts Cl; the circulation-corrected far field is an unstable
+feedback loop here — left off by default, flagged delicate); the drag carries no such caveat.
+`helisim cfd`. **Next (named, not done):** feed these viscous Cl/Cd into the rotor `Airfoil`
+trait (honest cap: laminar low-Re, valid for small model-scale blades Re~1e4-1e5, NOT high-Re
+NACA0012); and a stable circulation-corrected far field to recover the full lift magnitude.
 
 Each milestone is added as new crate(s); never break the existing cores.
 
@@ -821,8 +829,11 @@ crates/
     cylinder_solution.rs  drag TWO ways (surface integral + dissipation ∫ω²), wake, separation
     complex.rs    minimal std-only Complex (for the conformal map)
     joukowski.rs  Joukowski airfoil: conformal map → inviscid lift (Cp integral = exact Cl, Cd≈0)
+    airfoil_viscous.rs  VISCOUS airfoil: cylinder solver + Joukowski conformal metric h²(ξ,η),
+                  rounded TE (no cusp singularity) → profile drag + lift response
     tests/ghia_validation.rs      EXTERNAL: Ghia 1982 cavity Re=100 (u/v/vortex/ψ ~1%)
     tests/cylinder_validation.rs  EXTERNAL: Tritton/Dennis-Chang Re=40 cylinder (Cd/L_wake/θ_sep)
+    tests/airfoil_viscous_validation.rs  viscous airfoil: Cl(0)=0, profile Cd>0, lift +linear
   cost/         parametric cost + buildability (priorities #2 vert-integ, #3 cost)
     component.rs  Component + Buildability taxonomy (raw-stock/fabricated/assembled/purchased)
     costs.rs      UnitCosts — named, overridable cost inputs (representative defaults)

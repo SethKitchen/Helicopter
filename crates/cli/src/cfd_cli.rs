@@ -99,9 +99,33 @@ pub fn run() {
     );
     println!("    uses 5.73/rad ≈ 0.91·2π — the viscous/real reduction this inviscid value bounds.)\n");
 
+    // Viscous airfoil: the cylinder solver carrying the Joukowski conformal metric —
+    // the profile drag (the inviscid map gives Cd=0) and the lift response.
+    println!("  VISCOUS airfoil (NS solve, conformal metric), Re_chord=200:");
+    let vcfg = |deg: f64| helisim_cfd::AirfoilConfig {
+        n_r: 64,
+        n_t: 100,
+        r_max: 30.0,
+        omega_relax: 0.3,
+        te_round: 0.1,
+        psi_sweeps: 8,
+        max_steps: 6000,
+        ..helisim_cfd::AirfoilConfig::new(deg, 200.0)
+    };
+    let v0 = helisim_cfd::solve_airfoil_viscous(&vcfg(0.0));
+    let v6 = helisim_cfd::solve_airfoil_viscous(&vcfg(6.0));
+    let (cl0, cd0) = v0.force_coefficients();
+    let (cl6, cd6) = v6.force_coefficients();
+    println!("    α=0°:  Cl = {cl0:+.3} (symmetry)   Cd = {cd0:.3} (PROFILE DRAG — inviscid gives 0)");
     println!(
-        "Next toward Cl/Cd FOR THE ROTOR: the viscous NS solve past this airfoil (the cylinder\n\
-         solver with the Joukowski conformal metric) gives the drag + the low-Re lift reduction —\n\
-         valid for small model-scale blades (Re~1e4-1e5), the regime the analytic airfoil misses."
+        "    α=6°:  Cl = {cl6:+.3} (>0, develops viscously)   Cd = {cd6:.3}   [inviscid Cl = {:.3}]",
+        v6.inviscid_lift()
+    );
+    println!("    Lift positive & linear; magnitude below inviscid (finite-domain far field — named).\n");
+
+    println!(
+        "Next: feed these viscous Cl/Cd into the rotor `Airfoil` trait (honest regime cap:\n\
+         laminar low-Re, valid for small model-scale blades Re~1e4-1e5, not high-Re NACA0012);\n\
+         and a stable circulation-corrected far field to recover the full lift magnitude."
     );
 }

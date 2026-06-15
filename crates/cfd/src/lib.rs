@@ -28,9 +28,12 @@
 //!   **lifting airfoil** — the Joukowski conformal map ([`joukowski`]) carries the
 //!   circle flow into an airfoil whose inviscid lift, recovered by integrating the
 //!   surface pressure, matches the exact `2π(1+ε/c)sin α` Kutta–Joukowski closed form
-//!   and returns zero drag (d'Alembert). The remaining step is the *viscous* NS solve
-//!   past that airfoil (the cylinder solver carrying the Joukowski metric) for the
-//!   low-Re drag and lift reduction — named, not done.
+//!   and returns zero drag (d'Alembert); and the **viscous** airfoil — the cylinder
+//!   solver carrying the Joukowski conformal metric ([`airfoil_viscous`]), giving the
+//!   profile **drag** (the inviscid map returns zero) and a positive, linear lift
+//!   response (its magnitude finite-domain-limited — documented). The remaining step
+//!   is feeding these viscous `Cl/Cd` into the rotor `Airfoil` trait (scoped to the
+//!   low-Re, model-scale regime) — named, not done.
 //! * **First-order upwinding + uniform grid.** Accurate and robust; the absolute
 //!   match to Ghia tightens with grid refinement (and a higher-order convection
 //!   scheme), so the validation tolerances are honest about resolution.
@@ -43,6 +46,7 @@
 //! * [`taylor_green`]— exact unsteady-NS validation (Taylor–Green vortex decay).
 //! * [`solution`]    — the flow field + Ghia-comparison diagnostics.
 
+pub mod airfoil_viscous;
 pub mod cavity;
 pub mod complex;
 pub mod cylinder;
@@ -55,6 +59,7 @@ pub mod pressure;
 pub mod solution;
 pub mod taylor_green;
 
+pub use airfoil_viscous::{AirfoilConfig, AirfoilViscousSolution, solve_airfoil_viscous};
 pub use cavity::{CavityConfig, solve_cavity};
 pub use complex::C;
 pub use cylinder::{CylinderConfig, solve_cylinder};
