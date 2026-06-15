@@ -27,5 +27,6 @@ helisim-mission = { path = "../mission" }
 helisim-autorotation = { path = "../autorotation" }
 helisim-acoustics = { path = "../acoustics" }
 helisim-design = { path = "../design" }
+helisim-actuation = { path = "../actuation" }
 helisim-cost = { path = "../cost" }
 helisim-manufacture = { path = "../manufacture" }

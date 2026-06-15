@@ -10,6 +10,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "helisim-actuation"
+version = "0.1.0"
+dependencies = [
+ "helisim-airfoil",
+ "helisim-bemt",
+ "helisim-design",
+ "helisim-rotor",
+]
+
+[[package]]
 name = "helisim-airfoil"
 version = "0.1.0"
 
@@ -37,6 +47,7 @@ name = "helisim-cli"
 version = "0.1.0"
 dependencies = [
  "helisim-acoustics",
+ "helisim-actuation",
  "helisim-airfoil",
  "helisim-autorotation",
  "helisim-bemt",
