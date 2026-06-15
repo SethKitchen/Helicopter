@@ -3,6 +3,8 @@
 //! over this, which also lets the commands be smoke-tested (see `tests/`).
 
 pub mod attitude_cli;
+pub mod battery_build_cli;
+pub mod bms_cli;
 pub mod build_cli;
 pub mod design_cli;
 pub mod dynamics_cli;
@@ -41,6 +43,8 @@ pub fn dispatch(mode: &str) {
         "attitude" => attitude_cli::run(),
         "hover" => hover_cli::run(),
         "mission" => mission_cli::run(),
+        "bms" | "battery" => bms_cli::run(),
+        "battery-build" => battery_build_cli::run(),
         "design" => design_cli::run(),
         "build" => build_cli::run(),
         "harrington" => harrington_sweep(&cfg),

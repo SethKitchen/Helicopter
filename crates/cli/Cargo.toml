@@ -21,11 +21,13 @@ helisim-sim = { path = "../sim" }
 helisim-validation = { path = "../validation" }
 helisim-cell = { path = "../cell" }
 helisim-pack = { path = "../pack" }
+helisim-bms = { path = "../bms" }
 helisim-powertrain = { path = "../powertrain" }
 helisim-thermal = { path = "../thermal" }
 helisim-mission = { path = "../mission" }
 helisim-autorotation = { path = "../autorotation" }
 helisim-acoustics = { path = "../acoustics" }
 helisim-design = { path = "../design" }
+helisim-actuation = { path = "../actuation" }
 helisim-cost = { path = "../cost" }
 helisim-manufacture = { path = "../manufacture" }

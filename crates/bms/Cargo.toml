@@ -1,0 +1,11 @@
+[package]
+name = "helisim-bms"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Battery management system: protection envelope, SoC estimation, cell balancing, and protection-aware pack sizing/benchmarking."
+
+[dependencies]
+helisim-cell = { path = "../cell" }
+helisim-pack = { path = "../pack" }
+helisim-thermal = { path = "../thermal" }

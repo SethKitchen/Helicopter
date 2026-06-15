@@ -6,8 +6,18 @@ pub trait Cell {
     /// Open-circuit (rested) terminal voltage at state of charge `soc`, volts.
     fn ocv(&self, soc: f64) -> f64;
 
-    /// Internal series resistance at `soc`, ohms.
+    /// Internal series resistance at `soc`, ohms. By convention this is the
+    /// reference (25 °C) value — temperature dependence is layered on by
+    /// [`internal_resistance_at`](Self::internal_resistance_at).
     fn internal_resistance(&self, soc: f64) -> f64;
+
+    /// Internal series resistance at `soc` and cell temperature `temp_c`, ohms.
+    /// Default: the 25 °C value scaled by the Arrhenius factor
+    /// [`resistance_temp_factor`](crate::temperature::resistance_temp_factor)
+    /// (1.0 at 25 °C, rising in the cold). Override for a per-cell temperature fit.
+    fn internal_resistance_at(&self, soc: f64, temp_c: f64) -> f64 {
+        self.internal_resistance(soc) * crate::temperature::resistance_temp_factor(temp_c)
+    }
 
     /// Usable charge capacity, amp-hours.
     fn capacity_ah(&self) -> f64;

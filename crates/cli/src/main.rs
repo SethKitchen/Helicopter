@@ -18,6 +18,8 @@
 //!   helisim attitude        attitude hold: phugoid→LHP, off-seam regulation, hover seam-residual
 //!   helisim hover           velocity/position hold: timescale separation + hands-off hover capstone
 //!   helisim mission         end-to-end electric hover: power → C-rate → endurance
+//!   helisim bms             battery + BMS benchmark: 4-cell trade + protection/SoC/balancing
+//!   helisim battery-build   exact pack+BMS shopping list (qty, prices, links) + build steps
 //!   helisim design          model-scale sizing study: priority vector + disk-loading trade
 //!   helisim build           recommend a design → full part list, assembly, STL/DXF export
 //!   (safety track) autorotation power-off + acoustics noise feed the design study

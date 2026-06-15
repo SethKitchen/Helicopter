@@ -77,6 +77,21 @@ Milestone 6 — listed so coverage is not over-claimed:
   `a_soft_outboard_segment_adds_tip_compliance` (per-element EI assembly). Remaining
   element types (plate-bending / curved shell) named as future work.
 
+- **battery / bms (battery-bms branch)**: ✅ cell models for four 21700 cells
+  (Molicel P50B, Ampace JP40, BAK 45D, EVE 40PL) from sourced datasheets + Battery
+  Mooch measured DCIR. **EXTERNAL validation** (`crates/bms/tests/battery_external_validation.rs`,
+  prereg `validation/BATTERY_EXTERNAL_PREREG.md`, results `..._RESULTS.md`): **P1
+  capacity retention at 10C 96–98 % vs sourced ≥95 % — clean match**; **P4 emergent
+  continuous: steady-state still-air surface limit reproduces JP40 (47 vs 45 A) and
+  P50B (36 vs 35 A) to ~4 %, emergent** (temperature-dependent `R` load-bearing),
+  BAK over-predicted (45 vs 30, its rating conservative — believed not patched). The
+  prereg's P4 was FALSIFIED (surface criterion meaningless at high rate — skin lags
+  core) and the disagreement believed, surfacing the 2-node core-vs-surface finding.
+  Named GAPS (no fabrication): per-rate delivered mAh / loaded-voltage-sag curves
+  (paywalled / datasheet-graph only) → P3 left open; **per-cell measured OCV curves**
+  (About:Energy login-gated) → shared representative NMC curve retained; **published
+  eVTOL pack** spec (proprietary) → pack-level external validation deferred.
+
 ## Test coverage
 
 `cargo llvm-cov` (a dev tool, not a project dependency): **99.28% line / 99.88%
