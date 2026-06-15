@@ -1,6 +1,6 @@
 //! `battery-build` subcommand: emit an exact, purchasable build for a battery pack
-//! + BMS — the bill of materials (quantities, sourced prices, buy links), one-time
-//! tools, and the step-by-step assembly procedure.
+//! and BMS — the bill of materials (quantities, sourced prices, buy links),
+//! one-time tools, and the step-by-step assembly procedure.
 //!
 //! The pack is sized to the **real electrical load it must carry**: the motor (via
 //! its ESC) PLUS the control-surface actuators (swashplate + tail servos, via an HV
@@ -10,16 +10,16 @@
 //! to the motor and the actuators.
 
 use helisim_actuation::loads::MOTOR_POWER_MARGIN;
-use helisim_actuation::{power_budget, select_actuation, ActuationPlan, PowerBudget};
+use helisim_actuation::motor::pack_connector;
+use helisim_actuation::{ActuationPlan, PowerBudget, power_budget, select_actuation};
 use helisim_airfoil::LinearAirfoil;
 use helisim_bemt::Config;
 use helisim_bms::components::{Buildability, ESC, HV_BEC};
-use helisim_bms::{build_pack, size_for_target, PackBuild, Target};
+use helisim_bms::{PackBuild, Target, build_pack, size_for_target};
 use helisim_cell::{
-    ampace_jp40, bak_45d, benchmark_cells, eve_40pl, molicel_p50b, true_continuous_current, Cell,
+    Cell, ampace_jp40, bak_45d, benchmark_cells, eve_40pl, molicel_p50b, true_continuous_current,
 };
-use helisim_design::{evaluate, DesignCandidate};
-use helisim_actuation::motor::pack_connector;
+use helisim_design::{DesignCandidate, evaluate};
 
 /// Target hover endurance the pack energy is sized for, minutes.
 const TARGET_ENDURANCE_MIN: f64 = 12.0;
@@ -56,22 +56,52 @@ fn print_build(title: &str, b: &PackBuild) {
     println!("========================================================");
     println!(
         "Pack: {} — {}S{}P = {} cells | {:.1} V nom | {:.1} Ah | {:.0} Wh | {:.2} kg | peak {:.0} A",
-        b.cell_name, b.series, b.parallel, b.cell_count, b.nominal_v, b.capacity_ah, b.energy_wh, b.mass_kg, b.peak_current_a,
+        b.cell_name,
+        b.series,
+        b.parallel,
+        b.cell_count,
+        b.nominal_v,
+        b.capacity_ah,
+        b.energy_wh,
+        b.mass_kg,
+        b.peak_current_a,
     );
     if b.is_distributed_bms() {
-        println!("BMS: DISTRIBUTED (master + slave modules) — {}S exceeds a single integrated board.", b.series);
+        println!(
+            "BMS: DISTRIBUTED (master + slave modules) — {}S exceeds a single integrated board.",
+            b.series
+        );
     } else {
         println!("BMS: single integrated smart BMS (Li-ion variant).");
     }
     println!("\n--- SHOPPING LIST (per pack) ---");
-    println!("{:<46}{:>6} {:>6} {:>9} {:>9}  {}", "item", "qty", "type", "unit $", "line $", "source");
+    println!(
+        "{:<46}{:>6} {:>6} {:>9} {:>9}  source",
+        "item", "qty", "type", "unit $", "line $"
+    );
     for l in &b.lines {
-        print_line(&l.item, l.qty, build_kind(l.buildability), l.unit_price.usd, l.line_total_usd(), l.unit_price.retailer, l.unit_price.url);
+        print_line(
+            &l.item,
+            l.qty,
+            build_kind(l.buildability),
+            l.unit_price.usd,
+            l.line_total_usd(),
+            l.unit_price.retailer,
+            l.unit_price.url,
+        );
     }
     println!("{:<46}{:>30.2}", "PARTS TOTAL (USD)", b.parts_total_usd());
     println!("\n--- ONE-TIME TOOLS ---");
     for l in &b.tools {
-        print_line(&l.item, l.qty, build_kind(l.buildability), l.unit_price.usd, l.line_total_usd(), l.unit_price.retailer, l.unit_price.url);
+        print_line(
+            &l.item,
+            l.qty,
+            build_kind(l.buildability),
+            l.unit_price.usd,
+            l.line_total_usd(),
+            l.unit_price.retailer,
+            l.unit_price.url,
+        );
     }
     println!("{:<46}{:>30.2}", "TOOLS TOTAL (USD)", b.tools_total_usd());
     println!("\n--- BUILD INSTRUCTIONS ---");
@@ -106,10 +136,40 @@ fn print_power_feed(act: &ActuationPlan, budget: &PowerBudget) {
     let bec_a = budget.servo_peak_current_a.ceil();
     let conn = pack_connector(budget.motor_current_a);
     println!("\n--- POWER DISTRIBUTION (pack → motor + actuators) ---");
-    println!("{:<46}{:>6} {:>6} {:>9} {:>9}  {}", "item", "qty", "type", "unit $", "line $", "source");
-    print_line(&format!("Brushless heli ESC, ≥{esc_a:.0} A, {}S", act.cells), 1.0, "buy", ESC.usd, ESC.usd, ESC.retailer, ESC.url);
-    print_line(&format!("HV BEC for servos, ≥{bec_a:.0} A @ {:.1} V", budget.servo_voltage_v), 1.0, "buy", HV_BEC.usd, HV_BEC.usd, HV_BEC.retailer, HV_BEC.url);
-    print_line(&format!("Pack→ESC main connector ({conn})"), 1.0, "buy", 0.0, 0.0, "(included with main lead)", "");
+    println!(
+        "{:<46}{:>6} {:>6} {:>9} {:>9}  source",
+        "item", "qty", "type", "unit $", "line $"
+    );
+    print_line(
+        &format!("Brushless heli ESC, ≥{esc_a:.0} A, {}S", act.cells),
+        1.0,
+        "buy",
+        ESC.usd,
+        ESC.usd,
+        ESC.retailer,
+        ESC.url,
+    );
+    print_line(
+        &format!(
+            "HV BEC for servos, ≥{bec_a:.0} A @ {:.1} V",
+            budget.servo_voltage_v
+        ),
+        1.0,
+        "buy",
+        HV_BEC.usd,
+        HV_BEC.usd,
+        HV_BEC.retailer,
+        HV_BEC.url,
+    );
+    print_line(
+        &format!("Pack→ESC main connector ({conn})"),
+        1.0,
+        "buy",
+        0.0,
+        0.0,
+        "(included with main lead)",
+        "",
+    );
     println!(
         "  (the motor, servos and their prices/links are in the `helisim build` actuation section)"
     );
@@ -134,7 +194,13 @@ fn print_power_feed(act: &ActuationPlan, budget: &PowerBudget) {
 
 /// Size a pack to a fixed series count (= the motor's cell count) and a current +
 /// energy demand, returning (series, parallel).
-fn size_to_motor_rail(cell: &dyn Cell, cell_name: &str, series: usize, peak_a: f64, energy_wh: f64) -> (usize, usize) {
+fn size_to_motor_rail(
+    cell: &dyn Cell,
+    cell_name: &str,
+    series: usize,
+    peak_a: f64,
+    energy_wh: f64,
+) -> (usize, usize) {
     let tc = true_continuous_current(cell_name).unwrap();
     let p_power = (peak_a / tc).ceil();
     let cell_wh = cell.nominal_voltage() * cell.capacity_ah();
@@ -143,7 +209,9 @@ fn size_to_motor_rail(cell: &dyn Cell, cell_name: &str, series: usize, peak_a: f
 }
 
 pub fn run() {
-    println!("helisim — battery pack + BMS build (zero deps; prices sourced 2026-06-15, representative & overridable)");
+    println!(
+        "helisim — battery pack + BMS build (zero deps; prices sourced 2026-06-15, representative & overridable)"
+    );
     println!(
         "PRICE CAVEAT: every $ is a representative figure from a named retailer on the capture date,\n\
          NOT a quote — battery/hobby prices fluctuate; confirm on the live listing."
@@ -163,8 +231,9 @@ pub fn run() {
     print_power_feed(&act, &budget);
 
     // Energy for the target hover endurance: hover (not peak) electrical power.
-    let hover_pack_w =
-        budget.motor_power_w / MOTOR_POWER_MARGIN + budget.bec_input_power_w + budget.avionics_power_w;
+    let hover_pack_w = budget.motor_power_w / MOTOR_POWER_MARGIN
+        + budget.bec_input_power_w
+        + budget.avionics_power_w;
     let energy_wh = hover_pack_w * TARGET_ENDURANCE_MIN / 60.0;
 
     // Pack series = the motor's cell count (the ESC is configured for it); the
@@ -177,9 +246,20 @@ pub fn run() {
     let cell_name = lightest_cell_for(target);
     let cell = cell_by_name(cell_name);
     let series = act.cells.max(1) as usize;
-    let (series, parallel) =
-        size_to_motor_rail(cell.as_ref(), cell_name, series, budget.pack_peak_current_a, energy_wh);
-    let model = build_pack(cell_name, cell.as_ref(), series, parallel, budget.pack_peak_current_a);
+    let (series, parallel) = size_to_motor_rail(
+        cell.as_ref(),
+        cell_name,
+        series,
+        budget.pack_peak_current_a,
+        energy_wh,
+    );
+    let model = build_pack(
+        cell_name,
+        cell.as_ref(),
+        series,
+        parallel,
+        budget.pack_peak_current_a,
+    );
     print_build(
         &format!(
             "MODEL PACK (sized to the {:.0} W motor+actuator budget, {:.0}-min hover)",
@@ -196,10 +276,23 @@ pub fn run() {
     };
     let human_cell_name = lightest_cell_for(human_target);
     let human_cell = cell_by_name(human_cell_name);
-    let hs = size_for_target(human_cell.as_ref(), true_continuous_current(human_cell_name).unwrap(), human_target);
+    let hs = size_for_target(
+        human_cell.as_ref(),
+        true_continuous_current(human_cell_name).unwrap(),
+        human_target,
+    );
     let human_peak_a = human_target.peak_power_w / hs.bus_nominal_v;
-    let human = build_pack(human_cell_name, human_cell.as_ref(), hs.series, hs.parallel, human_peak_a);
-    print_build("HUMAN-SCALE PACK (parametric; distributed BMS; actuation beyond catalogue)", &human);
+    let human = build_pack(
+        human_cell_name,
+        human_cell.as_ref(),
+        hs.series,
+        hs.parallel,
+        human_peak_a,
+    );
+    print_build(
+        "HUMAN-SCALE PACK (parametric; distributed BMS; actuation beyond catalogue)",
+        &human,
+    );
 
     println!(
         "\nNote: the MODEL pack is sized to the motor+actuator power budget above (series = motor cell\n\

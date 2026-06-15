@@ -8,6 +8,7 @@ description = "Parametric motor + control-servo selection: real, cited catalogue
 [dependencies]
 helisim-design = { path = "../design" }
 helisim-rotor = { path = "../rotor" }
+helisim-fea = { path = "../fea" }
 
 [dev-dependencies]
 helisim-airfoil = { path = "../airfoil" }

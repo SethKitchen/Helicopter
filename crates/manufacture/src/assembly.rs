@@ -11,7 +11,9 @@ use crate::blade::blade_from_design;
 use crate::boom::boom_for;
 use crate::fuselage::fuselage_for;
 use crate::hub::hub_from_blade;
+use crate::landing_gear::landing_gear_for;
 use crate::mast::mast_for_torque;
+use crate::materials::SIGMA_ALLOW_AL;
 use crate::mount::mount_for;
 use crate::part::BuildPart;
 use crate::root_fitting::root_fitting_for;
@@ -52,6 +54,12 @@ pub fn build_package(c: &DesignCandidate, report: &DesignReport) -> BuildPackage
     let boom = boom_for(torque, c.radius_m);
     let mount = mount_for(pack_mass, c.radius_m);
     let fuselage = fuselage_for(c.gross_mass_kg, c.radius_m);
+    let landing_gear = landing_gear_for(
+        c.gross_mass_kg,
+        fuselage.length_m,
+        fuselage.width_m,
+        SIGMA_ALLOW_AL,
+    );
     // Retention bolt sized for the centrifugal load (double shear, 200 MPa working).
     let omega2 = omega * omega;
     let span = c.radius_m - blade.root_radius_m;
@@ -73,6 +81,7 @@ pub fn build_package(c: &DesignCandidate, report: &DesignReport) -> BuildPackage
         Box::new(tail),
         Box::new(boom),
         Box::new(fuselage),
+        Box::new(landing_gear),
         Box::new(mount),
     ];
 
@@ -117,7 +126,7 @@ mod tests {
     #[test]
     fn package_has_all_parts_with_steps() {
         let p = pkg();
-        assert_eq!(p.parts.len(), 9);
+        assert_eq!(p.parts.len(), 10);
         for part in &p.parts {
             // Exercise the full BuildPart surface on every concrete part type.
             assert!(!part.name().is_empty());
@@ -151,5 +160,6 @@ mod tests {
         assert!(names.iter().any(|n| n.contains("boom")));
         assert!(names.iter().any(|n| n.contains("tail rotor")));
         assert!(names.iter().any(|n| n.contains("fuselage")));
+        assert!(names.iter().any(|n| n.contains("landing gear")));
     }
 }

@@ -76,7 +76,15 @@ pub fn representative_nmc_ocv() -> Vec<(f64, f64)> {
 /// four, but it holds the steadiest voltage at extreme power and has the longest
 /// high-power cycle life. Released 2024 (Taiwan).
 pub fn molicel_p50b() -> TheveninCell {
-    TheveninCell::new(&representative_nmc_ocv(), 0.0095, 5.0, 3.6, 2.5, 60.0, 0.070)
+    TheveninCell::new(
+        &representative_nmc_ocv(),
+        0.0095,
+        5.0,
+        3.6,
+        2.5,
+        60.0,
+        0.070,
+    )
 }
 
 /// **Ampace INR21700-JP40** — one of the highest power-density cells available.
@@ -86,7 +94,15 @@ pub fn molicel_p50b() -> TheveninCell {
 /// continuous per bench testing), 140 A / 5 s pulse, 70 g, 215 Wh/kg, AC-1 kHz
 /// impedance <4 mΩ. Measured DCIR ≈ **5.4 mΩ** (Battery Mooch).
 pub fn ampace_jp40() -> TheveninCell {
-    TheveninCell::new(&representative_nmc_ocv(), 0.0054, 4.0, 3.6, 2.5, 60.0, 0.070)
+    TheveninCell::new(
+        &representative_nmc_ocv(),
+        0.0054,
+        4.0,
+        3.6,
+        2.5,
+        60.0,
+        0.070,
+    )
 }
 
 /// **BAK N21700-45D** — mid-capacity, weakest *true* continuous rating of the set.
@@ -96,7 +112,15 @@ pub fn ampace_jp40() -> TheveninCell {
 /// datasheet states both — true continuous ≈ 30 A), ≤69 g, AC-1 kHz ≤5 mΩ.
 /// Measured DCIR ≈ **6.0 mΩ** (5.6 & 6.3 mΩ, two cells, Battery Mooch).
 pub fn bak_45d() -> TheveninCell {
-    TheveninCell::new(&representative_nmc_ocv(), 0.0060, 4.5, 3.6, 2.5, 60.0, 0.069)
+    TheveninCell::new(
+        &representative_nmc_ocv(),
+        0.0060,
+        4.5,
+        3.6,
+        2.5,
+        60.0,
+        0.069,
+    )
 }
 
 /// **EVE INR21700-40PL** — lowest impedance / highest label current of the set.
@@ -105,7 +129,15 @@ pub fn bak_45d() -> TheveninCell {
 /// continuous (80 °C cutoff), ~67 g, 215–218 Wh/kg, AC-1 kHz ≤5 mΩ. Measured DCIR
 /// ≈ **5.1 mΩ** (Battery Mooch) — the lowest of the four. Released 2023 (China).
 pub fn eve_40pl() -> TheveninCell {
-    TheveninCell::new(&representative_nmc_ocv(), 0.0051, 4.0, 3.6, 2.5, 70.0, 0.067)
+    TheveninCell::new(
+        &representative_nmc_ocv(),
+        0.0051,
+        4.0,
+        3.6,
+        2.5,
+        70.0,
+        0.067,
+    )
 }
 
 /// True (de-rated) continuous current ratings, amps — the honest number behind
@@ -149,8 +181,8 @@ mod tests {
     /// the constructor's doc comment.
     #[test]
     fn documented_datasheet_numbers() {
-        // (cap_ah, v_nom, v_cut, i_label, mass_kg, r_ohm)
-        let rows: &[(&str, TheveninCell, f64, f64, f64, f64, f64, f64)] = &[
+        // (tag, cell, cap_ah, v_nom, v_cut, i_label, mass_kg, r_ohm)
+        let rows = [
             ("P50B", molicel_p50b(), 5.0, 3.6, 2.5, 60.0, 0.070, 0.0095),
             ("JP40", ampace_jp40(), 4.0, 3.6, 2.5, 60.0, 0.070, 0.0054),
             ("BAK45D", bak_45d(), 4.5, 3.6, 2.5, 60.0, 0.069, 0.0060),
@@ -212,7 +244,10 @@ mod tests {
     fn true_continuous_at_most_label() {
         for (name, c) in benchmark_cells() {
             let truec = true_continuous_current(name).unwrap();
-            assert!(truec <= c.max_continuous_current() + 1e-9, "{name} true<=label");
+            assert!(
+                truec <= c.max_continuous_current() + 1e-9,
+                "{name} true<=label"
+            );
         }
         assert!(true_continuous_current("Ampace JP40").unwrap() < 60.0);
         assert!(true_continuous_current("BAK 45D").unwrap() < 60.0);

@@ -16,6 +16,7 @@ dependencies = [
  "helisim-airfoil",
  "helisim-bemt",
  "helisim-design",
+ "helisim-fea",
  "helisim-rotor",
 ]
 

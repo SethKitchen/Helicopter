@@ -43,4 +43,21 @@ pub trait BuildPart {
     fn key_dimensions_mm(&self) -> Vec<(&'static str, f64)>;
     /// Step-by-step build (or sourcing) instructions.
     fn build_steps(&self) -> Vec<String>;
+
+    /// The part's bounding box `(L, W, H)` in mm, largest first — the envelope
+    /// that must fit a printer's build volume. The default takes the three
+    /// largest key dimensions (conservative: an over-estimate only triggers a
+    /// split sooner); parts with non-extent key dims can override.
+    fn bounding_box_mm(&self) -> (f64, f64, f64) {
+        let mut v: Vec<f64> = self
+            .key_dimensions_mm()
+            .iter()
+            .map(|(_, d)| d.abs())
+            .collect();
+        v.sort_by(|a, b| b.total_cmp(a));
+        let l = v.first().copied().unwrap_or(0.0);
+        let w = v.get(1).copied().unwrap_or(l);
+        let h = v.get(2).copied().unwrap_or(w);
+        (l, w, h)
+    }
 }

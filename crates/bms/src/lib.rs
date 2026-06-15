@@ -28,10 +28,10 @@ pub mod soc_estimator;
 pub mod thermal_envelope;
 
 pub use balancing::CellSpread;
-pub use benchmark::{best_by_mass, run_benchmark, BenchmarkRow};
+pub use benchmark::{BenchmarkRow, best_by_mass, run_benchmark};
 pub use components::{BomLine, Buildability, UnitPrice};
-pub use pack_build::{build_pack, PackBuild};
+pub use pack_build::{PackBuild, build_pack};
 pub use protection::{Fault, ProtectionLimits};
-pub use sizing::{size_for_target, Limiting, PackSizing, Target};
+pub use sizing::{Limiting, PackSizing, Target, size_for_target};
 pub use soc_estimator::SocEstimator;
 pub use thermal_envelope::ThermalEnvelope;
