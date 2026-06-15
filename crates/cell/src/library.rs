@@ -199,8 +199,7 @@ mod tests {
     #[test]
     fn documented_datasheet_numbers() {
         // (tag, cell, cap_ah, v_nom, v_cut, i_label, mass_kg, r_ohm)
-        type Row = (&'static str, TheveninCell, f64, f64, f64, f64, f64, f64);
-        let rows: &[Row] = &[
+        let rows = [
             ("P50B", molicel_p50b(), 5.0, 3.6, 2.5, 60.0, 0.070, 0.0095),
             ("JP40", ampace_jp40(), 4.0, 3.6, 2.5, 60.0, 0.070, 0.0054),
             ("BAK45D", bak_45d(), 4.5, 3.6, 2.5, 60.0, 0.069, 0.0060),

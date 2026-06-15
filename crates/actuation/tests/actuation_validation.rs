@@ -163,3 +163,37 @@ fn size_within_range_is_real() {
     let s = size_or_extrapolate(&align_hv_catalogue(), 0.3, 1.0, "cyclic servo");
     assert!(!s.beyond_catalogue && s.part.is_some());
 }
+
+/// Cross-source material pick (in-house + outsourced services): the stiffness-
+/// critical blade does NOT land on a soft service nylon — it needs continuous
+/// fiberglass or CNC metal — while the low-load pitch link picks the cheapest
+/// light option. The honest "outsourcing changes the material answer" result.
+#[test]
+fn cross_source_blade_needs_stiff_link_is_cheap() {
+    use helisim_actuation::{options_as_materials, recommend_materials, source_for};
+    let c = DesignCandidate::model();
+    let report = recommend_materials(&c, 0.16, &options_as_materials());
+
+    let blade = report
+        .parts
+        .iter()
+        .find(|p| p.part == "rotor blade")
+        .unwrap();
+    let blade_src = source_for(blade.chosen.expect("an adequate blade material")).unwrap();
+    // Soft commodity nylon can't make the torsional stiffness; the pick is a
+    // continuous-fiber or metal option.
+    assert_ne!(blade_src.material.name, "SLS PA12 (nylon)");
+    assert!(
+        blade_src.material.flex_modulus_gpa >= 20.0,
+        "blade needs a stiff material"
+    );
+
+    let link = report
+        .parts
+        .iter()
+        .find(|p| p.part == "pitch link/pushrod")
+        .unwrap();
+    let link_src = source_for(link.chosen.expect("an adequate link material")).unwrap();
+    // The lightly-loaded link lands on the lightest adequate (cheap SLS nylon).
+    assert_eq!(link_src.material.name, "SLS PA12 (nylon)");
+}
