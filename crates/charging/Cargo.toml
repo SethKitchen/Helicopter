@@ -1,0 +1,10 @@
+[package]
+name = "helisim-charging"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Charging the pack: charge sources (120 V mains, solar) + a CC/CV charge model that respects the cell/BMS limits."
+
+[dependencies]
+helisim-cell = { path = "../cell" }
+helisim-pack = { path = "../pack" }

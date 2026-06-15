@@ -79,7 +79,7 @@ impl SocEstimator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use helisim_cell::{ampace_jp40, Cell};
+    use helisim_cell::{Cell, ampace_jp40};
 
     #[test]
     fn coulomb_counting_tracks_a_full_discharge() {

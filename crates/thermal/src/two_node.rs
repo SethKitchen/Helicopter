@@ -170,7 +170,10 @@ mod tests {
         let cell = TwoNodeThermalCell::new(70.0, 0.9, 1e-9, 0.0049, 25.0);
         let cooling = Convective::natural_air();
         let (t_core, t_surf) = cell.steady_state(5.0, &cooling);
-        assert!((t_core - t_surf).abs() < 1e-6, "core {t_core} surf {t_surf}");
+        assert!(
+            (t_core - t_surf).abs() < 1e-6,
+            "core {t_core} surf {t_surf}"
+        );
     }
 
     /// Time-marching both nodes relaxes to the closed-form steady state.

@@ -9,13 +9,16 @@
 //! * [`library`]  — sourced benchmark cells (Molicel P50B, Ampace JP40, BAK 45D,
 //!   EVE 40PL) for the battery + BMS study.
 
+pub mod aging;
 pub mod cell;
 pub mod library;
 pub mod temperature;
 pub mod thevenin;
 
+pub use aging::{DegradationModel, equivalent_full_cycles};
 pub use cell::Cell;
 pub use library::{
-    ampace_jp40, bak_45d, benchmark_cells, eve_40pl, molicel_p50b, true_continuous_current,
+    ampace_jp40, bak_45d, benchmark_cells, eve_40pl, max_charge_current, molicel_p50b,
+    true_continuous_current,
 };
 pub use thevenin::TheveninCell;

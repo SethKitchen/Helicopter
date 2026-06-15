@@ -41,9 +41,11 @@ pub mod metrics;
 pub mod recommend;
 pub mod report;
 pub mod sweep;
+pub mod upsizing;
 
 pub use candidate::DesignCandidate;
 pub use metrics::evaluate;
 pub use recommend::{DesignSpace, Recommendation, ScoredCandidate, recommend};
 pub use report::DesignReport;
 pub use sweep::{SweepPoint, sweep_radius};
+pub use upsizing::{UpsizeResult, hover_power_per_kg, required_pack_fraction, size_for_daily_life};

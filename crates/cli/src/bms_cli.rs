@@ -7,10 +7,10 @@
 //! the same code sizes a small model pack and a human-scale HV pack.
 
 use helisim_bms::{
-    balancing::CellSpread, protection::ProtectionLimits, run_benchmark, sizing::Limiting,
-    soc_estimator::SocEstimator, Target, ThermalEnvelope,
+    Target, ThermalEnvelope, balancing::CellSpread, protection::ProtectionLimits, run_benchmark,
+    sizing::Limiting, soc_estimator::SocEstimator,
 };
-use helisim_cell::{benchmark_cells, true_continuous_current, Cell};
+use helisim_cell::{Cell, benchmark_cells, true_continuous_current};
 use helisim_thermal::Convective;
 
 fn limiting_str(l: Limiting) -> &'static str {
@@ -91,8 +91,16 @@ fn print_bms_demo() {
         "Protection (JP40): window {:.1}–{:.1} V, {:.0} A cont, {:.0}°C",
         limits.v_min, limits.v_max, limits.i_continuous, limits.t_max
     );
-    for &(v, i, t) in &[(3.6, 30.0, 25.0), (3.6, 50.0, 25.0), (2.4, 10.0, 25.0), (3.6, 10.0, 70.0)] {
-        println!("  check(V={v:.1}, I={i:.0}, T={t:.0}°C) -> {:?}", limits.check(v, i, t));
+    for &(v, i, t) in &[
+        (3.6, 30.0, 25.0),
+        (3.6, 50.0, 25.0),
+        (2.4, 10.0, 25.0),
+        (3.6, 10.0, 70.0),
+    ] {
+        println!(
+            "  check(V={v:.1}, I={i:.0}, T={t:.0}°C) -> {:?}",
+            limits.check(v, i, t)
+        );
     }
 
     // SoC estimator: coulomb-count drift, then OCV re-anchor corrects it.
@@ -117,7 +125,10 @@ fn print_bms_demo() {
     for _ in 0..1000 {
         s.passive_balance_step(0.001);
     }
-    println!("  after passive balancing: spread {:.2}%", s.spread() * 100.0);
+    println!(
+        "  after passive balancing: spread {:.2}%",
+        s.spread() * 100.0
+    );
 }
 
 fn print_thermal_tabless() {

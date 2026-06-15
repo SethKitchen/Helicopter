@@ -131,8 +131,11 @@ pub const MAIN_LEAD_HEAVY: UnitPrice =
     UnitPrice::new(35.0, "(heavy gauge + HV connector, representative)", "");
 /// Copper busbar interconnect set for high-current traction packs where 0.15 mm
 /// nickel strip cannot carry the series-link current. Representative.
-pub const COPPER_BUSBAR_SET: UnitPrice =
-    UnitPrice::new(120.0, "(copper busbar / thick interconnect, representative)", "");
+pub const COPPER_BUSBAR_SET: UnitPrice = UnitPrice::new(
+    120.0,
+    "(copper busbar / thick interconnect, representative)",
+    "",
+);
 /// Inline fuse + holder (ANL/bolt class, rated to pack peak current).
 pub const FUSE_AND_HOLDER: UnitPrice = UnitPrice::new(
     13.0,
@@ -148,8 +151,7 @@ pub const FISH_PAPER_ROLL: UnitPrice = UnitPrice::new(
 /// Kapton tape roll.
 pub const KAPTON_ROLL: UnitPrice = UnitPrice::new(7.0, "(Kapton tape, representative)", "");
 /// 21700 cell holder / spacer, per cell.
-pub const CELL_HOLDER_EACH: UnitPrice =
-    UnitPrice::new(0.20, "(21700 spacer, representative)", "");
+pub const CELL_HOLDER_EACH: UnitPrice = UnitPrice::new(0.20, "(21700 spacer, representative)", "");
 
 // ---- Power distribution between the pack and the actuators ----
 
@@ -164,11 +166,17 @@ pub const HV_BEC: UnitPrice = UnitPrice::new(20.0, "(HV switching BEC, represent
 // ---- One-time tools (not consumed per pack) ----
 
 /// Battery spot welder (kWeld-class / Sunkko 709A class).
-pub const SPOT_WELDER: UnitPrice =
-    UnitPrice::new(130.0, "kWeld (keenlab) / Sunkko", "https://kweld.keenlab.de/");
+pub const SPOT_WELDER: UnitPrice = UnitPrice::new(
+    130.0,
+    "kWeld (keenlab) / Sunkko",
+    "https://kweld.keenlab.de/",
+);
 /// Smart balance charger for first charge / balancing.
-pub const BALANCE_CHARGER: UnitPrice =
-    UnitPrice::new(60.0, "SkyRC / ISDT (representative)", "https://www.skyrc.com/");
+pub const BALANCE_CHARGER: UnitPrice = UnitPrice::new(
+    60.0,
+    "SkyRC / ISDT (representative)",
+    "https://www.skyrc.com/",
+);
 /// Multimeter for cell matching and checks.
 pub const MULTIMETER: UnitPrice = UnitPrice::new(25.0, "(multimeter, representative)", "");
 

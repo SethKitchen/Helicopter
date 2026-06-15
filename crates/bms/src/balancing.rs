@@ -18,9 +18,7 @@ pub struct CellSpread {
 impl CellSpread {
     /// A string of `n` identical cells all at `soc`.
     pub fn uniform(n: usize, soc: f64) -> Self {
-        CellSpread {
-            socs: vec![soc; n],
-        }
+        CellSpread { socs: vec![soc; n] }
     }
 
     /// From an explicit per-cell SoC list.

@@ -27,4 +27,4 @@ pub mod two_node;
 pub use cooling::{Convective, Cooling};
 pub use limits::{ThermalLimits, ThermalStatus};
 pub use lumped::LumpedThermalCell;
-pub use two_node::{effective_r_internal, TwoNodeThermalCell, JELLY_ROLL_RADIAL_K};
+pub use two_node::{JELLY_ROLL_RADIAL_K, TwoNodeThermalCell, effective_r_internal};

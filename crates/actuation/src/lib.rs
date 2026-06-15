@@ -45,7 +45,7 @@ pub mod servo;
 
 pub use motor::{BldcMotor, scorpion_hk_catalogue};
 pub use plan::{ActuationConfig, ActuationPlan, select_actuation, select_actuation_with};
-pub use power_budget::{power_budget, PowerBudget};
+pub use power_budget::{PowerBudget, power_budget};
 pub use scaling::{Sized, size_or_extrapolate};
 pub use selectable::{Selectable, select_smallest_adequate};
 pub use servo::{Servo, ServoRole, align_hv_catalogue, kgcm_to_nm};

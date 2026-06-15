@@ -20,6 +20,8 @@
 //!   helisim mission         end-to-end electric hover: power → C-rate → endurance
 //!   helisim bms             battery + BMS benchmark: 4-cell trade + protection/SoC/balancing
 //!   helisim battery-build   exact pack+BMS shopping list (qty, prices, links) + build steps
+//!   helisim charging        charge the pack: 120 V mains + solar, CC/CV time/energy/limits
+//!   helisim charge-build    10-yr-life pack (mass-propagated) + 1:1 charging equipment BOM
 //!   helisim design          model-scale sizing study: priority vector + disk-loading trade
 //!   helisim build           recommend a design → full part list, assembly, STL/DXF export
 //!   (safety track) autorotation power-off + acoustics noise feed the design study
