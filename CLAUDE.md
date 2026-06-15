@@ -498,10 +498,15 @@ removes the metric stiffness). Forces TWO independent ways — local **surface i
 C_D=(2/Re)∫ω² — that agree ~13% (★ cross-check). EXTERNAL vs **Tritton 1959 / Dennis &
 Chang 1970 / Coutanceau-Bouard 1977 / Le / Calhoun** at Re_D=40: C_D 1.35 vs 1.48-1.66
 (11%), L_wake/D 2.21 vs 2.18-2.35 (spot on), θ_sep 52.9° vs 53.5-54.2° (<2%); residual
-owned (1st-order upwind + finite domain blockage/truncation + resolution). `helisim cfd`.
-**Next (named, not done):** a Joukowski conformal map of the cylinder solver → airfoil
-at incidence → sectional Cl/Cd → feed the rotor `Airfoil` trait (honest caveat: laminar
-low-Re, valid for small model-scale blades, NOT the high-Re analytic NACA0012 regime).
+owned (1st-order upwind + finite domain blockage/truncation + resolution). **(5) Lift:**
+the **Joukowski conformal map** (ζ=z+c²/z) carries the circle flow into a lifting airfoil;
+integrating the surface pressure recovers the **exact** Kutta-Joukowski `Cl=2π(1+ε/c)sinα`
+to 4 digits AND returns zero drag (d'Alembert) — two independent checks. Connects CFD back
+to the rotor: the inviscid lift slope 2π(1+ε/c) bounds the `LinearAirfoil` 5.73/rad≈0.91·2π.
+`helisim cfd`. **Next (named, not done):** the *viscous* NS solve past the Joukowski airfoil
+(the cylinder solver carrying the conformal metric h²(ξ,η), Kármán-Trefftz TE to avoid the
+cusp singularity) → low-Re drag + lift reduction → feed the rotor `Airfoil` trait (honest
+caveat: laminar low-Re, valid for small model-scale blades Re~1e4-1e5, NOT high-Re NACA0012).
 
 Each milestone is added as new crate(s); never break the existing cores.
 
@@ -814,6 +819,8 @@ crates/
     polar_grid.rs body-fitted log-polar grid r=e^ξ (cylinder = coordinate line, no staircase)
     cylinder.rs   steady flow past a cylinder, vort-streamfn + LOCAL time-stepping (dt∝e^{2ξ})
     cylinder_solution.rs  drag TWO ways (surface integral + dissipation ∫ω²), wake, separation
+    complex.rs    minimal std-only Complex (for the conformal map)
+    joukowski.rs  Joukowski airfoil: conformal map → inviscid lift (Cp integral = exact Cl, Cd≈0)
     tests/ghia_validation.rs      EXTERNAL: Ghia 1982 cavity Re=100 (u/v/vortex/ψ ~1%)
     tests/cylinder_validation.rs  EXTERNAL: Tritton/Dennis-Chang Re=40 cylinder (Cd/L_wake/θ_sep)
   cost/         parametric cost + buildability (priorities #2 vert-integ, #3 cost)

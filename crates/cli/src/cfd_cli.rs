@@ -75,8 +75,33 @@ pub fn run() {
     );
     println!("    Two independent drag routes (surface + dissipation) agree — the ★ cross-check.\n");
 
+    // Lift: the Joukowski conformal map turns the circle flow into a lifting airfoil.
+    use std::f64::consts::PI;
+    let af = helisim_cfd::JoukowskiAirfoil::new(1.0, 0.1);
     println!(
-        "Next toward airfoil Cl/Cd: a Joukowski conformal map turns this same solver into\n\
-         flow past an airfoil at incidence; the surface loads then give the sectional Cl/Cd."
+        "  Joukowski airfoil (lift), t/c = {:.0}% — inviscid Cl from the surface-pressure integral:",
+        100.0 * af.thickness_ratio()
+    );
+    println!("    {:>6}  {:>9}  {:>9}  {:>8}", "α(deg)", "Cl(integ)", "Cl(exact)", "Cd");
+    for &deg in &[0.0, 4.0, 8.0] {
+        let s = af.solve_inviscid(deg * PI / 180.0, 2000);
+        println!(
+            "    {deg:>6.0}  {:>9.4}  {:>9.4}  {:>8.4}",
+            s.cl,
+            af.lift_coefficient_exact(deg * PI / 180.0),
+            s.cd
+        );
+    }
+    let slope = af.lift_coefficient_exact(4.0 * PI / 180.0) / (4.0 * PI / 180.0).sin();
+    println!(
+        "    lift slope {:.3}/rad = 2π·(1+ε/c); Cd≈0 confirms d'Alembert. (Rotor LinearAirfoil",
+        slope
+    );
+    println!("    uses 5.73/rad ≈ 0.91·2π — the viscous/real reduction this inviscid value bounds.)\n");
+
+    println!(
+        "Next toward Cl/Cd FOR THE ROTOR: the viscous NS solve past this airfoil (the cylinder\n\
+         solver with the Joukowski conformal metric) gives the drag + the low-Re lift reduction —\n\
+         valid for small model-scale blades (Re~1e4-1e5), the regime the analytic airfoil misses."
     );
 }
