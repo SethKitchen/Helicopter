@@ -29,6 +29,7 @@ members = [
     "crates/validation",
     "crates/cell",
     "crates/pack",
+    "crates/bms",
     "crates/powertrain",
     "crates/thermal",
     "crates/mission",

@@ -13,14 +13,18 @@
 //! I^2R at the high discharge rates that drive the safety question.
 //!
 //! One concept per module:
-//! * [`cooling`] — the [`Cooling`] trait and the [`Convective`] model.
-//! * [`lumped`]  — [`LumpedThermalCell`]: the heat-capacity lump and its step.
-//! * [`limits`]  — [`ThermalLimits`]: the safe / warning / over-temp band.
+//! * [`cooling`]  — the [`Cooling`] trait and the [`Convective`] model.
+//! * [`lumped`]   — [`LumpedThermalCell`]: the heat-capacity lump and its step.
+//! * [`limits`]   — [`ThermalLimits`]: the safe / warning / over-temp band.
+//! * [`two_node`] — [`TwoNodeThermalCell`]: core + surface (internal gradient),
+//!   the refinement that resolves a cell's hotter core (tabless reasoning).
 
 pub mod cooling;
 pub mod limits;
 pub mod lumped;
+pub mod two_node;
 
 pub use cooling::{Convective, Cooling};
 pub use limits::{ThermalLimits, ThermalStatus};
 pub use lumped::LumpedThermalCell;
+pub use two_node::{effective_r_internal, TwoNodeThermalCell, JELLY_ROLL_RADIAL_K};

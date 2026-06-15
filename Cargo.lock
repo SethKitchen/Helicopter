@@ -29,6 +29,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "helisim-bms"
+version = "0.1.0"
+dependencies = [
+ "helisim-cell",
+ "helisim-pack",
+ "helisim-thermal",
+]
+
+[[package]]
 name = "helisim-cell"
 version = "0.1.0"
 
@@ -40,6 +49,7 @@ dependencies = [
  "helisim-airfoil",
  "helisim-autorotation",
  "helisim-bemt",
+ "helisim-bms",
  "helisim-cell",
  "helisim-cost",
  "helisim-design",

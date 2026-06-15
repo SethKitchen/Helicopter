@@ -21,6 +21,7 @@ helisim-sim = { path = "../sim" }
 helisim-validation = { path = "../validation" }
 helisim-cell = { path = "../cell" }
 helisim-pack = { path = "../pack" }
+helisim-bms = { path = "../bms" }
 helisim-powertrain = { path = "../powertrain" }
 helisim-thermal = { path = "../thermal" }
 helisim-mission = { path = "../mission" }
