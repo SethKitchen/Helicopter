@@ -134,7 +134,11 @@ pub fn solve_cavity(cfg: &CavityConfig) -> CavitySolution {
         }
     }
 
-    CavitySolution { grid, u, v, psi, omega, steps, converged }
+    // Recover the pressure field from the converged velocity field (the quantity
+    // the streamfunction form drops, but the path to forces).
+    let pressure = crate::pressure::recover_pressure(&u, &v, &grid, 0.0);
+
+    CavitySolution { grid, u, v, psi, omega, pressure, steps, converged }
 }
 
 #[cfg(test)]

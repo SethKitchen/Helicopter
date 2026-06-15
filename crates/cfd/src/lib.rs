@@ -17,26 +17,35 @@
 //!
 //! # Scope & honesty
 //!
-//! * **Validated core, then application.** This first milestone establishes and
-//!   validates the solver on the canonical benchmark. The natural follow-on is the
-//!   primitive-variable (pressure) form for an airfoil section → viscous `Cl/Cd`,
-//!   which needs the pressure field the streamfunction form omits — named, not done.
+//! * **Validated core, then application.** The steady solver is validated on the
+//!   canonical Ghia benchmark; the *unsteady* solver against the exact Taylor–Green
+//!   vortex ([`taylor_green`]); and the **pressure field** — the quantity the
+//!   streamfunction form drops, and the one forces need — is recovered from the
+//!   velocity via the pressure-Poisson equation ([`pressure`]), validated by a
+//!   manufactured solution. The remaining step toward airfoil `Cl/Cd` is an
+//!   immersed/body-fitted boundary so a section sits in the flow — named, not done.
 //! * **First-order upwinding + uniform grid.** Accurate and robust; the absolute
 //!   match to Ghia tightens with grid refinement (and a higher-order convection
 //!   scheme), so the validation tolerances are honest about resolution.
 //!
 //! One concept per module:
-//! * [`grid`]     — the uniform unit-square grid.
-//! * [`poisson`]  — SOR solve of `∇²φ = rhs` (validated by a manufactured solution).
-//! * [`cavity`]   — the lid-driven-cavity vorticity–streamfunction solver.
-//! * [`solution`] — the flow field + Ghia-comparison diagnostics.
+//! * [`grid`]        — the uniform unit-square grid.
+//! * [`poisson`]     — SOR solve of `∇²φ = rhs` (validated by a manufactured solution).
+//! * [`cavity`]      — the lid-driven-cavity vorticity–streamfunction solver.
+//! * [`pressure`]    — pressure-Poisson recovery from a velocity field (toward forces).
+//! * [`taylor_green`]— exact unsteady-NS validation (Taylor–Green vortex decay).
+//! * [`solution`]    — the flow field + Ghia-comparison diagnostics.
 
 pub mod cavity;
 pub mod grid;
 pub mod poisson;
+pub mod pressure;
 pub mod solution;
+pub mod taylor_green;
 
 pub use cavity::{CavityConfig, solve_cavity};
 pub use grid::Grid;
 pub use poisson::{optimal_omega, sor_solve};
+pub use pressure::{pressure_source, recover_pressure, solve_pressure};
 pub use solution::CavitySolution;
+pub use taylor_green::TaylorGreen;

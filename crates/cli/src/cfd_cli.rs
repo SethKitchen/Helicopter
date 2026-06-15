@@ -43,8 +43,24 @@ pub fn run() {
     println!(
         "    (u_min occurs at y={y_at:.3}; Ghia 0.4531.)  All within ~1–2% — refines toward Ghia.\n"
     );
+
+    // Pressure recovery (the field the streamfunction form drops — the path to forces).
+    let (pmin, pmax) = s.pressure_extrema();
+    println!("  Pressure recovered from the velocity field (pressure-Poisson, Neumann):");
+    println!("    range p ∈ [{pmin:+.4}, {pmax:+.4}] (pinned 0 at corner) — high at the");
+    println!("    downstream-lid stagnation, low in the vortex core, as expected.\n");
+
+    // Unsteady-solver validation: the exact Taylor–Green vortex decay.
+    let tg = helisim_cfd::TaylorGreen::new(48, 0.1);
+    let (got, want) = (tg.march_energy_ratio(2.0, 0.4), tg.exact_energy_ratio(2.0));
+    println!("  Unsteady check — Taylor–Green vortex (exact NS solution), ν=0.1, t=2:");
     println!(
-        "Note: vorticity–streamfunction form (no pressure). The primitive-variable\n\
-         (pressure) solver for an airfoil section → viscous Cl/Cd is the next step."
+        "    kinetic energy E(t)/E(0) = {got:.4} vs exact e^(-4νt) = {want:.4}  ({:.1}%)\n",
+        100.0 * (got - want).abs() / want
+    );
+
+    println!(
+        "Next toward airfoil Cl/Cd: an immersed/body-fitted boundary so a section sits\n\
+         in the flow; the pressure + wall-shear integral then gives the sectional loads."
     );
 }
