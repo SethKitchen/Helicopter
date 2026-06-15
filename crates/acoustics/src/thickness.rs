@@ -12,7 +12,7 @@
 //!
 //! That cube is why **tip speed is the dominant acoustic design lever**: a sound
 //! pressure `∝ M³` is a sound *level* `∝ 60 log₁₀ M`, so a 10 % cut in tip speed
-//! buys ≈ 2.5 dB with no change to thrust — the cheapest noise reduction
+//! buys ≈ 2.7 dB with no change to thrust — the cheapest noise reduction
 //! available, traded against the higher torque/heavier blades a slower rotor
 //! needs. This module exposes the lever as a *relative* indicator (validated only
 //! for its monotone steep growth), not an absolute SPL; the quantitative tonal

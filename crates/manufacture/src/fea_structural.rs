@@ -11,7 +11,6 @@
 //! Section properties are taken from the real geometry: a thin tube for the boom,
 //! and the NACA 0012 flapwise inertia integrated from the section for the blade.
 
-use crate::airfoil_coords::naca4_half_thickness;
 use helisim_design::{DesignCandidate, DesignReport};
 use helisim_fea::{Bc, NodalLoad, uniform_beam};
 use std::f64::consts::PI;
@@ -51,18 +50,11 @@ fn tube_inertia(od: f64, wall: f64) -> f64 {
     PI * (od.powi(4) - id.powi(4)) / 64.0
 }
 
-/// NACA 0012 flapwise second moment of area about the chord line, integrated from
-/// the section: `I = (2/3) ∫₀^c y_t(x)³ dx` (solid section), m⁴.
+/// NACA 0012 flapwise second moment of area about the chord line, m⁴. Delegates
+/// to the shared [`crate::naca_section::flap_inertia`] so the section geometry has
+/// one source of truth (kept under this name for the public API).
 pub fn naca0012_flap_inertia(chord: f64) -> f64 {
-    let n = 400;
-    let mut i = 0.0;
-    let dx = chord / n as f64;
-    for k in 0..n {
-        let x = (k as f64 + 0.5) * dx;
-        let yt = naca4_half_thickness(0.12, x / chord) * chord; // dimensional half-thickness
-        i += (2.0 / 3.0) * yt.powi(3) * dx;
-    }
-    i
+    crate::naca_section::flap_inertia(chord)
 }
 
 /// Run the FEA structural check for a design.
@@ -77,8 +69,7 @@ pub fn run_fea(c: &DesignCandidate, report: &DesignReport) -> FeaReport {
     // --- tail boom: cantilever, tip load = tail thrust ---
     let boom_len = 1.15 * c.radius_m;
     let tail_thrust = torque / boom_len;
-    let od = (torque / (0.058 * 90.0e6)).cbrt();
-    let od = (od * 1000.0).ceil() / 1000.0;
+    let od = crate::sizing::boom_od_for_bending(torque, crate::materials::SIGMA_ALLOW_AL);
     let wall = 0.1 * od;
     let i_boom = tube_inertia(od, wall);
     let z_boom = i_boom / (od / 2.0);

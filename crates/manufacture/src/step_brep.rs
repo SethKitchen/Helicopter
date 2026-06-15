@@ -64,6 +64,30 @@ pub fn is_closed_manifold(tris: &[Tri]) -> bool {
     edges.values().all(|&n| n == 2)
 }
 
+/// True if the mesh is a consistently-**oriented** closed 2-manifold: every
+/// directed edge `(a→b)` is used exactly once and its reverse `(b→a)` exactly once.
+/// Stronger than [`is_closed_manifold`] (which only counts undirected edges) — this
+/// catches an inverted/back-facing facet, which a B-rep solid must not have.
+pub fn is_oriented_manifold(tris: &[Tri]) -> bool {
+    let mut vmap: HashMap<(i64, i64, i64), usize> = HashMap::new();
+    let vid = |p: Vec3, m: &mut HashMap<(i64, i64, i64), usize>| {
+        let n = m.len();
+        *m.entry(key(p)).or_insert(n)
+    };
+    let mut directed: HashMap<(usize, usize), usize> = HashMap::new();
+    for t in tris {
+        let a = vid(t.0, &mut vmap);
+        let b = vid(t.1, &mut vmap);
+        let c = vid(t.2, &mut vmap);
+        for (u, v) in [(a, b), (b, c), (c, a)] {
+            *directed.entry((u, v)).or_insert(0) += 1;
+        }
+    }
+    directed
+        .iter()
+        .all(|(&(u, v), &n)| n == 1 && directed.get(&(v, u)) == Some(&1))
+}
+
 /// Emit one numbered entity and return its id.
 fn emit(id: &mut usize, lines: &mut Vec<String>, body: String) -> usize {
     *id += 1;
@@ -411,6 +435,26 @@ mod tests {
             assert_eq!(v as i64 - e as i64 + f as i64, 2);
             assert!(is_closed_manifold(&tris));
         }
+    }
+
+    /// The B-rep mesh inputs are consistently ORIENTED (no inverted facet) — the
+    /// stronger directed-edge check, which the bare edge-count manifold test misses.
+    #[test]
+    fn brep_meshes_are_consistently_oriented() {
+        use crate::blade::blade_from_design;
+        use crate::mesh::{cylinder_z, ellipsoid};
+        use helisim_design::DesignCandidate;
+        let blade = blade_from_design(&DesignCandidate::model(), 0.0);
+        let blade_tris = lofted_blade_tris(&blade, 12, 24);
+        let cyl = cylinder_z(5.0, 100.0, 20);
+        let ell = ellipsoid(30.0, 12.0, 10.0, 10, 18);
+        for tris in [&cyl, &ell, &blade_tris] {
+            assert!(is_oriented_manifold(tris), "an inverted/back-facing facet");
+        }
+        // A deliberately-inverted copy must FAIL the oriented check (falsifiable).
+        let mut bad = cyl.clone();
+        bad[0] = Tri(bad[0].0, bad[0].2, bad[0].1); // flip one triangle's winding
+        assert!(!is_oriented_manifold(&bad));
     }
 
     #[test]

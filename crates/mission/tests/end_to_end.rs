@@ -264,3 +264,53 @@ fn infeasible_mass_reports_not_feasible_without_panicking() {
     );
     assert!(!c.feasible);
 }
+
+#[test]
+fn temperature_dependent_resistance_self_limits_heating() {
+    // With the temp→R loop CLOSED (opt-in), a warming cell's resistance drops
+    // (Arrhenius), so I²R self-heating is self-limiting: the same sustained climb
+    // that overheats under the conservative constant-R model peaks COOLER. This
+    // exercises the end-to-end temperature→resistance→heat→temperature loop.
+    let (rotor, op, af) = rotor_op_air();
+    let pt = ConstantEfficiency::typical_electric_heli();
+    let cool = Convective::natural_air();
+    let lim = ThermalLimits::default();
+    let cfg = Config::default();
+    let pack = || Pack::new(Box::new(TheveninCell::samsung_25r()), 6, 2);
+    let mass = 5.0;
+
+    let base = MissionConfig {
+        ambient_c: 30.0,
+        ..MissionConfig::default()
+    };
+    let looped = MissionConfig {
+        temp_dependent_resistance: true,
+        ..base
+    };
+
+    let run = |mcfg: &MissionConfig| {
+        analyze_climb(
+            &rotor,
+            &op,
+            &af,
+            &pack(),
+            &pt,
+            mass,
+            6.0,
+            360.0,
+            &cool,
+            lim,
+            &cfg,
+            mcfg,
+        )
+        .peak_temp_c
+    };
+    let conservative = run(&base);
+    let with_loop = run(&looped);
+    // The closed loop predicts a cooler peak (the negative temperature→R feedback).
+    assert!(
+        with_loop < conservative,
+        "temp-dependent R should self-limit: looped {with_loop:.1} vs constant {conservative:.1}"
+    );
+    assert!(with_loop > 30.0, "still heats above ambient");
+}

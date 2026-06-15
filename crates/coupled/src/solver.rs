@@ -80,6 +80,7 @@ pub fn solve_coupled(
     CoupledSolution {
         mu,
         lambda,
+        lambda_i: lambda - mu * cond.disk_aoa.tan(),
         beta0: fl.beta0,
         beta1c: fl.beta1c,
         beta1s: fl.beta1s,

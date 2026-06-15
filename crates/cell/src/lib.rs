@@ -14,7 +14,7 @@ pub mod library;
 pub mod temperature;
 pub mod thevenin;
 
-pub use cell::Cell;
+pub use cell::{Cell, SURFACE_AREA_18650_M2, SURFACE_AREA_21700_M2};
 pub use library::{
     ampace_jp40, bak_45d, benchmark_cells, eve_40pl, molicel_p50b, true_continuous_current,
 };

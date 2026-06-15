@@ -24,23 +24,41 @@ pub struct ElectricalState {
 }
 
 /// Solve for the pack current that delivers `p_elec` watts at state of charge
-/// `soc`. Returns `None` if the demand exceeds the pack's matched-load maximum
-/// power `OCV^2/(4R)` (no real solution — the pack cannot source that power).
+/// `soc` (25 °C resistance). Returns `None` if the demand exceeds the pack's
+/// matched-load maximum power `OCV^2/(4R)` (no real solution).
 pub fn solve_pack_current(pack: &Pack, soc: f64, p_elec: f64) -> Option<ElectricalState> {
+    solve_constant_power(pack.ocv(soc), pack.internal_resistance(soc), p_elec)
+}
+
+/// As [`solve_pack_current`], but at cell temperature `temp_c` — a cold pack has a
+/// higher resistance, so it sags more and draws more current for the same power
+/// (and can hit the feasibility limit sooner). Closes the temperature→resistance
+/// loop in the endurance simulation.
+pub fn solve_pack_current_at(
+    pack: &Pack,
+    soc: f64,
+    p_elec: f64,
+    temp_c: f64,
+) -> Option<ElectricalState> {
+    solve_constant_power(
+        pack.ocv(soc),
+        pack.internal_resistance_at(soc, temp_c),
+        p_elec,
+    )
+}
+
+/// Core constant-power solve at open-circuit voltage `ocv` and resistance `r`.
+fn solve_constant_power(ocv: f64, r: f64, p_elec: f64) -> Option<ElectricalState> {
     if p_elec <= 0.0 {
         return Some(ElectricalState {
             pack_current: 0.0,
-            terminal_voltage: pack.ocv(soc),
+            terminal_voltage: ocv,
         });
     }
-    let ocv = pack.ocv(soc);
-    let r = pack.internal_resistance(soc);
-
     // Feasibility: delivered power peaks at OCV^2/(4R).
     if p_elec > ocv * ocv / (4.0 * r) {
         return None;
     }
-
     // Bisection on the physical (low-current) branch, I in [0, OCV/(2R)].
     // residual(I) = V(I)*I - p_elec, V(I) = OCV - I*R; monotone increasing here.
     let mut lo = 0.0;

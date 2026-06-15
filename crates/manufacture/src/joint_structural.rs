@@ -20,6 +20,7 @@
 use crate::blade::blade_from_design;
 use crate::build_volume::BuildVolume;
 use crate::fasteners::select_bolt;
+use crate::naca_section::{flap_inertia, max_thickness, structural_area};
 use crate::part::BuildPart;
 use helisim_design::DesignCandidate;
 
@@ -130,16 +131,16 @@ pub fn blade_joint_effect(
     let cf_in = cf_at(r_in);
 
     // Bolt: BOLTS_PER_JOINT share the centrifugal load in double shear, SF 2.
-    let bolts_per_joint = 2;
+    let bolts_per_joint = crate::split::BOLTS_PER_JOINT;
     let bolt = select_bolt(cf_in / bolts_per_joint as f64, true, 2.0);
     let bolt_d = bolt
         .as_ref()
         .map(|b| b.diameter_mm / 1000.0)
         .unwrap_or(0.003);
 
-    // Net-section margin: solid structural area minus the bolt holes.
-    let t = 0.12 * chord;
-    let a_struct = 0.5 * 0.0822 * chord * chord;
+    // Net-section margin: conservative load-bearing area minus the bolt holes.
+    let t = max_thickness(chord);
+    let a_struct = structural_area(chord);
     let a_net = (a_struct - bolts_per_joint as f64 * bolt_d * t).max(1e-9);
     let net_section_margin = blade_tensile_pa / (cf_in / a_net);
 
@@ -156,8 +157,9 @@ pub fn blade_joint_effect(
     // --- modelled cap 1: flap-stiffness knockdown → added tip deflection ---
     // The splice has efficiency η over a short length L_j; the extra rotation it
     // allows under the local flap moment propagates to the tip. Summed over joints.
-    let t = 0.12 * chord;
-    let i_flap = chord * t.powi(3) / 12.0;
+    // Uses the accurate integrated NACA flap inertia (not the thin-rectangle
+    // over-estimate), consistent with the FEA blade model.
+    let i_flap = flap_inertia(chord);
     let ei = blade_flex_modulus_pa * i_flap;
     let w_lift = c.gross_mass_kg * 9.80665 / c.n_blades as f64 / span; // distributed lift, N/m
     let l_joint = 0.3 * chord; // splice length ≈ 30 % chord

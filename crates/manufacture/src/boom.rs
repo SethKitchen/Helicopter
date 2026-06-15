@@ -17,6 +17,7 @@
 
 use crate::materials::SIGMA_ALLOW_AL;
 use crate::part::{BuildPart, Source};
+use crate::sizing::boom_od_for_bending;
 
 /// A tail-boom specification (metres).
 #[derive(Clone, Debug)]
@@ -35,9 +36,7 @@ pub struct BoomSpec {
 pub fn boom_for(main_torque_nm: f64, rotor_radius_m: f64) -> BoomSpec {
     let length = 1.15 * rotor_radius_m;
     let m = main_torque_nm; // root bending moment = main torque
-    // Z ≈ 0.058 D³ for a thin tube with wall 0.1·D.
-    let od = (m / (0.058 * SIGMA_ALLOW_AL)).cbrt();
-    let od = (od * 1000.0).ceil() / 1000.0; // round up to mm
+    let od = boom_od_for_bending(m, SIGMA_ALLOW_AL);
     BoomSpec {
         length_m: length,
         root_moment_nm: m,
@@ -86,7 +85,6 @@ impl BuildPart for BoomSpec {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::f64::consts::PI;
 
     #[test]
     fn arm_scales_with_radius() {
@@ -103,6 +101,5 @@ mod tests {
         let d_min = (small.root_moment_nm / (0.058 * SIGMA_ALLOW_AL)).cbrt();
         let sigma = small.root_moment_nm / (0.058 * d_min.powi(3));
         assert!((sigma - SIGMA_ALLOW_AL).abs() / SIGMA_ALLOW_AL < 1e-9);
-        let _ = PI;
     }
 }

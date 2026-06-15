@@ -19,13 +19,12 @@
 //! root) and gives the magnitudes; detailed parts still want FEA/proof-load.
 
 use crate::materials::{SIGMA_ALLOW_AL, TAU_ALLOW_AL};
+use crate::naca_section::structural_area;
+use crate::sizing::{
+    boom_bending_stress, boom_od_for_bending, mast_dia_for_torsion, mast_torsion_stress,
+};
 use helisim_design::{DesignCandidate, DesignReport};
 use std::f64::consts::PI;
-
-/// NACA 0012 cross-section area coefficient: `A ≈ 0.0822 c²`.
-const SECTION_AREA_COEFF: f64 = 0.0822;
-/// Fraction of the section area treated as load-bearing (conservative).
-const STRUCTURAL_FRACTION: f64 = 0.5;
 
 /// One part's load and margin.
 #[derive(Clone, Debug)]
@@ -92,7 +91,7 @@ pub fn check_structure(
     let m_blade = c.blade_areal_density_kg_m2 * c.chord_m * span;
     let r_cg = 0.5 * (c.radius_m + root_radius);
     let f_cf = omega * omega * m_blade * r_cg;
-    let a_root = STRUCTURAL_FRACTION * SECTION_AREA_COEFF * c.chord_m * c.chord_m;
+    let a_root = structural_area(c.chord_m);
     let sigma_root = f_cf / a_root;
 
     // Minimum retention bolt (double shear): F_cf = 2 · (π d²/4) · τ_allow.
@@ -109,9 +108,8 @@ pub fn check_structure(
     if report.hover_shaft_power_w.is_finite() && omega > 0.0 {
         let torque = report.hover_shaft_power_w / omega;
         // Sized diameter (rounded up to mm) — recompute to match the part.
-        let d_min = (16.0 * torque / (PI * TAU_ALLOW_AL)).cbrt();
-        let d = (d_min * 1000.0).ceil() / 1000.0;
-        let tau = 16.0 * torque / (PI * d.powi(3));
+        let d = mast_dia_for_torsion(torque, TAU_ALLOW_AL);
+        let tau = mast_torsion_stress(torque, d);
         items.push(margin(
             "mast",
             format!("torsion {torque:.2} N·m"),
@@ -120,9 +118,8 @@ pub fn check_structure(
         ));
 
         // --- boom bending (root moment = main torque) ---
-        let od_min = (torque / (0.058 * SIGMA_ALLOW_AL)).cbrt();
-        let od = (od_min * 1000.0).ceil() / 1000.0;
-        let sigma_boom = torque / (0.058 * od.powi(3));
+        let od = boom_od_for_bending(torque, SIGMA_ALLOW_AL);
+        let sigma_boom = boom_bending_stress(torque, od);
         items.push(margin(
             "tail boom",
             format!("bending {torque:.2} N·m"),

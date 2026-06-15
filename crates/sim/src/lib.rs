@@ -42,6 +42,7 @@ pub mod driven_equilibrium;
 pub mod driven_march;
 pub mod eom;
 pub mod pi_attitude;
+pub mod rigid_body;
 pub mod rk4;
 pub mod sas;
 pub mod simulate;

@@ -11,7 +11,7 @@
 
 use crate::materials::TAU_ALLOW_AL;
 use crate::part::{BuildPart, Source};
-use std::f64::consts::PI;
+use crate::sizing::{mast_min_dia_for_torsion, round_up_mm};
 
 /// A drive-mast specification.
 #[derive(Clone, Debug)]
@@ -28,9 +28,8 @@ pub struct MastSpec {
 
 /// Size a mast for a transmitted `torque_nm` (= P_hover/Ω) and a head height.
 pub fn mast_for_torque(torque_nm: f64, head_height_m: f64) -> MastSpec {
-    let d_min = (16.0 * torque_nm / (PI * TAU_ALLOW_AL)).cbrt();
-    // Round up to the next millimetre for a real stock size.
-    let d = (d_min * 1000.0).ceil() / 1000.0;
+    let d_min = mast_min_dia_for_torsion(torque_nm, TAU_ALLOW_AL);
+    let d = round_up_mm(d_min);
     MastSpec {
         torque_nm,
         min_diameter_m: d_min,
@@ -89,7 +88,7 @@ mod tests {
     #[test]
     fn satisfies_the_torsion_stress_limit() {
         let m = mast_for_torque(5.0, 0.3);
-        let tau = 16.0 * m.torque_nm / (PI * m.min_diameter_m.powi(3));
+        let tau = crate::sizing::mast_torsion_stress(m.torque_nm, m.min_diameter_m);
         assert!((tau - TAU_ALLOW_AL).abs() / TAU_ALLOW_AL < 1e-9);
         // The rounded-up diameter is at least the minimum.
         assert!(m.diameter_m >= m.min_diameter_m);

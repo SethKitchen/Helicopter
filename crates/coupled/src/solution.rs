@@ -7,8 +7,10 @@ use helisim_rotor::{Operating, Rotor};
 pub struct CoupledSolution {
     /// Advance ratio.
     pub mu: f64,
-    /// Converged inflow ratio.
+    /// Converged total inflow ratio (induced + disk-normal freestream `μ·tanα`).
     pub lambda: f64,
+    /// Induced inflow ratio `λ_i = λ − μ·tanα` — the part that does induced work.
+    pub lambda_i: f64,
     /// Coning, rad.
     pub beta0: f64,
     /// Longitudinal flap, rad.
@@ -51,13 +53,16 @@ impl CoupledSolution {
     }
 
     /// Physically-decomposed rotor power (induced + profile), W — always ≥ 0.
-    /// Induced from momentum (`κ·C_T·λ`), profile from the drag-only integral.
-    /// `kappa` is the induced power factor (~1.15). This is the trim-safe power
-    /// that stays physical across the full speed range.
+    /// Induced from momentum (`κ·C_T·λ_i`), profile from the drag-only integral.
+    /// Uses the **induced** inflow `λ_i`, NOT the total `λ`: the `μ·tanα` part of
+    /// `λ` is the disk-normal freestream (propulsive) component, which the trim
+    /// adds back as airframe parasite power `½ρV³f` — counting it here too would
+    /// double-count it. At hover (μ=0) `λ_i=λ`, so the hover calibration of `κ`
+    /// is unchanged. This is the trim-safe power that stays physical across speed.
     pub fn rotor_power_w(&self, op: &Operating, rotor: &Rotor, kappa: f64) -> f64 {
         let vt = op.tip_speed(rotor.radius);
         let q = op.rho * rotor.disk_area() * vt * vt * vt;
-        (kappa * self.ct.max(0.0) * self.lambda + self.cp_profile.max(0.0)) * q
+        (kappa * self.ct.max(0.0) * self.lambda_i.max(0.0) + self.cp_profile.max(0.0)) * q
     }
 
     /// Dimensional shaft torque, N·m.

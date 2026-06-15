@@ -39,7 +39,7 @@ pub struct Bom {
 /// Assemble the bill of materials for a spec at the given unit costs.
 pub fn build_bom(spec: &AircraftSpec, costs: &UnitCosts) -> Bom {
     let blade_mass = spec.n_blades as f64 * spec.blade_mass_kg;
-    let motor_w = spec.motor_power_kw;
+    let motor_kw = spec.motor_power_kw;
     // Split powertrain mass roughly motor:esc = 3:1.
     let motor_mass = spec.powertrain_mass_kg * 0.75;
     let esc_mass = spec.powertrain_mass_kg * 0.25;
@@ -70,14 +70,14 @@ pub fn build_bom(spec: &AircraftSpec, costs: &UnitCosts) -> Bom {
             name: "motor (magnets+copper+laminations)",
             subsystem: "powertrain",
             mass_kg: motor_mass,
-            cost: motor_w * costs.motor_per_kw,
+            cost: motor_kw * costs.motor_per_kw,
             buildability: Buildability::Assembled,
         },
         Component {
             name: "ESC / controller",
             subsystem: "powertrain",
             mass_kg: esc_mass,
-            cost: motor_w * costs.esc_per_kw,
+            cost: motor_kw * costs.esc_per_kw,
             buildability: Buildability::Purchased,
         },
         Component {
