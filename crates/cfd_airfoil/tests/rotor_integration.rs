@@ -20,6 +20,23 @@ fn cfd_polar_interpolates_through_the_airfoil_trait() {
 }
 
 #[test]
+fn viterna_completes_the_polar_to_deep_stall() {
+    // An attached polar (±14°, lift slope ~4/rad, low-Re drag), completed to ±90°.
+    let attached =
+        CfdAirfoil::from_polar_deg(&[(-14.0, -1.0, 0.06), (0.0, 0.0, 0.04), (14.0, 1.0, 0.06)], 500.0);
+    let full = attached.with_viterna_stall(14.0, 2.0);
+
+    // The attached region is preserved.
+    assert!((full.cd(0.0, 0.0) - 0.04).abs() < 1e-6, "attached drag kept at α=0");
+    // Deep stall reaches the flat-plate limits: drag climbs toward Cd_max, lift → 0.
+    assert!(full.cd(45f64.to_radians(), 0.0) > full.cd(14f64.to_radians(), 0.0), "drag rises past stall");
+    assert!(full.cd(85f64.to_radians(), 0.0) > 1.5, "Cd near 90° approaches flat-plate ~2.0");
+    assert!(full.cl(89f64.to_radians(), 0.0).abs() < 0.15, "lift → 0 at 90°");
+    // Still a symmetric section across the whole range.
+    assert!(full.cl(-45f64.to_radians(), 0.0) < 0.0 && full.cd(-45f64.to_radians(), 0.0) > 0.0);
+}
+
+#[test]
 fn cfd_low_re_drag_penalises_the_rotor_vs_analytic_high_re() {
     // Generate the polar from the viscous NS solve (a coarse, few-angle sweep).
     let cfd = CfdAirfoil::from_cfd_sweep(200.0, &[0.0, 4.0, 8.0], 64, 100);

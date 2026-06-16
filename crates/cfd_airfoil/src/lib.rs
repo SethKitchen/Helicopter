@@ -18,6 +18,8 @@
 //! actually wrong), NOT a substitute for high-Re tables. It also has no stall model
 //! (lift stays linear), so keep the angle range to attached flow.
 
+pub mod viterna;
+
 use helisim_airfoil::{Airfoil, TableAirfoil};
 use helisim_cfd::{AirfoilConfig, solve_airfoil_viscous};
 
@@ -64,6 +66,31 @@ impl CfdAirfoil {
         }
         polar.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         CfdAirfoil { table: TableAirfoil::from_deg(&polar), polar, re_chord }
+    }
+
+    /// Complete the attached polar to deep stall with the **Viterna** post-stall model
+    /// (out to ±90°), anchored at `alpha_stall_deg` and reaching the flat-plate drag
+    /// `cd_max` (≈ 2.0 for a 2-D section). The attached CFD points below the stall angle
+    /// are kept; the result is a full-range polar a rotor blade can use everywhere
+    /// (inboard high-α, reverse flow), not just near zero.
+    pub fn with_viterna_stall(&self, alpha_stall_deg: f64, cd_max: f64) -> CfdAirfoil {
+        let a_s = alpha_stall_deg.to_radians();
+        let (cl_s, cd_s) = self.table.cl_cd(a_s, 0.0); // stall anchor from the attached polar
+        let mut rows: Vec<(f64, f64, f64)> =
+            self.polar.iter().copied().filter(|&(d, _, _)| d.abs() < alpha_stall_deg).collect();
+        let n = 16;
+        for k in 0..=n {
+            let deg = alpha_stall_deg + (90.0 - alpha_stall_deg) * k as f64 / n as f64;
+            let a = deg.to_radians();
+            let (cl, cd) = if k == 0 {
+                (cl_s, cd_s)
+            } else {
+                viterna::post_stall(a, a_s, cl_s, cd_s, cd_max)
+            };
+            rows.push((deg, cl, cd));
+            rows.push((-deg, -cl, cd));
+        }
+        CfdAirfoil::from_polar_deg(&rows, self.re_chord)
     }
 
     /// The generated `(alpha_deg, Cl, Cd)` polar.

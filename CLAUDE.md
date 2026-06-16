@@ -526,8 +526,20 @@ viscosity barely changes it for attached flow; the vorticity-feedback far field 
 recovers the suppressed lift ~5× (11%→~50% of inviscid; residual = genuine low-Re viscous +
 rounded-TE soft-Kutta + finite-domain reduction). (b) **Higher-Re polars** — drag falls with Re
 ~laminar Re^-1/2 (Cd 0.26@Re200 → 0.12@Re500 → 0.06@Re1000), the more realistic model-blade
-regime. **Remaining (named):** truly emergent lift (a stable circulation feedback / sharp-TE
-Kármán-Trefftz); a stall model; an external low-Re airfoil oracle (Milestone-6-style sourcing).
+regime. **(9) Final round:** (a) **Stall model** — Viterna-Corrigan post-stall extrapolation
+(`cfd_airfoil/viterna.rs`) completes the attached CFD polar to deep stall (±90°, flat-plate
+limits Cl→0/Cd→Cd_max≈2.0), so the rotor can use it everywhere (inboard high-α, reverse flow).
+(b) ★ **EXTERNAL airfoil oracle** (`tests/airfoil_external_validation.rs`, prereg-locked) — vs
+**NACA0012 Re=500 α=0 Cd≈0.176** (Lockard 0.1762 / Wu 0.1759 / TRT-LBM-VP 0.178; steady wake
+there, so the steady solver is valid): our rounded-Joukowski gives Cd≈0.12, the **right order
+~30% low in the predicted direction** (friction-drag resolution gap + rounded-TE-vs-NACA
+geometry, both named) — the airfoil's Milestone-6 category change (external ground truth). (c)
+**Emergent lift = a NAMED LIMITATION** (attempted, not faked): un-imposed lift is stuck ~14%
+(plain far field), the vorticity-feedback far field is unstable, and enlarging the domain
+diverges — full-magnitude emergent lift needs a different formulation (primitive-variable +
+convective outflow, or sharp-TE body-fitted grid); the Kutta-imposed far field is the stable
+stand-in. **CFD TRACK COMPLETE** (cavity → pressure → Taylor-Green → cylinder → inviscid airfoil
+→ viscous airfoil → rotor coupling → refinements → stall + external + emergent-limit).
 
 Each milestone is added as new crate(s); never break the existing cores.
 
@@ -849,8 +861,9 @@ crates/
     tests/airfoil_viscous_validation.rs  viscous airfoil: Cl(0)=0, profile Cd>0, lift +linear + Kutta recovery
     tests/airfoil_reynolds_validation.rs  profile drag falls with Re (~laminar Re^-1/2)
   cfd_airfoil/  bridge: CFD viscous airfoil → rotor Airfoil trait (offline polar → BEMT)
-    lib.rs        CfdAirfoil (from_cfd_sweep builds the polar, impl Airfoil by interpolation)
-    tests/rotor_integration.rs  CfdAirfoil in BEMT: low-Re Cd ~28x analytic → FM 0.66→0.11
+    lib.rs        CfdAirfoil (from_cfd_sweep builds the polar, impl Airfoil; with_viterna_stall completes it)
+    viterna.rs    Viterna-Corrigan post-stall extrapolation (attached polar → deep stall ±90°)
+    tests/rotor_integration.rs  CfdAirfoil in BEMT: low-Re Cd ~28x analytic → FM 0.66→0.11; Viterna full polar
   cost/         parametric cost + buildability (priorities #2 vert-integ, #3 cost)
     component.rs  Component + Buildability taxonomy (raw-stock/fabricated/assembled/purchased)
     costs.rs      UnitCosts — named, overridable cost inputs (representative defaults)

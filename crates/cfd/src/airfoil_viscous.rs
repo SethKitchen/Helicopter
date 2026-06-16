@@ -26,6 +26,16 @@
 //! That recovers the lift several-fold (to ~50% of inviscid); the residual is the
 //! genuine low-Re viscous + rounded-TE soft-Kutta + finite-domain reduction. The
 //! **drag** needs no such correction and carries no caveat.
+//!
+//! **Truly-emergent full-magnitude lift is a named limitation of this architecture**
+//! (attempted, not faked): with a plain far field the un-imposed lift is stuck at
+//! ~14% even with a sharpened TE, and the two routes that could fix it both fail —
+//! the vorticity-feedback far field is an unstable loop, and simply enlarging the
+//! domain (so the plain BC suppresses less) diverges (the far log-polar cells +
+//! conformal metric destabilise). Recovering the full magnitude emergently would need
+//! a different formulation (primitive-variable with a characteristic/convective outflow,
+//! or a sharp-TE body-fitted grid that special-cases the metric singularity) — out of
+//! scope here. The Kutta-imposed far field is the stable, physically-grounded stand-in.
 
 use crate::complex::C;
 use std::f64::consts::PI;
