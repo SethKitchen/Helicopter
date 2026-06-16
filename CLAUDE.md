@@ -512,9 +512,16 @@ linear in α (both surface-integral + circulation routes same sign). **Honest sc
 lift MAGNITUDE is finite-domain-suppressed (a lifting flow's far field decays only ~Γ/2πr, so
 a uniform-flow outer BC under-predicts Cl; the circulation-corrected far field is an unstable
 feedback loop here — left off by default, flagged delicate); the drag carries no such caveat.
-`helisim cfd`. **Next (named, not done):** feed these viscous Cl/Cd into the rotor `Airfoil`
-trait (honest cap: laminar low-Re, valid for small model-scale blades Re~1e4-1e5, NOT high-Re
-NACA0012); and a stable circulation-corrected far field to recover the full lift magnitude.
+`helisim cfd`. **(7) Wired into the rotor** (`cfd_airfoil` crate): `CfdAirfoil::from_cfd_sweep`
+runs the viscous solve across a sweep of α *once* to build a `(α,Cl,Cd)` polar (drag from NS,
+lift from the validated inviscid Joukowski), then serves it through the BEMT `Airfoil` trait by
+interpolation (offline-CFD→table→solver, the real rotor-code pattern — a 12s NS solve can't live
+in the BEMT loop). **Finding** (`tests/rotor_integration.rs`): at Re_c=200 the low-Re Cd is ~28×
+the analytic high-Re value, so the same rotor's figure of merit collapses **0.66→0.11** — the
+model-scale profile-drag penalty, quantified. Honest cap: laminar low-Re polar (right for
+model-blade Re~1e4-1e5, NOT high-Re NACA0012), no stall model (keep α attached); Re=200 is
+illustratively low. **Next (named, not done):** a stable circulation-corrected far field to
+recover the full lift magnitude; higher-Re polars (finer grid).
 
 Each milestone is added as new crate(s); never break the existing cores.
 
@@ -834,6 +841,9 @@ crates/
     tests/ghia_validation.rs      EXTERNAL: Ghia 1982 cavity Re=100 (u/v/vortex/ψ ~1%)
     tests/cylinder_validation.rs  EXTERNAL: Tritton/Dennis-Chang Re=40 cylinder (Cd/L_wake/θ_sep)
     tests/airfoil_viscous_validation.rs  viscous airfoil: Cl(0)=0, profile Cd>0, lift +linear
+  cfd_airfoil/  bridge: CFD viscous airfoil → rotor Airfoil trait (offline polar → BEMT)
+    lib.rs        CfdAirfoil (from_cfd_sweep builds the polar, impl Airfoil by interpolation)
+    tests/rotor_integration.rs  CfdAirfoil in BEMT: low-Re Cd ~28x analytic → FM 0.66→0.11
   cost/         parametric cost + buildability (priorities #2 vert-integ, #3 cost)
     component.rs  Component + Buildability taxonomy (raw-stock/fabricated/assembled/purchased)
     costs.rs      UnitCosts — named, overridable cost inputs (representative defaults)

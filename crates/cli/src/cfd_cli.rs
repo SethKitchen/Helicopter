@@ -124,8 +124,11 @@ pub fn run() {
     println!("    Lift positive & linear; magnitude below inviscid (finite-domain far field — named).\n");
 
     println!(
-        "Next: feed these viscous Cl/Cd into the rotor `Airfoil` trait (honest regime cap:\n\
-         laminar low-Re, valid for small model-scale blades Re~1e4-1e5, not high-Re NACA0012);\n\
-         and a stable circulation-corrected far field to recover the full lift magnitude."
+        "Wired into the rotor: `CfdAirfoil` (crate helisim-cfd-airfoil) builds this viscous\n\
+         polar once and serves it through the BEMT `Airfoil` trait. Finding — at Re_c=200 the\n\
+         low-Re Cd is ~28x the analytic high-Re value, so a model rotor's figure of merit\n\
+         collapses (~0.66 -> ~0.11). (Re=200 is illustratively low; the penalty is real but\n\
+         milder at model-blade Re~1e4-1e5.)  Next: a stable circulation-corrected far field\n\
+         to recover the full lift magnitude."
     );
 }
