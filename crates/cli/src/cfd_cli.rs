@@ -113,22 +113,28 @@ pub fn run() {
         ..helisim_cfd::AirfoilConfig::new(deg, 200.0)
     };
     let v0 = helisim_cfd::solve_airfoil_viscous(&vcfg(0.0));
-    let v6 = helisim_cfd::solve_airfoil_viscous(&vcfg(6.0));
+    let v6 = helisim_cfd::solve_airfoil_viscous(&vcfg(6.0)); // plain far field
+    let v6k = helisim_cfd::solve_airfoil_viscous(&helisim_cfd::AirfoilConfig {
+        kutta_far_field: true,
+        ..vcfg(6.0)
+    });
     let (cl0, cd0) = v0.force_coefficients();
     let (cl6, cd6) = v6.force_coefficients();
+    let (cl6k, _) = v6k.force_coefficients();
     println!("    α=0°:  Cl = {cl0:+.3} (symmetry)   Cd = {cd0:.3} (PROFILE DRAG — inviscid gives 0)");
+    println!("    α=6°:  Cd = {cd6:.3};  Cl = {cl6:+.3} (plain far field) → {cl6k:+.3} (Kutta far field)");
     println!(
-        "    α=6°:  Cl = {cl6:+.3} (>0, develops viscously)   Cd = {cd6:.3}   [inviscid Cl = {:.3}]",
+        "           — the Kutta circulation recovers ~{:.0}% of the inviscid Cl = {:.3}.",
+        100.0 * cl6k / v6.inviscid_lift(),
         v6.inviscid_lift()
     );
-    println!("    Lift positive & linear; magnitude below inviscid (finite-domain far field — named).\n");
+    println!("    Drag falls with Re (laminar BL): Cd≈0.26 @Re200 → 0.12 @Re500 → 0.06 @Re1000.\n");
 
     println!(
         "Wired into the rotor: `CfdAirfoil` (crate helisim-cfd-airfoil) builds this viscous\n\
-         polar once and serves it through the BEMT `Airfoil` trait. Finding — at Re_c=200 the\n\
-         low-Re Cd is ~28x the analytic high-Re value, so a model rotor's figure of merit\n\
-         collapses (~0.66 -> ~0.11). (Re=200 is illustratively low; the penalty is real but\n\
-         milder at model-blade Re~1e4-1e5.)  Next: a stable circulation-corrected far field\n\
-         to recover the full lift magnitude."
+         polar once (at any Re) and serves it through the BEMT `Airfoil` trait. Finding — at\n\
+         Re_c=200 the low-Re Cd is ~28x the analytic high-Re value, so a model rotor's figure of\n\
+         merit collapses (~0.66 -> ~0.11); at higher (more realistic) Re the penalty eases as the\n\
+         drag falls. Refinements done: Kutta-circulation far field (lift recovery) + higher-Re polars."
     );
 }

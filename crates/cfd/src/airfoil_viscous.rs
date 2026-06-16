@@ -16,13 +16,16 @@
 //! it returns `C_d = 0` by d'Alembert), and a **positive, linear lift** that develops
 //! with incidence (the right mechanism and sign).
 //!
-//! **Honest scope on lift magnitude:** a lifting flow's bound circulation makes the
-//! far field decay only like `Γ/2πr`, so a uniform-flow Dirichlet outer boundary on a
-//! finite domain *suppresses* the circulation and under-predicts `C_l` — the inviscid
-//! `2π(1+ε/c)sin α` is the reference it would approach with a circulation-corrected
-//! far field. That correction is an unstable feedback loop in this vorticity–
-//! streamfunction form (left as `circulation_correction`, off by default and flagged
-//! delicate); the **drag** carries no such caveat.
+//! **Lift magnitude — the `kutta_far_field` refinement.** A lifting flow's bound
+//! circulation makes the far field decay only like `Γ/2πr`, so a plain uniform-flow
+//! outer boundary on a finite domain *suppresses* the circulation and under-predicts
+//! `C_l` (only ~11% of inviscid here). Feeding the vorticity integral back into the
+//! far field to fix this is an *unstable* loop; instead, since the Kutta condition
+//! *sets* the circulation and viscosity barely changes it for attached flow, we impose
+//! the known inviscid Kutta value `Γ = 4πUa sin α` in the far field (fixed, stable).
+//! That recovers the lift several-fold (to ~50% of inviscid); the residual is the
+//! genuine low-Re viscous + rounded-TE soft-Kutta + finite-domain reduction. The
+//! **drag** needs no such correction and carries no caveat.
 
 use crate::complex::C;
 use std::f64::consts::PI;
@@ -50,10 +53,11 @@ pub struct AirfoilConfig {
     /// Steady-state tolerance and step cap.
     pub steady_tol: f64,
     pub max_steps: usize,
-    /// Apply the point-vortex far-field correction (needed for lift; leave off at α=0).
-    pub circulation_correction: bool,
-    /// Under-relaxation of the bound circulation in the far-field correction.
-    pub gamma_relax: f64,
+    /// Impose the inviscid **Kutta circulation** in the far field (recovers the lift
+    /// magnitude a plain uniform-flow boundary suppresses). Stable — the circulation
+    /// is fixed at the Kutta value rather than fed back from the vorticity (that loop
+    /// is unstable on a finite domain). Leave off at α=0.
+    pub kutta_far_field: bool,
 }
 
 impl AirfoilConfig {
@@ -71,8 +75,7 @@ impl AirfoilConfig {
             psi_sweeps: 10,
             steady_tol: 5e-6,
             max_steps: 12_000,
-            circulation_correction: false,
-            gamma_relax: 0.05,
+            kutta_far_field: false,
         }
     }
 }
@@ -155,25 +158,17 @@ pub fn solve_airfoil_viscous(cfg: &AirfoilConfig) -> AirfoilViscousSolution {
     let diff_diag = nu * (2.0 / dxi2 + 2.0 / deta2);
     let neigh = |j: usize| ((j + n_t - 1) % n_t, (j + 1) % n_t);
 
+    // Fixed far-field circulation: the inviscid Kutta value Γ = 4π U a sin α (a = 1),
+    // imposed (not fed back) so the finite domain doesn't suppress the lift.
+    let gamma = if cfg.kutta_far_field { 4.0 * PI * cfg.alpha.sin() } else { 0.0 };
+    for j in 0..n_t {
+        psi[idx(j, n_r - 1, n_t)] = far_psi(n_r - 1, j, gamma);
+    }
+
     let mut converged = false;
     let mut steps = 0;
-    let mut gamma = 0.0; // under-relaxed bound circulation for the far-field correction
     while steps < cfg.max_steps {
-        // Current bound circulation Γ = ∫∫ω dA (physical area dA = h² dξ dη),
-        // strongly under-relaxed (the far-field feedback is otherwise an unstable loop).
-        if cfg.circulation_correction {
-            let mut g = 0.0;
-            for k in 0..len {
-                g += omega[k] * h2[k];
-            }
-            g *= dxi * deta;
-            gamma = (1.0 - cfg.gamma_relax) * gamma + cfg.gamma_relax * g;
-        }
-
-        // 1. ψ Poisson: ∂_ξξψ + ∂_ηηψ = −h²ω; far field carries the Γ correction.
-        for j in 0..n_t {
-            psi[idx(j, n_r - 1, n_t)] = far_psi(n_r - 1, j, gamma);
-        }
+        // 1. ψ Poisson: ∂_ξξψ + ∂_ηηψ = −h²ω (far-field ψ is fixed, set above).
         for _ in 0..cfg.psi_sweeps {
             for i in 1..n_r - 1 {
                 for j in 0..n_t {

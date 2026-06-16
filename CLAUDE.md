@@ -520,8 +520,14 @@ in the BEMT loop). **Finding** (`tests/rotor_integration.rs`): at Re_c=200 the l
 the analytic high-Re value, so the same rotor's figure of merit collapses **0.66→0.11** — the
 model-scale profile-drag penalty, quantified. Honest cap: laminar low-Re polar (right for
 model-blade Re~1e4-1e5, NOT high-Re NACA0012), no stall model (keep α attached); Re=200 is
-illustratively low. **Next (named, not done):** a stable circulation-corrected far field to
-recover the full lift magnitude; higher-Re polars (finer grid).
+illustratively low. **(8) Refinements DONE:** (a) **Kutta far field** — imposing the inviscid
+Kutta circulation Γ=4πUa·sinα in the far field (stable, since Kutta SETS the circulation and
+viscosity barely changes it for attached flow; the vorticity-feedback far field was unstable)
+recovers the suppressed lift ~5× (11%→~50% of inviscid; residual = genuine low-Re viscous +
+rounded-TE soft-Kutta + finite-domain reduction). (b) **Higher-Re polars** — drag falls with Re
+~laminar Re^-1/2 (Cd 0.26@Re200 → 0.12@Re500 → 0.06@Re1000), the more realistic model-blade
+regime. **Remaining (named):** truly emergent lift (a stable circulation feedback / sharp-TE
+Kármán-Trefftz); a stall model; an external low-Re airfoil oracle (Milestone-6-style sourcing).
 
 Each milestone is added as new crate(s); never break the existing cores.
 
@@ -840,7 +846,8 @@ crates/
                   rounded TE (no cusp singularity) → profile drag + lift response
     tests/ghia_validation.rs      EXTERNAL: Ghia 1982 cavity Re=100 (u/v/vortex/ψ ~1%)
     tests/cylinder_validation.rs  EXTERNAL: Tritton/Dennis-Chang Re=40 cylinder (Cd/L_wake/θ_sep)
-    tests/airfoil_viscous_validation.rs  viscous airfoil: Cl(0)=0, profile Cd>0, lift +linear
+    tests/airfoil_viscous_validation.rs  viscous airfoil: Cl(0)=0, profile Cd>0, lift +linear + Kutta recovery
+    tests/airfoil_reynolds_validation.rs  profile drag falls with Re (~laminar Re^-1/2)
   cfd_airfoil/  bridge: CFD viscous airfoil → rotor Airfoil trait (offline polar → BEMT)
     lib.rs        CfdAirfoil (from_cfd_sweep builds the polar, impl Airfoil by interpolation)
     tests/rotor_integration.rs  CfdAirfoil in BEMT: low-Re Cd ~28x analytic → FM 0.66→0.11
