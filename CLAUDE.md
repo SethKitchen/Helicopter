@@ -482,6 +482,65 @@ powered-flight stack omitted; built off the validated cores, never modifies them
   with scale as self-made structure/rotor grow against ~flat avionics. `helisim
   design` (cost section).
 
+CFD track — **active (`cfd` crate)**: the first solve of the *actual* Navier-Stokes
+equations on a grid (the rest of the aero stack is reduced-order BEMT/momentum/
+finite-state). Std-only, zero deps, every operator hand-rolled; built validate-core-
+then-apply like `fea`. **(1)** Lid-driven cavity (vorticity-streamfunction + SOR +
+Thom wall vorticity) — EXTERNAL vs **Ghia et al. (1982)** Re=100 to ~1% (u/v/vortex/ψ),
+converging under refinement. **(2)** Pressure recovery (pressure-Poisson from the
+velocity field, 2nd-order Neumann) — the field the streamfunction form drops, needed
+for forces; manufactured-solution validated. **(3)** Taylor-Green vortex — exact
+unsteady-NS solution, validates the time-marcher (energy decays at e^(-4νt) to 0.2%).
+**(4) Body in the flow:** steady viscous flow past a circular cylinder on a body-fitted
+log-polar grid (cylinder = coordinate line, exact no-slip; local time-stepping dt∝e^{2ξ}
+removes the metric stiffness). Forces TWO independent ways — local **surface integral**
+(friction from wall ω + pressure from ∂p/∂η=(2/Re)∂ω/∂ξ) and whole-field **dissipation**
+C_D=(2/Re)∫ω² — that agree ~13% (★ cross-check). EXTERNAL vs **Tritton 1959 / Dennis &
+Chang 1970 / Coutanceau-Bouard 1977 / Le / Calhoun** at Re_D=40: C_D 1.35 vs 1.48-1.66
+(11%), L_wake/D 2.21 vs 2.18-2.35 (spot on), θ_sep 52.9° vs 53.5-54.2° (<2%); residual
+owned (1st-order upwind + finite domain blockage/truncation + resolution). **(5) Lift:**
+the **Joukowski conformal map** (ζ=z+c²/z) carries the circle flow into a lifting airfoil;
+integrating the surface pressure recovers the **exact** Kutta-Joukowski `Cl=2π(1+ε/c)sinα`
+to 4 digits AND returns zero drag (d'Alembert) — two independent checks. Connects CFD back
+to the rotor: the inviscid lift slope 2π(1+ε/c) bounds the `LinearAirfoil` 5.73/rad≈0.91·2π.
+**(6) Viscous airfoil:** the cylinder solver carrying the Joukowski **conformal metric**
+h²=|dζ/dz|²e^{2ξ} (the e^{2ξ} cylinder metric is the c=0 special case), **rounded TE** (circle
+ENCLOSES the critical point z=c by margin δ → dζ/dz≠0 on the surface → no cusp singularity,
+simpler than Kármán-Trefftz). Validated as response: Cl(α=0)=0 (symmetry), positive PROFILE
+drag Cd~0.23 at Re_c=200 (the inviscid map gives Cd=0 — genuinely viscous), lift positive &
+linear in α (both surface-integral + circulation routes same sign). **Honest scope:** the
+lift MAGNITUDE is finite-domain-suppressed (a lifting flow's far field decays only ~Γ/2πr, so
+a uniform-flow outer BC under-predicts Cl; the circulation-corrected far field is an unstable
+feedback loop here — left off by default, flagged delicate); the drag carries no such caveat.
+`helisim cfd`. **(7) Wired into the rotor** (`cfd_airfoil` crate): `CfdAirfoil::from_cfd_sweep`
+runs the viscous solve across a sweep of α *once* to build a `(α,Cl,Cd)` polar (drag from NS,
+lift from the validated inviscid Joukowski), then serves it through the BEMT `Airfoil` trait by
+interpolation (offline-CFD→table→solver, the real rotor-code pattern — a 12s NS solve can't live
+in the BEMT loop). **Finding** (`tests/rotor_integration.rs`): at Re_c=200 the low-Re Cd is ~28×
+the analytic high-Re value, so the same rotor's figure of merit collapses **0.66→0.11** — the
+model-scale profile-drag penalty, quantified. Honest cap: laminar low-Re polar (right for
+model-blade Re~1e4-1e5, NOT high-Re NACA0012), no stall model (keep α attached); Re=200 is
+illustratively low. **(8) Refinements DONE:** (a) **Kutta far field** — imposing the inviscid
+Kutta circulation Γ=4πUa·sinα in the far field (stable, since Kutta SETS the circulation and
+viscosity barely changes it for attached flow; the vorticity-feedback far field was unstable)
+recovers the suppressed lift ~5× (11%→~50% of inviscid; residual = genuine low-Re viscous +
+rounded-TE soft-Kutta + finite-domain reduction). (b) **Higher-Re polars** — drag falls with Re
+~laminar Re^-1/2 (Cd 0.26@Re200 → 0.12@Re500 → 0.06@Re1000), the more realistic model-blade
+regime. **(9) Final round:** (a) **Stall model** — Viterna-Corrigan post-stall extrapolation
+(`cfd_airfoil/viterna.rs`) completes the attached CFD polar to deep stall (±90°, flat-plate
+limits Cl→0/Cd→Cd_max≈2.0), so the rotor can use it everywhere (inboard high-α, reverse flow).
+(b) ★ **EXTERNAL airfoil oracle** (`tests/airfoil_external_validation.rs`, prereg-locked) — vs
+**NACA0012 Re=500 α=0 Cd≈0.176** (Lockard 0.1762 / Wu 0.1759 / TRT-LBM-VP 0.178; steady wake
+there, so the steady solver is valid): our rounded-Joukowski gives Cd≈0.12, the **right order
+~30% low in the predicted direction** (friction-drag resolution gap + rounded-TE-vs-NACA
+geometry, both named) — the airfoil's Milestone-6 category change (external ground truth). (c)
+**Emergent lift = a NAMED LIMITATION** (attempted, not faked): un-imposed lift is stuck ~14%
+(plain far field), the vorticity-feedback far field is unstable, and enlarging the domain
+diverges — full-magnitude emergent lift needs a different formulation (primitive-variable +
+convective outflow, or sharp-TE body-fitted grid); the Kutta-imposed far field is the stable
+stand-in. **CFD TRACK COMPLETE** (cavity → pressure → Taylor-Green → cylinder → inviscid airfoil
+→ viscous airfoil → rotor coupling → refinements → stall + external + emergent-limit).
+
 Each milestone is added as new crate(s); never break the existing cores.
 
 ## Hard rules (always follow)
@@ -783,6 +842,28 @@ crates/
     cst.rs        plane-stress constant-strain triangle (2-D continuum FE)
     tests/beam_validation.rs  cantilever PL³/3EI (exact) + string limit qL²/8T + distributed
     tests/cst_validation.rs   FE patch test + uniaxial bar (σ=F/A, δ=FL/AE exact)
+  cfd/          from-scratch viscous 2-D incompressible Navier-Stokes (std-only, zero deps)
+    grid.rs       uniform unit-square grid (lid-driven cavity)
+    poisson.rs    SOR ∇²φ=rhs (validated vs manufactured solution)
+    cavity.rs     lid-driven cavity, vorticity-streamfunction + Thom wall vorticity
+    solution.rs   CavitySolution + Ghia-comparison diagnostics (+ recovered pressure)
+    pressure.rs   pressure recovery: ∇²p=-(u_x²+2u_yv_x+v_y²), 2nd-order Neumann (toward forces)
+    taylor_green.rs exact unsteady-NS validation: periodic TG vortex decay e^(-4νt)
+    polar_grid.rs body-fitted log-polar grid r=e^ξ (cylinder = coordinate line, no staircase)
+    cylinder.rs   steady flow past a cylinder, vort-streamfn + LOCAL time-stepping (dt∝e^{2ξ})
+    cylinder_solution.rs  drag TWO ways (surface integral + dissipation ∫ω²), wake, separation
+    complex.rs    minimal std-only Complex (for the conformal map)
+    joukowski.rs  Joukowski airfoil: conformal map → inviscid lift (Cp integral = exact Cl, Cd≈0)
+    airfoil_viscous.rs  VISCOUS airfoil: cylinder solver + Joukowski conformal metric h²(ξ,η),
+                  rounded TE (no cusp singularity) → profile drag + lift response
+    tests/ghia_validation.rs      EXTERNAL: Ghia 1982 cavity Re=100 (u/v/vortex/ψ ~1%)
+    tests/cylinder_validation.rs  EXTERNAL: Tritton/Dennis-Chang Re=40 cylinder (Cd/L_wake/θ_sep)
+    tests/airfoil_viscous_validation.rs  viscous airfoil: Cl(0)=0, profile Cd>0, lift +linear + Kutta recovery
+    tests/airfoil_reynolds_validation.rs  profile drag falls with Re (~laminar Re^-1/2)
+  cfd_airfoil/  bridge: CFD viscous airfoil → rotor Airfoil trait (offline polar → BEMT)
+    lib.rs        CfdAirfoil (from_cfd_sweep builds the polar, impl Airfoil; with_viterna_stall completes it)
+    viterna.rs    Viterna-Corrigan post-stall extrapolation (attached polar → deep stall ±90°)
+    tests/rotor_integration.rs  CfdAirfoil in BEMT: low-Re Cd ~28x analytic → FM 0.66→0.11; Viterna full polar
   cost/         parametric cost + buildability (priorities #2 vert-integ, #3 cost)
     component.rs  Component + Buildability taxonomy (raw-stock/fabricated/assembled/purchased)
     costs.rs      UnitCosts — named, overridable cost inputs (representative defaults)

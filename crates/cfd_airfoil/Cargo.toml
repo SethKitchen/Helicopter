@@ -1,0 +1,14 @@
+[package]
+name = "helisim-cfd-airfoil"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Bridges the viscous-CFD airfoil to the rotor's Airfoil trait: a CFD-generated low-Re polar the BEMT solver can interpolate."
+
+[dependencies]
+helisim-airfoil = { path = "../airfoil" }
+helisim-cfd = { path = "../cfd" }
+
+[dev-dependencies]
+helisim-rotor = { path = "../rotor" }
+helisim-bemt = { path = "../bemt" }

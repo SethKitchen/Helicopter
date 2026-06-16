@@ -35,6 +35,8 @@ members = [
     "crates/powertrain",
     "crates/thermal",
     "crates/mission",
+    "crates/cfd",
+    "crates/cfd_airfoil",
     "crates/cli",
 ]
 

@@ -32,3 +32,4 @@ helisim-design = { path = "../design" }
 helisim-actuation = { path = "../actuation" }
 helisim-cost = { path = "../cost" }
 helisim-manufacture = { path = "../manufacture" }
+helisim-cfd = { path = "../cfd" }
