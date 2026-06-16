@@ -78,7 +78,11 @@ impl CavitySolution {
     /// recovered pressure (stagnation high, vortex-core low).
     pub fn pressure_extrema(&self) -> (f64, f64) {
         let pmin = self.pressure.iter().copied().fold(f64::INFINITY, f64::min);
-        let pmax = self.pressure.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+        let pmax = self
+            .pressure
+            .iter()
+            .copied()
+            .fold(f64::NEG_INFINITY, f64::max);
         (pmin, pmax)
     }
 }

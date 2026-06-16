@@ -134,7 +134,9 @@ impl CylinderSolution {
     /// Wall vorticity `ω_w(η)` around the cylinder (the surface-shear distribution).
     pub fn surface_vorticity(&self) -> Vec<(f64, f64)> {
         let g = &self.grid;
-        (0..g.n_t).map(|j| (g.eta(j), self.omega[g.idx(0, j)])).collect()
+        (0..g.n_t)
+            .map(|j| (g.eta(j), self.omega[g.idx(0, j)]))
+            .collect()
     }
 
     /// Top–bottom asymmetry of the streamfunction (should be ≈ 0 — the steady flow

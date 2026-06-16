@@ -56,7 +56,10 @@ impl Sub for C {
 impl Mul for C {
     type Output = C;
     fn mul(self, o: C) -> C {
-        C::new(self.re * o.re - self.im * o.im, self.re * o.im + self.im * o.re)
+        C::new(
+            self.re * o.re - self.im * o.im,
+            self.re * o.im + self.im * o.re,
+        )
     }
 }
 
@@ -64,6 +67,9 @@ impl Div for C {
     type Output = C;
     fn div(self, o: C) -> C {
         let d = o.norm_sqr();
-        C::new((self.re * o.re + self.im * o.im) / d, (self.im * o.re - self.re * o.im) / d)
+        C::new(
+            (self.re * o.re + self.im * o.im) / d,
+            (self.im * o.re - self.re * o.im) / d,
+        )
     }
 }

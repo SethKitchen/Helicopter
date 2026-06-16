@@ -157,5 +157,12 @@ pub fn solve_cylinder(cfg: &CylinderConfig) -> CylinderSolution {
         }
     }
 
-    CylinderSolution { grid, psi, omega, re_d: cfg.re_d, steps, converged }
+    CylinderSolution {
+        grid,
+        psi,
+        omega,
+        re_d: cfg.re_d,
+        steps,
+        converged,
+    }
 }

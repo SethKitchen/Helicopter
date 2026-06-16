@@ -42,7 +42,15 @@ pub fn solve_pressure(source: &[f64], grid: &Grid, omega: f64, pin_value: f64) -
     // Second-order homogeneous Neumann via **mirror ghost nodes**: the value across
     // a wall reflects the inward node (`∂p/∂n = 0` to O(h²)). Every node — boundary
     // included — is an unknown solved with reflected neighbours.
-    let mir = |a: usize, n: usize| if a == 0 { 1 } else if a == n - 1 { n - 2 } else { 0 };
+    let mir = |a: usize, n: usize| {
+        if a == 0 {
+            1
+        } else if a == n - 1 {
+            n - 2
+        } else {
+            0
+        }
+    };
     let len = grid.len();
     let mut prev = vec![0.0; len];
     for _ in 0..5_000 {
@@ -83,7 +91,12 @@ pub fn solve_pressure(source: &[f64], grid: &Grid, omega: f64, pin_value: f64) -
 /// pinned to `pin_value` at the corner.
 pub fn recover_pressure(u: &[f64], v: &[f64], grid: &Grid, pin_value: f64) -> Vec<f64> {
     let source = pressure_source(u, v, grid);
-    solve_pressure(&source, grid, crate::poisson::optimal_omega(grid.nx), pin_value)
+    solve_pressure(
+        &source,
+        grid,
+        crate::poisson::optimal_omega(grid.nx),
+        pin_value,
+    )
 }
 
 #[cfg(test)]
@@ -105,7 +118,10 @@ mod tests {
                 .collect();
             let source: Vec<f64> = exact.iter().map(|&e| -2.0 * PI * PI * e).collect();
             let p = solve_pressure(&source, &g, crate::poisson::optimal_omega(n), exact[0]);
-            p.iter().zip(&exact).map(|(a, b)| (a - b).abs()).fold(0.0, f64::max)
+            p.iter()
+                .zip(&exact)
+                .map(|(a, b)| (a - b).abs())
+                .fold(0.0, f64::max)
         };
         let e41 = err(41);
         assert!(e41 < 1e-2, "max pressure error {e41}");

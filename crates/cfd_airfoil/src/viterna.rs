@@ -54,14 +54,23 @@ mod tests {
         let (a_s, cl_s, cd_s, cd_max) = (14f64.to_radians(), 1.0, 0.05, 2.0);
         // Continuity: the model passes through the anchor at α_stall.
         let (cl0, cd0) = post_stall(a_s, a_s, cl_s, cd_s, cd_max);
-        assert!((cl0 - cl_s).abs() < 1e-9 && (cd0 - cd_s).abs() < 1e-9, "anchor continuity");
+        assert!(
+            (cl0 - cl_s).abs() < 1e-9 && (cd0 - cd_s).abs() < 1e-9,
+            "anchor continuity"
+        );
         // Flat-plate limit at 90°: Cl→0, Cd→Cd_max.
         let (cl90, cd90) = post_stall(PI / 2.0 - 1e-9, a_s, cl_s, cd_s, cd_max);
         assert!(cl90.abs() < 1e-3, "Cl(90°) ≈ 0 (got {cl90})");
-        assert!((cd90 - cd_max).abs() < 1e-3, "Cd(90°) ≈ Cd_max (got {cd90})");
+        assert!(
+            (cd90 - cd_max).abs() < 1e-3,
+            "Cd(90°) ≈ Cd_max (got {cd90})"
+        );
         // Drag rises monotonically through the post-stall region.
         let (_, cd45) = post_stall(45f64.to_radians(), a_s, cl_s, cd_s, cd_max);
-        assert!(cd_s < cd45 && cd45 < cd_max, "Cd monotone {cd_s} < {cd45} < {cd_max}");
+        assert!(
+            cd_s < cd45 && cd45 < cd_max,
+            "Cd monotone {cd_s} < {cd45} < {cd_max}"
+        );
     }
 
     #[test]

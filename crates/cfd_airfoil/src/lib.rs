@@ -36,7 +36,11 @@ impl CfdAirfoil {
     pub fn from_polar_deg(rows: &[(f64, f64, f64)], re_chord: f64) -> Self {
         let mut polar = rows.to_vec();
         polar.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        CfdAirfoil { table: TableAirfoil::from_deg(&polar), polar, re_chord }
+        CfdAirfoil {
+            table: TableAirfoil::from_deg(&polar),
+            polar,
+            re_chord,
+        }
     }
 
     /// Generate the polar by running the **viscous CFD** at each `α ≥ 0` in
@@ -65,7 +69,11 @@ impl CfdAirfoil {
             }
         }
         polar.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        CfdAirfoil { table: TableAirfoil::from_deg(&polar), polar, re_chord }
+        CfdAirfoil {
+            table: TableAirfoil::from_deg(&polar),
+            polar,
+            re_chord,
+        }
     }
 
     /// Complete the attached polar to deep stall with the **Viterna** post-stall model
@@ -76,8 +84,12 @@ impl CfdAirfoil {
     pub fn with_viterna_stall(&self, alpha_stall_deg: f64, cd_max: f64) -> CfdAirfoil {
         let a_s = alpha_stall_deg.to_radians();
         let (cl_s, cd_s) = self.table.cl_cd(a_s, 0.0); // stall anchor from the attached polar
-        let mut rows: Vec<(f64, f64, f64)> =
-            self.polar.iter().copied().filter(|&(d, _, _)| d.abs() < alpha_stall_deg).collect();
+        let mut rows: Vec<(f64, f64, f64)> = self
+            .polar
+            .iter()
+            .copied()
+            .filter(|&(d, _, _)| d.abs() < alpha_stall_deg)
+            .collect();
         let n = 16;
         for k in 0..=n {
             let deg = alpha_stall_deg + (90.0 - alpha_stall_deg) * k as f64 / n as f64;

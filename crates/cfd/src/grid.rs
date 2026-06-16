@@ -19,7 +19,11 @@ impl Grid {
     /// A square `n × n` grid covering the unit square.
     pub fn square(n: usize) -> Self {
         assert!(n >= 3, "need at least a 3×3 grid");
-        Grid { nx: n, ny: n, h: 1.0 / (n as f64 - 1.0) }
+        Grid {
+            nx: n,
+            ny: n,
+            h: 1.0 / (n as f64 - 1.0),
+        }
     }
 
     /// Flat index of node `(i, j)`.

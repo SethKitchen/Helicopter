@@ -47,8 +47,14 @@ fn naca0012_re500_drag_matches_published_order() {
     // Right order as the published NACA0012 value, on the low side (predicted).
     let oracle = 0.176;
     let ratio = cd / oracle;
-    assert!((0.45..1.05).contains(&ratio), "Cd {cd} vs NACA0012 {oracle}: ratio {ratio}");
+    assert!(
+        (0.45..1.05).contains(&ratio),
+        "Cd {cd} vs NACA0012 {oracle}: ratio {ratio}"
+    );
     // The under-prediction is the friction-drag resolution gap, not a sign of the wrong
     // regime — the magnitude is firmly the low-Re laminar one, not the high-Re ~0.01.
-    assert!(cd > 10.0 * 0.0079, "Cd {cd} is the laminar low-Re drag, not high-Re");
+    assert!(
+        cd > 10.0 * 0.0079,
+        "Cd {cd} is the laminar low-Re drag, not high-Re"
+    );
 }

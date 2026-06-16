@@ -9,7 +9,10 @@ pub fn run() {
     let re = 100.0;
     let n = 65;
     println!("Lid-driven cavity at Re={re:.0} on a {n}×{n} grid (lid U=1):");
-    let cfg = CavityConfig { steady_tol: 1e-5, ..CavityConfig::new(re, n) };
+    let cfg = CavityConfig {
+        steady_tol: 1e-5,
+        ..CavityConfig::new(re, n)
+    };
     let s = solve_cavity(&cfg);
     println!(
         "  steady state reached in {} pseudo-time steps (converged: {}).\n",
@@ -22,7 +25,10 @@ pub fn run() {
     let (vx, vy, vpsi) = s.primary_vortex();
 
     println!("  Validation vs Ghia et al. (1982) — gold-standard CFD benchmark:");
-    println!("    {:<34}{:>12}{:>12}{:>9}", "quantity", "this solver", "Ghia 1982", "err");
+    println!(
+        "    {:<34}{:>12}{:>12}{:>9}",
+        "quantity", "this solver", "Ghia 1982", "err"
+    );
     let row = |label: &str, got: f64, want: f64| {
         println!(
             "    {:<34}{:>12.5}{:>12.5}{:>8.1}%",
@@ -73,7 +79,9 @@ pub fn run() {
         cs.wake_length_over_d(),
         cs.separation_angle_deg()
     );
-    println!("    Two independent drag routes (surface + dissipation) agree — the ★ cross-check.\n");
+    println!(
+        "    Two independent drag routes (surface + dissipation) agree — the ★ cross-check.\n"
+    );
 
     // Lift: the Joukowski conformal map turns the circle flow into a lifting airfoil.
     use std::f64::consts::PI;
@@ -82,7 +90,10 @@ pub fn run() {
         "  Joukowski airfoil (lift), t/c = {:.0}% — inviscid Cl from the surface-pressure integral:",
         100.0 * af.thickness_ratio()
     );
-    println!("    {:>6}  {:>9}  {:>9}  {:>8}", "α(deg)", "Cl(integ)", "Cl(exact)", "Cd");
+    println!(
+        "    {:>6}  {:>9}  {:>9}  {:>8}",
+        "α(deg)", "Cl(integ)", "Cl(exact)", "Cd"
+    );
     for &deg in &[0.0, 4.0, 8.0] {
         let s = af.solve_inviscid(deg * PI / 180.0, 2000);
         println!(
@@ -97,7 +108,9 @@ pub fn run() {
         "    lift slope {:.3}/rad = 2π·(1+ε/c); Cd≈0 confirms d'Alembert. (Rotor LinearAirfoil",
         slope
     );
-    println!("    uses 5.73/rad ≈ 0.91·2π — the viscous/real reduction this inviscid value bounds.)\n");
+    println!(
+        "    uses 5.73/rad ≈ 0.91·2π — the viscous/real reduction this inviscid value bounds.)\n"
+    );
 
     // Viscous airfoil: the cylinder solver carrying the Joukowski conformal metric —
     // the profile drag (the inviscid map gives Cd=0) and the lift response.
@@ -121,8 +134,12 @@ pub fn run() {
     let (cl0, cd0) = v0.force_coefficients();
     let (cl6, cd6) = v6.force_coefficients();
     let (cl6k, _) = v6k.force_coefficients();
-    println!("    α=0°:  Cl = {cl0:+.3} (symmetry)   Cd = {cd0:.3} (PROFILE DRAG — inviscid gives 0)");
-    println!("    α=6°:  Cd = {cd6:.3};  Cl = {cl6:+.3} (plain far field) → {cl6k:+.3} (Kutta far field)");
+    println!(
+        "    α=0°:  Cl = {cl0:+.3} (symmetry)   Cd = {cd0:.3} (PROFILE DRAG — inviscid gives 0)"
+    );
+    println!(
+        "    α=6°:  Cd = {cd6:.3};  Cl = {cl6:+.3} (plain far field) → {cl6k:+.3} (Kutta far field)"
+    );
     println!(
         "           — the Kutta circulation recovers ~{:.0}% of the inviscid Cl = {:.3}.",
         100.0 * cl6k / v6.inviscid_lift(),

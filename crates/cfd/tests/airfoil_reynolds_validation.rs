@@ -23,7 +23,10 @@ fn cd_at(re: f64) -> f64 {
     // rounded TE begins a faint wake asymmetry at higher Re, so it is small rather than
     // exactly zero) and the drag is bounded — the guard against a runaway.
     let (cl, cd) = s.force_coefficients();
-    assert!(cl.abs() < 0.05, "α=0 lift near zero (Cl={cl}, not diverged)");
+    assert!(
+        cl.abs() < 0.05,
+        "α=0 lift near zero (Cl={cl}, not diverged)"
+    );
     assert!((0.0..0.5).contains(&cd), "Cd {cd} bounded and positive");
     cd
 }
@@ -34,9 +37,15 @@ fn profile_drag_falls_with_reynolds_number() {
     let cd_high = cd_at(500.0);
     // Drag drops substantially with Re — the model blade's true regime is far less
     // draggy than the very-low-Re illustration suggests.
-    assert!(cd_high < 0.8 * cd_low, "Cd should fall with Re: {cd_low} → {cd_high}");
+    assert!(
+        cd_high < 0.8 * cd_low,
+        "Cd should fall with Re: {cd_low} → {cd_high}"
+    );
     // ...and roughly like a laminar boundary layer (~Re^{-1/2}); 2.5× Re ⇒ ~0.6× Cd,
     // a generous band around it (the rounded TE adds a pressure-drag floor).
     let ratio = cd_high / cd_low;
-    assert!((0.30..0.75).contains(&ratio), "Cd ratio {ratio} in the laminar band");
+    assert!(
+        (0.30..0.75).contains(&ratio),
+        "Cd ratio {ratio} in the laminar band"
+    );
 }

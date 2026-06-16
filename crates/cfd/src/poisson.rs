@@ -78,6 +78,9 @@ mod tests {
         assert!(e41 < 5e-3, "max error {e41} should be small");
         // Second-order: halving h quarters the error (≈4×).
         let e81 = solve_err(81);
-        assert!(e81 < e41 / 3.0, "error must drop ~4× on refinement ({e41} → {e81})");
+        assert!(
+            e81 < e41 / 3.0,
+            "error must drop ~4× on refinement ({e41} → {e81})"
+        );
     }
 }

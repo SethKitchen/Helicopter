@@ -36,7 +36,11 @@ pub struct TaylorGreen {
 impl TaylorGreen {
     /// Set up an `n×n` periodic grid at viscosity `nu`.
     pub fn new(n: usize, nu: f64) -> Self {
-        TaylorGreen { n, nu, h: 2.0 * PI / n as f64 }
+        TaylorGreen {
+            n,
+            nu,
+            h: 2.0 * PI / n as f64,
+        }
     }
 
     fn idx(&self, i: usize, j: usize) -> usize {
@@ -115,8 +119,10 @@ impl TaylorGreen {
             for j in 0..n {
                 for i in 0..n {
                     let k = self.idx(i, j);
-                    u[k] = (psi[self.idx(i, (j + 1) % n)] - psi[self.idx(i, (j + n - 1) % n)]) / (2.0 * h);
-                    v[k] = -(psi[self.idx((i + 1) % n, j)] - psi[self.idx((i + n - 1) % n, j)]) / (2.0 * h);
+                    u[k] = (psi[self.idx(i, (j + 1) % n)] - psi[self.idx(i, (j + n - 1) % n)])
+                        / (2.0 * h);
+                    v[k] = -(psi[self.idx((i + 1) % n, j)] - psi[self.idx((i + n - 1) % n, j)])
+                        / (2.0 * h);
                 }
             }
             // Vorticity transport (central convection + central diffusion).
@@ -147,8 +153,10 @@ impl TaylorGreen {
         let mut e = 0.0;
         for j in 0..n {
             for i in 0..n {
-                let u = (psi[self.idx(i, (j + 1) % n)] - psi[self.idx(i, (j + n - 1) % n)]) / (2.0 * h);
-                let v = -(psi[self.idx((i + 1) % n, j)] - psi[self.idx((i + n - 1) % n, j)]) / (2.0 * h);
+                let u =
+                    (psi[self.idx(i, (j + 1) % n)] - psi[self.idx(i, (j + n - 1) % n)]) / (2.0 * h);
+                let v = -(psi[self.idx((i + 1) % n, j)] - psi[self.idx((i + n - 1) % n, j)])
+                    / (2.0 * h);
                 e += 0.5 * (u * u + v * v);
             }
         }
@@ -168,7 +176,10 @@ mod tests {
         let t_end = 2.0;
         let got = tg.march_energy_ratio(t_end, 0.4);
         let want = tg.exact_energy_ratio(t_end);
-        assert!((got - want).abs() / want < 0.03, "energy ratio {got} vs exact {want}");
+        assert!(
+            (got - want).abs() / want < 0.03,
+            "energy ratio {got} vs exact {want}"
+        );
     }
 
     /// The periodic Poisson recovers ψ = ω/2 for the Taylor–Green field (since

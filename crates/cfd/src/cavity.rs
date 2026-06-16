@@ -40,7 +40,14 @@ pub struct CavityConfig {
 impl CavityConfig {
     /// A run at Reynolds number `re` on an `n`-node grid (sensible defaults).
     pub fn new(re: f64, n: usize) -> Self {
-        CavityConfig { re, n, lid_u: 1.0, steady_tol: 1e-6, max_steps: 200_000, cfl: 0.8 }
+        CavityConfig {
+            re,
+            n,
+            lid_u: 1.0,
+            steady_tol: 1e-6,
+            max_steps: 200_000,
+            cfl: 0.8,
+        }
     }
 }
 
@@ -89,8 +96,7 @@ pub fn solve_cavity(cfg: &CavityConfig) -> CavitySolution {
         // 3. Wall vorticity (Thom's formula); the lid carries the −2U/h source.
         for i in 0..nx {
             omega[grid.idx(i, 0)] = -2.0 * psi[grid.idx(i, 1)] / h2; // bottom
-            omega[grid.idx(i, ny - 1)] =
-                -2.0 * psi[grid.idx(i, ny - 2)] / h2 - 2.0 * cfg.lid_u / h; // lid
+            omega[grid.idx(i, ny - 1)] = -2.0 * psi[grid.idx(i, ny - 2)] / h2 - 2.0 * cfg.lid_u / h; // lid
         }
         for j in 0..ny {
             omega[grid.idx(0, j)] = -2.0 * psi[grid.idx(1, j)] / h2; // left
@@ -112,9 +118,9 @@ pub fn solve_cavity(cfg: &CavityConfig) -> CavitySolution {
                 } else {
                     (omega[k + nx] - omega[k]) / h
                 };
-                let lap =
-                    (omega[k - 1] + omega[k + 1] + omega[k - nx] + omega[k + nx] - 4.0 * omega[k])
-                        / h2;
+                let lap = (omega[k - 1] + omega[k + 1] + omega[k - nx] + omega[k + nx]
+                    - 4.0 * omega[k])
+                    / h2;
                 let rate = -u[k] * dwdx - v[k] * dwdy + nu * lap;
                 omega_new[k] = omega[k] + dt * rate;
                 max_change = max_change.max((omega_new[k] - omega[k]).abs());
@@ -138,7 +144,16 @@ pub fn solve_cavity(cfg: &CavityConfig) -> CavitySolution {
     // the streamfunction form drops, but the path to forces).
     let pressure = crate::pressure::recover_pressure(&u, &v, &grid, 0.0);
 
-    CavitySolution { grid, u, v, psi, omega, pressure, steps, converged }
+    CavitySolution {
+        grid,
+        u,
+        v,
+        psi,
+        omega,
+        pressure,
+        steps,
+        converged,
+    }
 }
 
 #[cfg(test)]
@@ -150,12 +165,17 @@ mod tests {
     /// the upper-right quadrant, and the back-flow along the centreline is negative.
     #[test]
     fn lid_drives_a_clockwise_primary_vortex() {
-        let sol = solve_cavity(&CavityConfig { max_steps: 20_000, ..CavityConfig::new(100.0, 41) });
+        let sol = solve_cavity(&CavityConfig {
+            max_steps: 20_000,
+            ..CavityConfig::new(100.0, 41)
+        });
         let (x, y, psi) = sol.primary_vortex();
         assert!(psi < 0.0, "recirculation streamfunction is negative");
-        assert!(x > 0.5 && y > 0.5, "primary vortex in the upper-right quadrant");
+        assert!(
+            x > 0.5 && y > 0.5,
+            "primary vortex in the upper-right quadrant"
+        );
         let (u_min, _) = sol.min_centerline_u();
         assert!(u_min < 0.0, "centreline carries reverse flow");
     }
 }
-

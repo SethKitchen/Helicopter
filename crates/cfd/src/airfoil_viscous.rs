@@ -170,7 +170,11 @@ pub fn solve_airfoil_viscous(cfg: &AirfoilConfig) -> AirfoilViscousSolution {
 
     // Fixed far-field circulation: the inviscid Kutta value Γ = 4π U a sin α (a = 1),
     // imposed (not fed back) so the finite domain doesn't suppress the lift.
-    let gamma = if cfg.kutta_far_field { 4.0 * PI * cfg.alpha.sin() } else { 0.0 };
+    let gamma = if cfg.kutta_far_field {
+        4.0 * PI * cfg.alpha.sin()
+    } else {
+        0.0
+    };
     for j in 0..n_t {
         psi[idx(j, n_r - 1, n_t)] = far_psi(n_r - 1, j, gamma);
     }

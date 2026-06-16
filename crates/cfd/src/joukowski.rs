@@ -153,7 +153,12 @@ mod tests {
             let alpha = deg * PI / 180.0;
             let s = af.solve_inviscid(alpha, 2000);
             let exact = af.lift_coefficient_exact(alpha);
-            assert!((s.cl - exact).abs() / exact < 0.02, "Cl {} vs exact {}", s.cl, exact);
+            assert!(
+                (s.cl - exact).abs() / exact < 0.02,
+                "Cl {} vs exact {}",
+                s.cl,
+                exact
+            );
             assert!(s.cd.abs() < 0.02, "d'Alembert: Cd {} ≈ 0", s.cd);
         }
     }
@@ -166,11 +171,17 @@ mod tests {
         // Thin section → 2π.
         let thin = JoukowskiAirfoil::new(1.0, 0.001);
         let slope_thin = thin.lift_coefficient_exact(alpha) / alpha.sin();
-        assert!((slope_thin - 2.0 * PI).abs() < 0.05, "thin slope {slope_thin} ≈ 2π");
+        assert!(
+            (slope_thin - 2.0 * PI).abs() < 0.05,
+            "thin slope {slope_thin} ≈ 2π"
+        );
         // Thicker → exceeds 2π by ≈ ε/c (here +10%).
         let thick = JoukowskiAirfoil::new(1.0, 0.1);
         let slope_thick = thick.lift_coefficient_exact(alpha) / alpha.sin();
-        assert!(slope_thick > 2.0 * PI * 1.05, "thick slope {slope_thick} > 2π");
+        assert!(
+            slope_thick > 2.0 * PI * 1.05,
+            "thick slope {slope_thick} > 2π"
+        );
         // Symmetric ⇒ zero lift at zero incidence.
         assert!(thick.lift_coefficient_exact(0.0).abs() < 1e-12);
     }
@@ -183,7 +194,10 @@ mod tests {
         // Thin limit: the coefficient approaches 3√3/4.
         let thin = JoukowskiAirfoil::new(1.0, 0.01);
         let coeff = thin.thickness_ratio() / (thin.eps / thin.c);
-        assert!((coeff - 1.299).abs() < 0.03, "thin t/c coefficient {coeff} ≈ 1.299");
+        assert!(
+            (coeff - 1.299).abs() < 0.03,
+            "thin t/c coefficient {coeff} ≈ 1.299"
+        );
         // Representative section: ~12% thick (exact geometry, below the thin estimate).
         let af = JoukowskiAirfoil::new(1.0, 0.1);
         let tc = af.thickness_ratio();
