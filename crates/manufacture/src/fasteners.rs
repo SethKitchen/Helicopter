@@ -96,6 +96,18 @@ pub fn select_bolt(load_n: f64, double_shear: bool, sf: f64) -> Option<Bolt> {
         .find(|b| b.shear_capacity_n * mult >= load_n * sf)
 }
 
+/// The blade-RETENTION bolt for a centrifugal load `f_cf_n`: the smallest catalogue
+/// bolt that carries it in double shear (SF2) AND is at least **M3**. The M3 floor
+/// matches the structural sizing (a sole blade-retention/feather pivot below 3 mm is
+/// imprudent regardless of the shear sum), so the schedule, the shopping list and the
+/// rotor-head diagram all agree on one bolt.
+pub fn retention_bolt(f_cf_n: f64) -> Bolt {
+    bolt_catalogue()
+        .into_iter()
+        .find(|b| b.diameter_mm >= 3.0 - 1e-9 && 2.0 * b.shear_capacity_n >= 2.0 * f_cf_n)
+        .unwrap_or_else(|| *bolt_catalogue().last().unwrap())
+}
+
 /// Select the smallest bearing with bore ≥ `bore_min_mm` and rating ≥ `load_n`×`sf`.
 pub fn select_bearing(bore_min_mm: f64, load_n: f64, sf: f64) -> Option<Bearing> {
     bearing_catalogue()

@@ -15,10 +15,15 @@
 //! inside one number.
 
 use crate::candidate::DesignCandidate;
+use crate::envelope::{EnvelopeLimits, FlightEnvelope, analyze_envelope};
 use crate::metrics::evaluate;
+use crate::mission_profile::AircraftPower;
 use crate::report::DesignReport;
+use crate::sizing::SizingPolicy;
 use helisim_airfoil::Airfoil;
+use helisim_autorotation::profile_power;
 use helisim_bemt::Config;
+use helisim_optimize::pareto_front;
 use std::f64::consts::PI;
 
 /// Rank-decreasing weights for priorities 2..6 (vert-integration, cost, airtime,
@@ -46,6 +51,25 @@ pub struct DesignSpace {
     pub min_endurance_min: f64,
     /// Maximum tip Mach (compressibility / noise ceiling).
     pub max_tip_mach: f64,
+    /// Optional forward-flight **envelope** constraint: reject any candidate whose
+    /// usable speed limit (min of aerodynamic Vne and the power-limited max speed)
+    /// falls below the floor. `None` = hover-only search (the prior behaviour).
+    pub envelope: Option<EnvelopeConstraint>,
+    /// Optional **mission-driven weight closure**: when set, each geometry's gross
+    /// mass and pack energy are SOLVED to fly the policy's mission with the weight
+    /// spiral closed (geometries whose spiral diverges or can't hover are dropped),
+    /// instead of inheriting the base candidate's fixed gross mass. `None` = use the
+    /// base gross mass as-is (the prior behaviour).
+    pub sizing: Option<SizingPolicy>,
+}
+
+/// A forward-flight envelope floor used as a hard search constraint.
+#[derive(Clone, Copy, Debug)]
+pub struct EnvelopeConstraint {
+    /// Atmosphere + airframe limits.
+    pub limits: EnvelopeLimits,
+    /// Reject candidates whose usable speed limit is below this, m/s.
+    pub min_speed_limit_mps: f64,
 }
 
 impl DesignSpace {
@@ -59,6 +83,8 @@ impl DesignSpace {
             min_flare_margin: 1.5,
             min_endurance_min: 10.0,
             max_tip_mach: 0.55,
+            envelope: None,
+            sizing: None,
         }
     }
 }
@@ -81,6 +107,12 @@ pub struct Recommendation {
     pub best: ScoredCandidate,
     /// All feasible+safe candidates, best first.
     pub ranked: Vec<ScoredCandidate>,
+    /// The **Pareto non-dominated front** over the priority objectives (maximise
+    /// vert-integration, endurance, FM; minimise cost, noise) — the designs none of
+    /// which can be bettered in one objective without sacrificing another. The
+    /// scalarised `best` is always one of these; the rest expose the trades the
+    /// single ranked winner hides. Sorted best-score first.
+    pub pareto: Vec<ScoredCandidate>,
     /// Total candidates evaluated.
     pub n_evaluated: usize,
     /// How many passed the hard constraints.
@@ -98,30 +130,47 @@ pub fn recommend(
     airfoil: &dyn Airfoil,
     cfg: &Config,
 ) -> Option<Recommendation> {
-    // 1. Enumerate + evaluate the grid.
+    // 1. Enumerate the grid; size each geometry (mission weight-closure) if a sizing
+    //    policy is set, dropping geometries that can't hover or whose spiral diverges.
     let mut evaluated: Vec<(DesignCandidate, DesignReport)> = Vec::new();
+    let mut n_evaluated = 0;
     for &nb in &space.blade_counts {
         for &r in &space.radii_m {
             for &vt in &space.tip_speeds_ms {
                 for &sigma in &space.solidities {
+                    n_evaluated += 1;
                     let chord = sigma * PI * r / nb as f64;
-                    let cand = base.with_geometry(nb, r, chord, vt);
+                    let geom = base.with_geometry(nb, r, chord, vt);
+                    let cand = match &space.sizing {
+                        Some(pol) => match pol.sized_candidate(&geom, airfoil, cfg) {
+                            Some((sized, _)) => sized,
+                            None => continue, // no closed, hoverable design at this geometry
+                        },
+                        None => geom,
+                    };
                     let rep = evaluate(&cand, airfoil, cfg);
                     evaluated.push((cand, rep));
                 }
             }
         }
     }
-    let n_evaluated = evaluated.len();
 
-    // 2. Hard constraints: safety floor + feasibility + airtime + tip Mach.
+    // 2. Hard constraints: safety floor + feasibility + airtime + tip Mach, plus the
+    //    optional forward-flight envelope floor (Vne / power-limited max speed).
     let feasible: Vec<(DesignCandidate, DesignReport)> = evaluated
         .into_iter()
-        .filter(|(_, rep)| {
+        .filter(|(cand, rep)| {
             rep.hover_feasible
                 && rep.flare_margin >= space.min_flare_margin
                 && rep.endurance_min >= space.min_endurance_min
                 && rep.tip_mach <= space.max_tip_mach
+                && match &space.envelope {
+                    Some(ec) => {
+                        candidate_envelope(cand, rep, &ec.limits).speed_limit_mps
+                            >= ec.min_speed_limit_mps
+                    }
+                    None => true,
+                }
         })
         .collect();
     let n_feasible = feasible.len();
@@ -139,7 +188,8 @@ pub fn recommend(
     let fm: Vec<f64> = feasible.iter().map(|(_, r)| r.figure_of_merit).collect();
     let noise: Vec<f64> = feasible.iter().map(|(_, r)| r.oaspl_db).collect();
 
-    let mut ranked: Vec<ScoredCandidate> = feasible
+    // Scored in feasible order (so Pareto indices line up), then ranked is the sort.
+    let scored: Vec<ScoredCandidate> = feasible
         .iter()
         .map(|(cand, rep)| {
             let score = W_VII * norm_up(rep.vertical_integration_index, &vii)
@@ -154,17 +204,75 @@ pub fn recommend(
             }
         })
         .collect();
+
+    // 4. Pareto non-dominated front over the priority objectives (minimisation form:
+    //    negate the maximise-objectives). The scalarised winner is always on it.
+    let objectives: Vec<Vec<f64>> = scored
+        .iter()
+        .map(|s| {
+            let r = &s.report;
+            vec![
+                -r.vertical_integration_index,
+                r.total_cost,
+                -r.endurance_min,
+                -r.figure_of_merit,
+                r.oaspl_db,
+            ]
+        })
+        .collect();
+    let mut pareto: Vec<ScoredCandidate> = pareto_front(&objectives)
+        .into_iter()
+        .map(|i| scored[i].clone())
+        .collect();
+    pareto.sort_by(|a, b| b.score.total_cmp(&a.score));
+
+    let mut ranked = scored;
     ranked.sort_by(|a, b| b.score.total_cmp(&a.score));
 
     let best = ranked[0].clone();
-    let rationale = build_rationale(space, &best, n_evaluated, n_feasible);
+    let rationale = build_rationale(space, &best, n_evaluated, n_feasible, pareto.len());
     Some(Recommendation {
         best,
         ranked,
+        pareto,
         n_evaluated,
         n_feasible,
         rationale,
     })
+}
+
+/// Build the analytic forward-flight [`AircraftPower`] for a candidate, composing its
+/// geometry, trimmed figure of merit, and a profile-power estimate. Shared by the
+/// envelope and the mission-energy paths.
+pub fn candidate_power(cand: &DesignCandidate, rep: &DesignReport) -> AircraftPower {
+    let op = cand.operating();
+    let area = cand.disk_area();
+    let prof = profile_power(
+        op.rho,
+        area,
+        cand.tip_speed_ms,
+        cand.solidity(),
+        cand.blade_cd0,
+    );
+    AircraftPower {
+        gross_mass_kg: cand.gross_mass_kg,
+        rho: op.rho,
+        disk_area_m2: area,
+        figure_of_merit: rep.figure_of_merit,
+        flat_plate_area_m2: cand.flat_plate_area_m2,
+        profile_power_w: prof,
+        powertrain_eta: cand.powertrain_eta,
+    }
+}
+
+/// Build the forward-flight envelope for a feasible candidate.
+pub fn candidate_envelope(
+    cand: &DesignCandidate,
+    rep: &DesignReport,
+    limits: &EnvelopeLimits,
+) -> FlightEnvelope {
+    let power = candidate_power(cand, rep);
+    analyze_envelope(&power, cand.tip_speed_ms, cand.solidity(), limits)
 }
 
 /// Normalise `x` to [0,1] where higher is better.
@@ -197,6 +305,7 @@ fn build_rationale(
     best: &ScoredCandidate,
     n_eval: usize,
     n_feas: usize,
+    n_pareto: usize,
 ) -> Vec<String> {
     let c = &best.candidate;
     let r = &best.report;
@@ -242,6 +351,12 @@ fn build_rationale(
             r.oaspl_db
         ),
     ];
+
+    lines.push(format!(
+        "Pareto front: {n_pareto} non-dominated design(s) (the recommended point is \
+         one of them); the others trade one priority for another — inspect `pareto` \
+         to see the front rather than accept the single weighted winner."
+    ));
 
     if !edges.is_empty() {
         lines.push(format!(

@@ -7,7 +7,7 @@
 //! design — followed by the assembly sequence that joins them into a flying
 //! machine.
 
-use crate::blade::blade_from_design;
+use crate::blade::blade_from_design_tapered;
 use crate::boom::boom_for;
 use crate::fuselage::fuselage_for;
 use crate::hub::hub_from_blade;
@@ -30,8 +30,23 @@ pub struct BuildPackage {
 }
 
 /// Build the full package from a design and its evaluated report (which supplies
-/// the hover power → torque used to size the mast and boom).
+/// the hover power → torque used to size the mast and boom). The blade is the
+/// untwisted/rectangular design geometry; use [`build_package_lofted`] to build the
+/// optimized twisted/tapered blade (it 3D-prints from the loft, so twist is free).
 pub fn build_package(c: &DesignCandidate, report: &DesignReport) -> BuildPackage {
+    build_package_lofted(c, report, 0.0, 1.0)
+}
+
+/// As [`build_package`] but with the blade's linear washout `twist_deg` and
+/// tip/root chord `taper_ratio` (from the blade-shape optimization) baked into the
+/// printed/lofted blade geometry. Other parts are unchanged (they key off the root
+/// chord; a taper only reduces tip mass, so the structural sizing stays conservative).
+pub fn build_package_lofted(
+    c: &DesignCandidate,
+    report: &DesignReport,
+    twist_deg: f64,
+    taper_ratio: f64,
+) -> BuildPackage {
     let omega = c.omega();
     let torque = if report.hover_shaft_power_w.is_finite() && omega > 0.0 {
         report.hover_shaft_power_w / omega
@@ -41,7 +56,7 @@ pub fn build_package(c: &DesignCandidate, report: &DesignReport) -> BuildPackage
     let head_height = 0.20 * c.radius_m + 0.05;
     let pack_mass = 0.25 * c.gross_mass_kg;
 
-    let blade = blade_from_design(c, 0.0);
+    let blade = blade_from_design_tapered(c, twist_deg, taper_ratio);
     let mast = mast_for_torque(torque, head_height);
     let hub = hub_from_blade(
         c.n_blades,
@@ -51,7 +66,7 @@ pub fn build_package(c: &DesignCandidate, report: &DesignReport) -> BuildPackage
         mast.diameter_m,
     );
     let swash = swashplate_for(c.radius_m, mast.diameter_m, c.n_blades);
-    let boom = boom_for(torque, c.radius_m);
+    let boom = boom_for(torque, c.radius_m, omega);
     let mount = mount_for(pack_mass, c.radius_m);
     let fuselage = fuselage_for(c.gross_mass_kg, c.radius_m);
     let landing_gear = landing_gear_for(

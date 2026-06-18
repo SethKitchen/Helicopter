@@ -89,7 +89,9 @@ impl TailRotorSpec {
                 self.chord_m * 1000.0 * 1.20,
                 max_thickness * 1000.0 * 1.20,
             ),
-            method: "balsa/basswood or solid composite (small)",
+            method: "3D-printed WHOLE in Markforged Onyx + continuous Fiberglass (fiber spanwise)",
+            printed: true,
+            service_print: false, // small tail blades fit a desktop bed
         }
     }
 }

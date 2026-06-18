@@ -11,6 +11,8 @@ pub mod charge_build_cli;
 pub mod charging_cli;
 pub mod design_cli;
 pub mod dynamics_cli;
+pub mod final_report_build;
+pub mod final_report_cli;
 pub mod flapping_cli;
 pub mod fly_cli;
 pub mod forward_cli;
@@ -22,6 +24,7 @@ pub mod report;
 pub mod sas_cli;
 pub mod sim_cli;
 pub mod study;
+pub mod synthesize_cli;
 pub mod trim_cli;
 
 use helisim_bemt::{Config, solve_hover};
@@ -52,7 +55,9 @@ pub fn dispatch(mode: &str) {
         "charge-build" => charge_build_cli::run(),
         "cfd" => cfd_cli::run(),
         "design" => design_cli::run(),
+        "synthesize" | "optimize" => synthesize_cli::run(),
         "build" => build_cli::run(),
+        "final-report" | "report" => final_report_cli::run(),
         "harrington" => harrington_sweep(&cfg),
         "spanwise" => {
             validation_report(&cfg);

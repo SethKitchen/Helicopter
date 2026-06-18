@@ -251,7 +251,7 @@ mod tests {
         let blade = blade_from_design(&c, 0.0);
         let bsteps = plan_split(&blade, &onyx_pro(), 363.0).join_instructions();
         assert!(bsteps.iter().any(|s| s.contains("spar splice")));
-        let boom = boom_for(2.0, c.radius_m);
+        let boom = boom_for(2.0, c.radius_m, c.omega());
         let msteps = plan_split(&boom, &onyx_pro(), 69.0).join_instructions();
         assert!(msteps.iter().any(|s| s.contains("sleeve")));
     }

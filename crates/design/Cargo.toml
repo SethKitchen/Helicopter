@@ -10,6 +10,9 @@ helisim-airfoil = { path = "../airfoil" }
 helisim-rotor = { path = "../rotor" }
 helisim-bemt = { path = "../bemt" }
 helisim-mission = { path = "../mission" }
+helisim-optimize = { path = "../optimize" }
 helisim-autorotation = { path = "../autorotation" }
+helisim-bms = { path = "../bms" }
+helisim-cell = { path = "../cell" }
 helisim-acoustics = { path = "../acoustics" }
 helisim-cost = { path = "../cost" }

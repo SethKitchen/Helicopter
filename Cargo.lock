@@ -125,8 +125,11 @@ dependencies = [
  "helisim-airfoil",
  "helisim-autorotation",
  "helisim-bemt",
+ "helisim-bms",
+ "helisim-cell",
  "helisim-cost",
  "helisim-mission",
+ "helisim-optimize",
  "helisim-rotor",
 ]
 
@@ -185,6 +188,10 @@ dependencies = [
  "helisim-rotor",
  "helisim-thermal",
 ]
+
+[[package]]
+name = "helisim-optimize"
+version = "0.1.0"
 
 [[package]]
 name = "helisim-pack"

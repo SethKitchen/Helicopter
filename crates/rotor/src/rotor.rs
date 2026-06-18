@@ -22,6 +22,15 @@ pub struct Rotor {
     pub twist_rate: f64,
     /// Inboard start of the lifting blade, as a fraction of radius.
     pub root_cutout: f64,
+    /// **Ideal-twist override** (the minimum-induced-loss anchor). When `Some(θ_t)`
+    /// the local pitch is the hyperbolic `θ(x) = θ_t / x` instead of the linear
+    /// formula, which gives uniform inflow (the Betz minimum-induced-power
+    /// condition). Defaults to `None` everywhere — every existing rotor keeps its
+    /// linear pitch bit-for-bit; this only exists so blade-shape optimization has a
+    /// closed-form optimum to be validated against (cf. `gyro_rate`). Not buildable
+    /// (singular at the root) — it is the analytic limit a real linear/tapered blade
+    /// approaches, never reaches.
+    pub ideal_twist_tip: Option<f64>,
 }
 
 impl Rotor {
@@ -41,16 +50,45 @@ impl Rotor {
             collective,
             twist_rate: 0.0,
             root_cutout,
+            ideal_twist_tip: None,
+        }
+    }
+
+    /// An **ideal-twist** rotor: `θ(x) = θ_tip / x` (hyperbolic), the distribution
+    /// that gives uniform inflow and hence minimum induced power for a given thrust.
+    /// `θ_tip` is the pitch at the tip (x=1). Geometry (chord, radius, cutout) as for
+    /// [`Rotor::rectangular`]. The closed-form optimum the blade optimizer is gated
+    /// against; not a buildable shape.
+    pub fn ideal_twist(
+        n_blades: usize,
+        radius: f64,
+        chord: f64,
+        tip_pitch: f64,
+        root_cutout: f64,
+    ) -> Self {
+        Rotor {
+            n_blades,
+            radius,
+            root_chord: chord,
+            tip_chord: chord,
+            collective: tip_pitch,
+            twist_rate: 0.0,
+            root_cutout,
+            ideal_twist_tip: Some(tip_pitch),
         }
     }
 
     /// Return a copy with a different collective pitch (radians). Convenient for
-    /// sweeping pitch in a validation loop without mutating the original.
+    /// sweeping pitch in a validation loop without mutating the original. For an
+    /// ideal-twist rotor "collective" is the tip pitch `θ_tip`, so it also retunes
+    /// the hyperbolic distribution — letting the shared trim routine drive either.
     pub fn with_collective(&self, collective: f64) -> Self {
-        Rotor {
-            collective,
-            ..self.clone()
+        let mut r = self.clone();
+        r.collective = collective;
+        if r.ideal_twist_tip.is_some() {
+            r.ideal_twist_tip = Some(collective);
         }
+        r
     }
 
     /// Chord at station `x`, m (linear between root and tip chords).
@@ -58,9 +96,13 @@ impl Rotor {
         self.root_chord + (self.tip_chord - self.root_chord) * x
     }
 
-    /// Local geometric pitch at station `x`, radians.
+    /// Local geometric pitch at station `x`, radians. Ideal-twist rotors use the
+    /// hyperbolic `θ_tip / x`; all others the linear `collective + rate·(x − cutout)`.
     pub fn pitch(&self, x: f64) -> f64 {
-        self.collective + self.twist_rate * (x - self.root_cutout)
+        match self.ideal_twist_tip {
+            Some(tip_pitch) => tip_pitch / x,
+            None => self.collective + self.twist_rate * (x - self.root_cutout),
+        }
     }
 
     /// Local solidity `sigma(x) = n_blades * chord(x) / (pi * R)`.

@@ -82,15 +82,21 @@ impl BuildPart for HubSpec {
                 self.bore_m * 1000.0
             ),
             format!(
-                "3. Make {} grip(s): {:.0} × {:.0} × {:.1} mm pocket to clamp each blade root.",
+                "3. Make {} grip(s): a {:.0} × {:.0} × {:.1} mm clamp pocket that grips the \
+                 metal-reinforced blade root — the bonded doublers (or the fiber-loop bushing boss) \
+                 — see `rotor_head.svg`. The grip clamps the METAL reinforcement, not bare plastic.",
                 self.n_grips,
                 self.grip_length_m * 1000.0,
                 self.grip_width_m * 1000.0,
                 self.grip_height_m * 1000.0
             ),
-            "4. Press in the pitch (and flap, if teetering) bearings; fit the pitch horns."
+            "4. Press the pitch (feather) bearings into each grip; the blade pivots about the \
+             retention bolt on these bearings so collective/cyclic can feather it. Fit a pitch horn \
+             to each grip, LEADING the blade ~90° around (gyroscopic precession — see `swashplate.svg`)."
                 .to_string(),
-            "5. Check each grip's pitch axis is concentric and free; set zero pitch.".to_string(),
+            "5. Connect a pitch link from each grip's horn to the rotating swashplate ring. Check the \
+             pitch axis is concentric and free, then set zero blade pitch at centred mid-collective."
+                .to_string(),
         ]
     }
 }

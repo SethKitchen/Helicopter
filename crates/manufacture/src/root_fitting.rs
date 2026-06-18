@@ -43,7 +43,7 @@ impl BuildPart for RootFitting {
         "blade root fittings"
     }
     fn material(&self) -> &str {
-        "aluminium/steel tang bonded or bolted into the blade root"
+        "2× 6061 aluminium doubler plates (cut from flat bar) + a steel bolt bushing"
     }
     fn source(&self) -> Source {
         Source::Fabricated
@@ -57,22 +57,43 @@ impl BuildPart for RootFitting {
         ]
     }
     fn build_steps(&self) -> Vec<String> {
+        let bolt_mm = self.bolt_diameter_m * 1000.0;
+        let plates = 2 * self.count;
         vec![
             format!(
-                "1. Make {} root tang(s): {:.0} × {:.0} × {:.1} mm, bonded/bolted into each \
-                 blade root.",
-                self.count,
+                "1. Cut {plates} doubler plates ({} per blade) from the 6061 aluminium flat bar: each \
+                 {:.0} × {:.0} × ~2 mm. Use the listed mini-hacksaw + needle files, OR send \
+                 `blade_section.dxf`-style rectangles to a laser/water-jet service (both are in the \
+                 shopping list with links). Deburr.",
+                2,
                 self.length_m * 1000.0,
                 self.width_m * 1000.0,
+            ),
+            format!(
+                "2. Cut {} steel bushing(s) (one per blade) to the root thickness ({:.1} mm) from the \
+                 listed bushing/standoff stock; the bolt will bear on this steel, never on plastic.",
+                self.count,
                 self.thickness_m * 1000.0
             ),
             format!(
-                "2. Drill the Ø{:.1} mm retention bolt hole on the pitch axis (centrifugal \
-                 load — see structural check).",
-                self.bolt_diameter_m * 1000.0
+                "3. The printed root already carries the Ø{:.1} mm PILOT hole (printed in, not drilled) \
+                 on the pitch axis (~25% chord). REAM the pilot to Ø{bolt_mm:.1} mm; drill the two \
+                 aluminium doublers undersize then ream the stack together so all three are concentric \
+                 (do NOT drill the plastic root from solid — it delaminates). BOND the steel bushing \
+                 into the reamed bore with structural epoxy (NOT press-fit: a polymer interference fit \
+                 stress-relaxes and loosens). This bolt is the flap/feather PIVOT and carries the \
+                 blade centrifugal force in double shear (sized in the structural check).",
+                bolt_mm - 1.0
             ),
-            "3. Match-drill the grip; the bolt is the flap/feather pivot — use a close fit."
+            "4. Bond the two doublers to the root faces with structural epoxy (scuff + degrease, \
+             clamp, FULL cure — not 5-min epoxy). The bonded doublers carry the centrifugal load into \
+             metal; the bonded bushing keeps the bolt bearing on steel; the printed root only locates."
                 .to_string(),
+            format!(
+                "5. Ream the grip jaws to the SAME Ø{bolt_mm:.1} mm; fit the pitch bearings, pass the \
+                 bolt through grip + doubler/root/doubler + grip, and fit the nyloc nut — snug, free \
+                 to pivot, threadlocked."
+            ),
         ]
     }
 }

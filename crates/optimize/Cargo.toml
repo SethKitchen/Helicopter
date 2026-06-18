@@ -1,0 +1,8 @@
+[package]
+name = "helisim-optimize"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Std-only optimization: derivative-free Nelder-Mead, penalty constraints, and a Pareto non-dominated front — the design-synthesis solver shape."
+
+[dependencies]

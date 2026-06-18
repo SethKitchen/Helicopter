@@ -27,7 +27,9 @@
 pub mod beam;
 pub mod cst;
 pub mod linsolve;
+pub mod tet;
 
 pub use beam::{Bc, Beam, BeamSolution, NodalLoad, uniform_beam};
 pub use cst::{Cst, CstSolution, rectangle_two_tris};
 pub use linsolve::solve;
+pub use tet::{TetMesh, TetSolution, box_six_tets};

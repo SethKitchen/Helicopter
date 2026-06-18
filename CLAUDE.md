@@ -394,11 +394,23 @@ powered-flight stack omitted; built off the validated cores, never modifies them
   Turns the recommended [`DesignCandidate`] into real dimensioned part geometry,
   beginning with the blade: exact **NACA 4-digit section coordinates** (validated
   against published 0012 ordinates — y_t(0.30)=0.0600, TE(1.0)=0.00126), a
-  dimensioned **BladeSpec** (span/chord/max-thickness), the **raw stock block** to
-  start from (with machining allowance), and **step-by-step shaping instructions**.
-  Geometry is exact math → geometric oracles, not fabricated numbers. `helisim
-  design` now ends with the recommended blade's build steps (e.g. "Obtain stock
-  654×44×5 mm balsa; shape NACA 0012, chord 36.7 mm, max thickness 4.40 mm @ 30%").
+  dimensioned **BladeSpec** (span/chord/max-thickness) and **step-by-step instructions**.
+  A twisted/tapered NACA blade is NOT hand-carved — it is **3D-PRINTED WHOLE**
+  (`Source::Fabricated`) from the exported loft (`blade.stl`), so the solid STL *is* the
+  part (no internal spar channel to fake). The retention-bolt hole is **PRINTED** (an
+  undersized pilot, then **reamed** — never drilled from solid, which delaminates a
+  layered/sintered root), and the bolt bears on a **BONDED** steel bushing (never a
+  press-fit — a polymer interference fit stress-relaxes and loosens). Route by span:
+  ≤320 mm desktop Markforged **Onyx + continuous Fiberglass**; ≤750 mm whole via an
+  **SLS print service** (PA-CF nylon — the service order, with link, IS the purchase);
+  else molded carbon. **The centrifugal load path is route-dependent** ([`RootLoadPath`],
+  decided by whether the route can lay continuous fiber): the desktop continuous-fiber
+  blade winds the structural tow as a **fiber LOOP around the bushing** (F_cf carried in
+  fiber *tension* — the textbook composite root, no bond-shear/plastic-bearing primary
+  path); the larger SLS/molded blade (chopped fiber, no loop) uses **two bonded 6061
+  aluminium doubler plates** (printed plastic only locates). Every part, plus the
+  tools/services to cut them, is in the buildable shopping list ([`shopping`]) with a
+  link + price. Geometry is exact math → geometric oracles, not fabricated numbers.
   **COMPLETE part system + assembly + export.** Every part is its own
   [`BuildPart`] (trait = polymorphism boundary) **physically sized from the
   design**, not guessed: blade (NACA section), **mast** (torsion `d=(16Q/πτ)^⅓`
@@ -541,6 +553,67 @@ convective outflow, or sharp-TE body-fitted grid); the Kutta-imposed far field i
 stand-in. **CFD TRACK COMPLETE** (cavity → pressure → Taylor-Green → cylinder → inviscid airfoil
 → viscous airfoil → rotor coupling → refinements → stall + external + emergent-limit).
 
+Design-synthesis track — **COMPLETE** (the INVERSE of the analysis stack: the prior
+cores answer "given design X, how does it perform?"; this answers "find the X that
+performs best." New crate `optimize` + new `design` modules; composes the validated
+cores, adds no new physics, never modifies them):
+- **`optimize` crate — the 7th solver shape.** Derivative-free **Nelder–Mead** simplex
+  over an `Objective` trait, exterior-**penalty** inequality constraints, and a
+  **Pareto non-dominated front** (no single optimum exists for competing objectives).
+  Validated against KNOWN optima (sphere / Rosenbrock / active box bound / KKT-
+  constrained quadratic) and analytic dominance — the oracle for an optimizer is "does
+  it find the answer we can compute by hand?".
+- **Blade twist/taper optimization (`design/blade_opt.rs`).** Minimizes hover power at
+  a fixed thrust over the buildable knobs (linear twist rate + taper), trimming
+  collective each trial. Oracle: the minimum-induced-loss theorem — induced power is
+  least at **uniform inflow**, achieved by *ideal twist* `θ∝1/x` (`Rotor::ideal_twist`,
+  a non-invasive `Option` add, default off). Findings: optimum is a washout + max taper,
+  ~20% power cut, inflow CV 0.34→0.14; ideal twist makes CV→0.003 and bounds the
+  *induced* C_P, but its singular root pitch inflates *profile* drag so it does NOT
+  minimize TOTAL power — the honest split (the linear blade can't reach the hyperbolic
+  ideal; that residual is the cost of buildability, not a solver failure).
+- **Gross-weight closure (`design/weight_closure.rs`).** The preliminary-design fixed
+  point `W = W_empty(W) + payload + W_battery(W)` by bisection on the monotone residual.
+  Oracle: the AFFINE case (`FixedDiskLoading` → constant battery fraction) has the
+  closed form `W=(payload+fixed)/(1−e−f)` — exact; plus the divergence threshold
+  (`e+f≥1` ⇒ `None`, the mass spiral that doesn't close) and the amplification factor
+  `dW/d(payload)=1/(1−e−f)>1`. `FixedRotor` is the nonlinear (`W^1.5`) general spiral.
+- **Mission-profile energy (`design/mission_profile.rs`).** Optimize/size for a MISSION
+  (climb→cruise→loiter→hover), not just hover: integrates `Σ Pᵢ·tᵢ` through analytic
+  flight power. Oracles: exact segment-sum; the Breguet identity `range=E/D_equiv`; the
+  forward power bucket has an interior minimum the optimizer recovers (best-range speed
+  > best-loiter speed — textbook ordering).
+- **Flight envelope (`design/envelope.rs`).** Vne from advancing-tip Mach
+  (`a·M_lim−V_tip`) and retreating-blade stall (`μ_stall=1−√(6(C_T/σ)/C_Lmax)`),
+  power-limited max level speed, and the hover ceiling (`P_hover∝ρ^{−1/2}` + ISA
+  inversion) — each a closed-form oracle, usable as optimizer constraints.
+- **Wired into `recommend`:** it returns the **Pareto front** (the scalarized winner
+  is always on it — validated), accepts an optional **envelope constraint** (prunes
+  designs below a usable-speed floor), AND an optional **mission-driven weight closure**
+  (`SizingPolicy`): with it set, each geometry's gross mass + pack are SOLVED to fly a
+  stated mission with the spiral closed (gaps 3+4 folded into the search; diverging /
+  non-hovering geometries dropped). `cargo run -- synthesize`. NOTE: as a *selector*
+  the closure's vertical-integration-first ranking favours large lightly-loaded disks,
+  so the **`final-report`** capstone selects the geometry by hover priorities + envelope,
+  THEN mission-sizes that winner (a sensibly-loaded, closed design).
+- **`final-report` — the capstone, ONE integrated CONTINUOUS solve.** `cargo run --
+  final-report` runs `optimize_design` (continuous Nelder-Mead, not a grid) to find the
+  TRUE minimum-gross-mass design while the weight closure folds in the mission energy,
+  the 10-year/365-per-year life (DoD oversize ~3×) and the envelope — so the winner is a
+  real optimum (interior, or honestly flagged if it rests on a physical bound), with an
+  **optimality proof** (perturb ±15% → lighter is unsafe, bigger is heavier). The
+  rotor-group structural mass in the closure makes the size optimum interior (no more
+  "bigger always wins"). For the model: **4 blades, R≈0.69 m, gross ≈3.6 kg, FM 0.68,
+  28-min airtime / 22-min hover endurance, OASPL ~5 dB, 120 V ≥1:1 charge**. **§9 solves
+  the human-scale aircraft with the SAME optimizer** (R≈5.6 m, 1063 kg, 289 kg life-pack,
+  98 kW, DC-fast meets 1:1; hydraulic actuation). **§7 documents the swashplate/rotor-head
+  control system** (servos are correct: continuous held angle; 3-servo 120° CCPM; pitch
+  links to grip pitch horns with the 90° precession lead). Writes `FINAL_REPORT.md` (design
+  + optimality proof; blade-shape opt; envelope; mission + life closure; parts/assembly/
+  structural/FEA/hardware; cost BOM; priced battery BOM w/ links; charging kits; control
+  system; human-scale) PLUS STEP/STL/DXF. Remaining-optional: gradient/SQP for tighter
+  optima; multi-objective Pareto over the continuous optimum (today min-mass scalar).
+
 Each milestone is added as new crate(s); never break the existing cores.
 
 ## Hard rules (always follow)
@@ -578,7 +651,9 @@ reader can hand-check: **pack** (6S2P 25R → 21.6 V / 5 Ah / 108 Wh / 63 mΩ / 
 (convection h in the Incropera Nu·k/D bands), **airfoil** (NACA0012 a₀=5.73/rad,
 C_lmax 1.4, C_d0 0.0065 — Abbott & von Doenhoff / Prouty), **manufacture**
 (bolt areas = ISO 724, working shear = ISO 898-1 0.6·800/2.4; boom Z≈0.058D³ =
-Roark; Al allowables MMPDS/ASM), **cells** (4×21700 datasheets + Battery-Mooch DCIR).
+Roark; Al allowables MMPDS/ASM; continuous-Fiberglass root-loop allowables = Markforged
+Composites Datasheet REV 5.0 tensile 590 MPa / compressive 180 MPa ÷ 6 SF), **cells**
+(4×21700 datasheets + Battery-Mooch DCIR).
 **Honest gaps that remain** (no clean external number without Milestone-6-style
 sourcing, named not faked): the **acoustics external-SPL** anchor (only Bessel tables
 + Gutin closed form + directivity); per-cell measured OCV curves and per-rate
@@ -791,6 +866,13 @@ crates/
     solution.rs   AutorotationSolution
     tests/autorotation_validation.rs  momentum-quadratic anchors + measured ideal band [1.7,2.0] + forward glide
     tests/r22_external_validation.rs  EXTERNAL: R22 POH glide speeds (locked prereg, cited oracle)
+  optimize/     std-only optimization — the design-SYNTHESIS solver shape (7th)
+    objective.rs  trait Objective (+ FnObjective adapter, box bounds) <- boundary
+    nelder_mead.rs minimize — derivative-free downhill simplex (reflect/expand/contract/shrink)
+    constraint.rs Penalized — exterior penalty for inequality constraints g(x)≤0
+    pareto.rs     pareto_front / dominates — non-dominated set (multi-objective)
+    tests/optimizer_validation.rs  sphere/Rosenbrock/active-bound/KKT-constrained known optima
+    tests/pareto_validation.rs     analytic dominance + convex trade curve
   acoustics/    rotor harmonic noise (priority: minimal sound)
     bessel.rs     integer-order J_n(x), std-only (validated vs tabulated zeros/values)
     rotational.rs Gutin rotational (loading) noise harmonic pressure
@@ -803,15 +885,45 @@ crates/
     report.rs     DesignReport (consequences by priority: safety/airtime/efficiency/noise)
     metrics.rs    evaluate — BEMT trim + autorotation + acoustics + cost → report
     sweep.rs      sweep_radius — the disk-loading trade at fixed tip speed
-    recommend.rs  recommend — search + safety-constrained priority-ranked suggestion
+    recommend.rs  recommend — search + safety/envelope-constrained ranked suggestion
+                  + Pareto non-dominated front (uses optimize); candidate_envelope
+    blade_opt.rs  BladeProblem — optimize twist/taper for min hover power at fixed
+                  thrust (uses optimize) vs the ideal-twist min-induced-loss anchor
+    weight_closure.rs  WeightClosure — gross-weight spiral W=W_empty+payload+W_batt(W)
+                  (bisection); FixedDiskLoading (affine, closed form) / FixedRotor
+    sizing.rs     SizingPolicy + LifeRequirement — mission- AND life-driven weight
+                  closure per GEOMETRY (damped fixed point; trimmed FM cached across a
+                  few outer trims + mission energy + 10-yr/365-per-yr life DoD via
+                  bms::size_for_life → ~3-6× pack oversize + rotor-group structural mass);
+                  folded into recommend AND optimize_design
+    optimize_design.rs  optimize_design — CONTINUOUS Nelder-Mead over (radius,tip,σ) per
+                  blade count, min gross mass s.t. flare/tip-Mach/envelope + life closure;
+                  the TRUE optimum (interior, or flags a physical bound) — not a grid corner
+    mission_profile.rs  AircraftPower + Mission/Segment — multi-leg energy budget;
+                  min-power (loiter) & best-range speeds (uses optimize)
+    envelope.rs   analyze_envelope — Vne (advancing-Mach + retreating-stall), power-
+                  limited max speed, hover ceiling (ISA), as optimizer constraints
     upsizing.rs   size_for_daily_life — closure condition (disk loading + pack fraction)
                   for a 10-yr daily-flight pack; finds the battery-heavy redesign
-    tests/design_validation.rs  composition-consistency + trade-direction + recommender
+    tests/design_validation.rs       composition-consistency + trade-direction + recommender
+    tests/blade_opt_validation.rs    ideal twist → uniform inflow; opt beats untwisted; honest gap
+    tests/weight_closure_validation.rs  affine closed form + divergence + spiral amplification
+    tests/mission_profile_validation.rs segment-sum + Breguet range + power-bucket min
+    tests/envelope_validation.rs        Vne/stall/ceiling closed forms + trends
+    tests/synthesis_validation.rs       winner is Pareto-optimal; envelope floor prunes
+    tests/sizing_validation.rs          mission+life closure self-consistent + daily oversize + monotone
+    tests/optimize_design_validation.rs continuous optimum is the lightest FEASIBLE design (interior)
   manufacture/  recommended design → buildable geometry + step-by-step (the end goal)
     part.rs       trait BuildPart (polymorphism boundary) + Source taxonomy
+    svg.rs        std-only SVG writer (line/rect/circle/poly/text/arrow/dim) — diagrams
+    diagrams.rs   blade-section / rotor-head load-path / swashplate-CCPM / aircraft SVGs
+                  (graphics for the build steps — SHOW the linkage, not just text)
+    shopping.rs   shopping_list — buyable hardware + consumables (fasteners, bearings,
+                  epoxy, balancer, reamer) with retailer + link + representative price
     materials.rs  allowable-stress constants (Al shear/bending, conservative)
     airfoil_coords.rs NACA 4-digit section coords (validated vs published 0012 ordinates)
-    blade.rs      BladeSpec from a design: dimensions, raw stock, shaping instructions
+    blade.rs      BladeSpec from a design: dimensions + 3D-PRINT instructions (Onyx+
+                  Fiberglass, printed from the loft; molded composite only at human scale)
     hub.rs        HubSpec — teetering/articulated head + grips from blade root
     mast.rs       MastSpec — drive shaft, torsion-sized from hover torque
     swashplate.rs SwashplateSpec — control plates, ∝ rotor + mast bore
@@ -822,8 +934,30 @@ crates/
     tail_rotor.rs TailRotorSpec — anti-torque sub-rotor (T_tr=Q/L_boom), reuses BladeSpec
     structural.rs check_structure — flight-load margins (centrifugal + torsion + bending)
     mesh.rs       triangle toolkit (cylinder/ellipsoid/lofted-blade + transforms)
-    structural.rs check_structure — section margins (centrifugal/torsion/bending)
-    fea_structural.rs run_fea — beam-FEM boom+blade (deflection + FE-vs-closed-form)
+    structural.rs check_structure — section margins (centrifugal/torsion/bending) + the
+                  AS-BUILT root joint, ROUTE-DEPENDENT (blade::RootLoadPath): fiber-loop
+                  blade → fiber-tension + bushing-bearing; doubler blade → epoxy-bond shear +
+                  doubler net-tension + bolt bearing. Bushing is BONDED (not press-fit)
+    fea_structural.rs run_fea — beam-FEM boom+blade; blade uses the AS-BUILT modulus (print-
+                  route material × gyroid-infill knockdown, Gibson–Ashby), not a solid laminate
+    resonance.rs  analyze_resonance — Campbell/fan check: cantilever fundamental (β₁ closed
+                  form) + Southwell rotating-flap vs rotor per-rev harmonics; flags + feasible-fix.
+                  The boom is sized for stress+stiffness+FREQUENCY (boom_governing_od) so it is
+                  non-resonant — an infeasible (whipping) boom is replaced with a stiff one
+    root_fea.rs   analyze_root_hole — bolt-hole STRESS CONCENTRATION in the doubler: CST
+                  plate-with-hole FE + Heywood closed-form Kt_net=2+(1−d/w)³ oracle; peak check
+    root_solid.rs analyze_root_solid — TRUE 3-D solid root: 2-D quarter mesh extruded to
+                  linear TETRAHEDRA (fea/tet.rs); 3-D Kt over-predicts + CST under-predicts
+                  BRACKET the Heywood closed-form (the cross-check); through-thickness σ≈uniform
+                  (plane-stress OK); bolt bearing via cosine contact (peak 4/π × average)
+    fatigue.rs    analyze_fatigue — root-doubler (aluminium) life: GAG (per-flight) + per-rev,
+                  Basquin 6061-T6 S-N (ASM anchors) + Goodman + Miner → predicted years.
+                  analyze_blade_fatigue — printed-blade (nylon) per-rev HCF: polymer semi-log
+                  S-N (σ_a/UTS=1−B·log₁₀N) + flap-hinge relief + Miner → blade fatigue life
+    bond_creep.rs analyze_bond_creep — epoxy root-bond CREEP-RUPTURE under sustained centrifugal
+                  shear: static τ × time-factor (1−0.10·log₁₀h) × temp-factor over loaded hours
+    thermal_softening.rs analyze_thermal_softening — sun-baked blade: solar energy balance →
+                  temp, nylon modulus/strength retention vs T, hot centrifugal margin re-check
     fasteners.rs  bolt/bearing catalogues + select-smallest-adequate + hardware_schedule
     assembly.rs   BuildPackage — all parts + the assembly sequence
     build_volume.rs  printer build envelopes (the box a part must fit, or split to fit)
@@ -840,6 +974,8 @@ crates/
     linsolve.rs   dense Ax=b (Gaussian elimination, partial pivoting)
     beam.rs       Euler-Bernoulli beam FEM + geometric (tension) stiffening Kg
     cst.rs        plane-stress constant-strain triangle (2-D continuum FE)
+    tet.rs        linear 4-node tetrahedron (3-D solid FE); box_six_tets helper.
+                  Inline tests: 3-D constant-strain patch test (exact) + load-direction + volume
     tests/beam_validation.rs  cantilever PL³/3EI (exact) + string limit qL²/8T + distributed
     tests/cst_validation.rs   FE patch test + uniaxial bar (σ=F/A, δ=FL/AE exact)
   cfd/          from-scratch viscous 2-D incompressible Navier-Stokes (std-only, zero deps)
@@ -895,7 +1031,7 @@ crates/
 
 ### Solver vocabulary
 
-Six solver shapes are now in use — pick by problem structure:
+Seven solver shapes are now in use — pick by problem structure:
 1. **Monotone-residual bisection** wrapping an integral — hover/forward inflow,
    hover thrust-trim, coupled pack current. Use for a 1-D root of a monotone
    residual: robust, derivative-free.
@@ -931,6 +1067,18 @@ Six solver shapes are now in use — pick by problem structure:
    the states are internal — no standalone oracle — so gate on the τ→0 reduction
    to the validated quasi-static model (exact) AND a documented qualitative
    signature (the off-axis sign flip).
+7. **Derivative-free optimization (Nelder–Mead) + Pareto front** — `optimize` crate.
+   The design-SYNTHESIS shape: the others find an *equilibrium/response*; this finds
+   a *minimum*. Use when you need the best design over a vector of knobs and the
+   evaluator (BEMT power, mission energy) is cheap but not analytically
+   differentiable: a downhill simplex needs no gradient. Inequality constraints by
+   exterior **penalty** (`Penalized`); genuinely multi-objective problems return the
+   **Pareto non-dominated front** (`pareto_front`) instead of a scalarized rank.
+   CAUTION (same discipline as every other shape): validate the optimizer against a
+   problem with a KNOWN optimum — sphere/Rosenbrock/active-bound/KKT-constrained — and
+   the front against analytic dominance, before trusting it on a design. Consumers:
+   `design/blade_opt.rs` (twist/taper), `mission_profile.rs` (best speeds),
+   `recommend.rs` (Pareto front over the priority objectives).
 - `C_P == C_Q`; figure of merit `FM = C_T^{3/2}/(√2 C_P)`.
 - Solidity `σ = N_b c/(πR)`.
 
@@ -1178,6 +1326,25 @@ r nose-right +.
 - **Actuation (`actuation`):** motor/servo catalogues match the published Scorpion /
   Align datasheets (external) and the selection is falsifiable (chosen passes, next
   size down fails); every catalogue part carries a cited price + purchase URL.
+- **Design synthesis (`optimize` + `design`):** the optimizer is validated against
+  problems with KNOWN optima — sphere/Rosenbrock to <1e-6, an active box bound, and a
+  KKT-constrained quadratic to ≈(1,1) — and the Pareto front against analytic
+  dominance. Blade-shape optimization hits the minimum-induced-loss oracle: ideal twist
+  drives inflow CV→0.003 (uniform) and bounds the induced C_P, while the optimized
+  linear blade cuts hover power ~20% (washout + taper) — the buildable approach to the
+  unreachable hyperbolic ideal, the gap named not faked. Weight closure reproduces the
+  affine closed form exactly and reports the divergent spiral as `None`. Mission energy
+  matches the segment-sum and the Breguet range identity; the power bucket's interior
+  minimum and the best-range > best-loiter ordering come out. Envelope limits (Vne from
+  advancing-Mach + retreating-stall, power-limited max speed, ISA hover ceiling) each
+  match their closed form. The recommender's scalarized winner is provably on the
+  Pareto front, the envelope floor prunes the feasible set, and the mission- AND
+  life-driven weight closure (`SizingPolicy`, gaps 3+4 + the 10-yr-life/1:1-charge
+  constraint folded in) is a self-consistent fixed point that closes heavier for harder
+  missions, **oversizes the pack ~3-6× for daily 10-yr life** (battery-heavy, >3.5 kg),
+  and rejects non-hovering geometries. `cargo run -- synthesize`;
+  `cargo run -- final-report` runs the integrated life+charge solve and writes the
+  consolidated report + STEP/STL/DXF.
 
 ## Electric-hover chain conventions (mission)
 
@@ -1228,10 +1395,20 @@ r nose-right +.
   airtime → efficiency → noise) at a starter point + a radius/disk-loading sweep
   showing the sweet spot (not a monotone "bigger is better"). Composes the
   autorotation, acoustics and BEMT-trim cores.
+- `cargo run -- synthesize` (alias `optimize`) — the design-synthesis layer: blade
+  twist/taper optimization vs the ideal-twist anchor, gross-weight closure, a
+  mission-profile energy budget (best-loiter/best-range speeds), the flight envelope
+  (Vne / max level speed / hover ceiling), and the recommender's Pareto front under
+  an envelope constraint. Find the best design, not just evaluate one.
 - `cargo run -- build` — the end goal: recommend a design, then emit the COMPLETE
   build package — every part sized from the design (mast by torsion, boom by
   bending, etc.), the assembly sequence, and exported STL (printable blade) + DXF
   (cuttable section) files to `build_output/`.
+- `cargo run -- final-report` (alias `report`) — the CAPSTONE: runs the whole
+  synthesis→build chain for one reference mission and writes a single consolidated
+  `build_output/FINAL_REPORT.md` (best design + Pareto front, blade-shape optimization,
+  flight envelope, mission energy + weight closure, parts/assembly/structural, cost
+  BOM, priced battery shopping list with buy links) plus the STEP/STL/DXF files.
 - `cargo run -- bms` — battery + BMS benchmark: the 4-cell trade (sourced datasheet
   + measured DCIR), protection/SoC/balancing demo, and the emergent true-continuous
   from the 2-node thermal model (label-vs-true continuous = the finding).

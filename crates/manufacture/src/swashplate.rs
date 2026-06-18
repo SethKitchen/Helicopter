@@ -53,19 +53,41 @@ impl BuildPart for SwashplateSpec {
     fn build_steps(&self) -> Vec<String> {
         vec![
             format!(
-                "1. Machine two Ø{:.0} mm plates with a Ø{:.1} mm bore; recess for the \
-                 inter-plate bearing.",
+                "1. Machine two Ø{:.0} mm plates, each with a Ø{:.1} mm bore, and a central \
+                 ball/uniball that lets the assembly BOTH slide up/down the mast AND tilt in \
+                 any direction (the bore is a sliding+gimballing fit on the mast, not a press fit).",
                 self.outer_diameter_m * 1000.0,
                 self.bore_m * 1000.0
             ),
-            "2. Press the bearing between plates; the lower stays fixed, the upper rotates."
+            "2. Press a thrust+radial bearing between the plates: the LOWER (stationary) plate \
+             never rotates; the UPPER (rotating) plate spins with the head. The bearing lets the \
+             two share the same up/down position and tilt while one spins."
                 .to_string(),
             format!(
-                "3. Fit {} pitch-link ball joints on the rotating plate and {} servo-input \
-                 joints (120° CCPM) on the stationary plate.",
-                self.n_links, self.n_servo_inputs
+                "3. ACTUATOR = {} servos (digital, metal-gear) — the correct choice: blade pitch \
+                 is a continuous, bidirectional, position-held angle, which is exactly what a servo \
+                 gives (a brushless ESC/motor cannot hold a precise angle). Mount the {} servos to \
+                 the frame at 120° around the mast (CCPM); connect each by a threaded pushrod + \
+                 ball link to a pickup on the STATIONARY plate.",
+                self.n_servo_inputs, self.n_servo_inputs
             ),
-            "4. Add an anti-rotation guide for the stationary plate; check free tilt + slide."
+            "4. How it MOVES (CCPM mixing, done in the flight controller): all 3 servos UP together \
+             = the whole swashplate rises = COLLECTIVE (every blade gains pitch, more thrust). Two \
+             servos differential = the plate TILTS = CYCLIC (blade pitch varies once per rev, tilting \
+             the rotor disk). The FC mixes stick → 3 servo angles."
+                .to_string(),
+            format!(
+                "5. Fit {} ball joints on the ROTATING plate; run a pitch link from each up to its \
+                 blade-grip PITCH HORN. The rotating plate's tilt feeds a once-per-rev pitch change \
+                 to each blade. IMPORTANT: lead the pitch horn ~90° around from the blade (gyroscopic \
+                 precession — peak pitch input precedes peak flap by ~90°), so a fore-aft stick tilts \
+                 the disk fore-aft, not sideways.",
+                self.n_links
+            ),
+            "6. Drive the rotating plate with the mast via a SCISSOR/driver link (so it spins with \
+             the head), and hold the stationary plate from spinning with a second anti-rotation \
+             scissor to the frame. Check: free slide, free tilt, no bind through full collective + \
+             full cyclic; set link lengths so zero stick = zero blade pitch at mid-collective."
                 .to_string(),
         ]
     }

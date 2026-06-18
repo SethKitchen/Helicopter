@@ -120,6 +120,18 @@ impl DesignCandidate {
         self.n_blades as f64 * mu * self.radius_m.powi(3) * (1.0 - e * e * e) / 3.0
     }
 
+    /// Estimate the **rotor-group mass** (blades + hub/grips + mast + tail boom), kg,
+    /// from blade geometry — it GROWS with radius, so a bigger disk costs structural
+    /// mass. Blade mass is the planform lamina `N_b·R(1−e)·c·areal_density`; the
+    /// head/mast/boom add ~2× more (a representative, overridable factor). Folding this
+    /// into the weight closure is what makes the size optimum *interior* (a real
+    /// disk-loading trade) instead of "bigger rotor always wins".
+    pub fn estimate_rotor_group_mass(&self) -> f64 {
+        let blade_planform = self.radius_m * (1.0 - self.root_cutout) * self.chord_m;
+        let blades = self.n_blades as f64 * blade_planform * self.blade_areal_density_kg_m2;
+        blades * 3.0
+    }
+
     /// A copy with new rotor geometry (blades/radius/chord/tip speed) **and** the
     /// rotor inertia re-estimated from that geometry — the search primitive the
     /// recommender uses so each candidate is self-consistent.

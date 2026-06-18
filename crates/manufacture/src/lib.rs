@@ -33,10 +33,13 @@ pub mod airfoil_coords;
 pub mod assembly;
 pub mod assembly_export;
 pub mod blade;
+pub mod bond_creep;
 pub mod boom;
 pub mod build_volume;
+pub mod diagrams;
 pub mod export;
 pub mod fasteners;
+pub mod fatigue;
 pub mod fea_structural;
 pub mod fuselage;
 pub mod hub;
@@ -49,32 +52,44 @@ pub mod mount;
 pub mod naca_section;
 pub mod part;
 pub mod print_plan;
+pub mod resonance;
+pub mod root_fea;
 pub mod root_fitting;
+pub mod root_solid;
+pub mod shopping;
 pub mod sizing;
 pub mod split;
 pub mod split_geometry;
 pub mod step_brep;
 pub mod structural;
+pub mod svg;
 pub mod swashplate;
 pub mod tail_rotor;
+pub mod thermal_softening;
 
 pub use airfoil_coords::{Point, naca00xx_contour, naca4_half_thickness};
-pub use assembly::{BuildPackage, build_package};
+pub use assembly::{BuildPackage, build_package, build_package_lofted};
 pub use assembly_export::{
     aircraft_parts, aircraft_to_step, aircraft_to_step_ap203, aircraft_to_stl,
 };
 pub use blade::{BladeSpec, blade_from_design, blade_from_design_tapered};
+pub use bond_creep::{BondCreepReport, analyze_bond_creep, creep_time_factor};
 pub use boom::{BoomSpec, boom_for};
 pub use build_volume::{
     BuildVolume, build_volumes, cnc_envelope, eos_sls_pa12, hp_mjf_4200, markforged_x7, onyx_pro,
     smallest_fitting,
 };
+pub use diagrams::{assembly_svg, blade_section_svg, rotor_head_svg, swashplate_svg};
 pub use export::{
     airfoil_to_dxf, blade_to_stl, lofted_blade_to_stl, lofted_facet_count, stl_facet_count,
 };
 pub use fasteners::{
     Bearing, Bolt, HardwareItem, bearing_catalogue, bolt_catalogue, hardware_schedule,
-    select_bearing, select_bolt,
+    retention_bolt, select_bearing, select_bolt,
+};
+pub use fatigue::{
+    BladeFatigueReport, FatigueReport, analyze_blade_fatigue, analyze_fatigue,
+    basquin_allowable_cycles,
 };
 pub use fea_structural::{FeaPart, FeaReport, naca0012_flap_inertia, run_fea};
 pub use fuselage::{FuselageSpec, fuselage_for};
@@ -85,7 +100,11 @@ pub use mast::{MastSpec, mast_for_torque};
 pub use mount::{MountSpec, mount_for};
 pub use part::{BuildPart, Source};
 pub use print_plan::{joint_load_for, largest_part_bbox, plan_prints, recommend_printer};
+pub use resonance::{ResonanceReport, analyze_resonance, cantilever_fundamental_hz};
+pub use root_fea::{RootHoleReport, analyze_root_hole, howland_kt_net};
 pub use root_fitting::{RootFitting, root_fitting_for};
+pub use root_solid::{RootSolidReport, analyze_root_solid};
+pub use shopping::{BuyItem, shopping_list, shopping_total};
 pub use split::{Joint, SplitPlan, plan_split};
 pub use split_geometry::{
     annular_boss, blade_piece_tris, blade_splice_plate, blade_split_meshes, splice_plate,
@@ -95,5 +114,9 @@ pub use step_brep::{
     mesh_to_step_brep, mesh_topology,
 };
 pub use structural::{MarginItem, StructuralReport, check_structure};
+pub use svg::Svg;
 pub use swashplate::{SwashplateSpec, swashplate_for};
 pub use tail_rotor::{TailRotorSpec, tail_rotor_for};
+pub use thermal_softening::{
+    ThermalSofteningReport, analyze_thermal_softening, equilibrium_blade_temp_c,
+};

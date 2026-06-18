@@ -15,9 +15,14 @@
 //! Arm length is set for tip clearance (`L_tr ≈ 1.15 R`, so the tail rotor clears
 //! the main disk).
 
-use crate::materials::SIGMA_ALLOW_AL;
+use crate::materials::{E_AL, RHO_AL, SIGMA_ALLOW_AL};
 use crate::part::{BuildPart, Source};
-use crate::sizing::boom_od_for_bending;
+use crate::sizing::{BOOM_TARGET_PER_REV, boom_governing_od};
+use std::f64::consts::PI;
+
+/// Tip-deflection limit for the boom, as a fraction of its length (a stiff boom keeps
+/// the tail rotor on-axis and its bending frequency clear of the rotor harmonics).
+const BOOM_DEFL_FRAC: f64 = 0.02;
 
 /// A tail-boom specification (metres).
 #[derive(Clone, Debug)]
@@ -32,11 +37,24 @@ pub struct BoomSpec {
     pub tube_wall_m: f64,
 }
 
-/// Size a tail boom from the main torque and rotor radius.
-pub fn boom_for(main_torque_nm: f64, rotor_radius_m: f64) -> BoomSpec {
+/// Size a tail boom from the main torque, rotor radius, and rotor speed `omega`
+/// (rad/s — sets the resonance-frequency target).
+pub fn boom_for(main_torque_nm: f64, rotor_radius_m: f64, omega_rad_s: f64) -> BoomSpec {
     let length = 1.15 * rotor_radius_m;
     let m = main_torque_nm; // root bending moment = main torque
-    let od = boom_od_for_bending(m, SIGMA_ALLOW_AL);
+    // Sized for bending stress, a ≤2% tip-deflection stiffness limit, AND a fundamental
+    // frequency at ~1.5/rev (clear of the rotor harmonics) — the governing one wins, so
+    // the boom is strong, stiff, AND non-resonant (see the resonance check).
+    let target_hz = BOOM_TARGET_PER_REV * omega_rad_s / (2.0 * PI);
+    let od = boom_governing_od(
+        m,
+        length,
+        E_AL,
+        RHO_AL,
+        SIGMA_ALLOW_AL,
+        BOOM_DEFL_FRAC,
+        target_hz,
+    );
     BoomSpec {
         length_m: length,
         root_moment_nm: m,
@@ -88,14 +106,15 @@ mod tests {
 
     #[test]
     fn arm_scales_with_radius() {
-        let b = boom_for(2.0, 0.7);
+        let b = boom_for(2.0, 0.7, 100.0);
         assert!((b.length_m - 1.15 * 0.7).abs() < 1e-12);
     }
 
     #[test]
     fn tube_od_grows_with_torque_and_meets_bending_limit() {
-        let small = boom_for(2.0, 0.7);
-        let big = boom_for(20.0, 0.7);
+        // omega = 0 removes the frequency target so this isolates the torque scaling.
+        let small = boom_for(2.0, 0.7, 0.0);
+        let big = boom_for(20.0, 0.7, 0.0);
         assert!(big.tube_od_m > small.tube_od_m);
         // The min (un-rounded) OD satisfies σ ≤ σ_allow with Z = 0.058 D³.
         let d_min = (small.root_moment_nm / (0.058 * SIGMA_ALLOW_AL)).cbrt();

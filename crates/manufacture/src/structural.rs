@@ -18,13 +18,18 @@
 //! check, not an FEA — it catches the obvious failures (a centrifugally-overloaded
 //! root) and gives the magnitudes; detailed parts still want FEA/proof-load.
 
-use crate::materials::{SIGMA_ALLOW_AL, TAU_ALLOW_AL};
-use crate::naca_section::structural_area;
-use crate::sizing::{
-    boom_bending_stress, boom_od_for_bending, mast_dia_for_torsion, mast_torsion_stress,
+use crate::blade::{RootLoadPath, root_load_path};
+use crate::materials::{
+    SIGMA_ALLOW_AL, SIGMA_ALLOW_CFF_GLASS, SIGMA_BEARING_AL, SIGMA_COMPR_CFF_GLASS, TAU_ALLOW_AL,
+    TAU_ALLOW_EPOXY,
 };
+use crate::naca_section::structural_area;
+use crate::sizing::{boom_bending_stress, mast_dia_for_torsion, mast_torsion_stress};
 use helisim_design::{DesignCandidate, DesignReport};
 use std::f64::consts::PI;
+
+/// Steel retention-bushing wall thickness, m (the sleeve OD = bolt Ø + 2·wall).
+const BUSHING_WALL_M: f64 = 0.001;
 
 /// One part's load and margin.
 #[derive(Clone, Debug)]
@@ -104,6 +109,79 @@ pub fn check_structure(
         blade_tensile_allow_pa,
     )];
 
+    // --- AS-BUILT root joint: the load path that actually carries F_cf ---
+    // The retention bolt bears on a BONDED steel bushing (never a press-fit — a polymer
+    // interference fit stress-relaxes and loosens). How F_cf gets from the blade into
+    // the bushing depends on the print route (see [`crate::root_load_path`]):
+    let bolt_d = min_bolt_d.max(0.003); // retention bolt (≥ M3)
+    match root_load_path(span) {
+        // Desktop continuous-fiber route: the fiber tow loops the bushing, carrying F_cf
+        // in fiber TENSION (two legs across the root) bearing on the steel bushing. The
+        // amount of fiber is NOT assumed — the required area falls out of the load and the
+        // sourced strength (A_req = F_cf/σ_allow). Reporting the section-average stress
+        // F_cf/a_root against the fiber allowable makes the margin the FEASIBILITY headroom:
+        // MS = a_root/A_req − 1, i.e. the loop needs a fraction 1/(MS+1) of the root section
+        // to be fiber — buildable as long as that fraction is < 1 (MS ≥ 0).
+        RootLoadPath::FiberLoop => {
+            items.push(margin(
+                "root fiber loop",
+                "fiber tension (req. frac. of root section)".to_string(),
+                f_cf / a_root,
+                SIGMA_ALLOW_CFF_GLASS,
+            ));
+            // Fiber bearing on the steel bushing — a COMPRESSION on the fiber (datasheet
+            // compressive allowable). Bearing area = bushing OD × the root boss length: the
+            // root is a local THICKENED boss around the bushing, sized (as in
+            // [`crate::root_fitting`]) to at least 1.8·bolt Ø — not the thin running airfoil.
+            // The bushing OD is itself SIZED to keep the fiber bearing within the allowable
+            // (as the bolt Ø is sized to its shear), floored at bolt Ø + 2·wall and rounded
+            // up to the next mm — a thicker steel sleeve simply spreads the contact.
+            let boss_length = (0.12 * c.chord_m).max(1.8 * bolt_d);
+            let od_for_bearing = f_cf / (SIGMA_COMPR_CFF_GLASS * boss_length);
+            let bushing_od =
+                ((bolt_d + 2.0 * BUSHING_WALL_M).max(od_for_bearing) * 1000.0).ceil() / 1000.0;
+            let a_bear = bushing_od * boss_length;
+            items.push(margin(
+                "root bushing bearing",
+                "fiber on bushing (compression)".to_string(),
+                f_cf / a_bear,
+                SIGMA_COMPR_CFF_GLASS,
+            ));
+        }
+        // SLS/molded route: bonded aluminium doublers carry F_cf into metal. Three ways
+        // the joint can fail: the epoxy bond (shear), the doublers (net-section tension
+        // at the bolt hole), and the bolt bearing on the doublers.
+        RootLoadPath::BondedDoublers => {
+            let doubler_l = 1.5 * c.chord_m; // bond overlap (= root-fitting length)
+            let doubler_w = c.chord_m; // ≈ root chord
+            let doubler_t = 0.003; // 3 mm (1/8") flat bar, per plate
+            // Epoxy bond: F_cf sheared over both doubler footprints.
+            let a_bond = 2.0 * doubler_l * doubler_w;
+            items.push(margin(
+                "root epoxy bond",
+                "doubler bond, shear".to_string(),
+                f_cf / a_bond,
+                TAU_ALLOW_EPOXY,
+            ));
+            // Doubler net-section tension (two plates, minus the bolt hole).
+            let a_net = 2.0 * (doubler_w - bolt_d).max(1e-4) * doubler_t;
+            items.push(margin(
+                "root doublers",
+                "net-section tension".to_string(),
+                f_cf / a_net,
+                SIGMA_ALLOW_AL,
+            ));
+            // Bolt bearing on the doublers (two plates).
+            let a_bear = 2.0 * bolt_d * doubler_t;
+            items.push(margin(
+                "root bolt bearing",
+                "bolt on doublers".to_string(),
+                f_cf / a_bear,
+                SIGMA_BEARING_AL,
+            ));
+        }
+    }
+
     // --- mast torsion (at the sized diameter) ---
     if report.hover_shaft_power_w.is_finite() && omega > 0.0 {
         let torque = report.hover_shaft_power_w / omega;
@@ -117,8 +195,18 @@ pub fn check_structure(
             TAU_ALLOW_AL,
         ));
 
-        // --- boom bending (root moment = main torque) ---
-        let od = boom_od_for_bending(torque, SIGMA_ALLOW_AL);
+        // --- boom bending at the GOVERNING (stress / stiffness / resonance) OD ---
+        let boom_len = 1.15 * c.radius_m;
+        let target_hz = crate::sizing::BOOM_TARGET_PER_REV * omega / (2.0 * PI);
+        let od = crate::sizing::boom_governing_od(
+            torque,
+            boom_len,
+            crate::materials::E_AL,
+            crate::materials::RHO_AL,
+            SIGMA_ALLOW_AL,
+            0.02,
+            target_hz,
+        );
         let sigma_boom = boom_bending_stress(torque, od);
         items.push(margin(
             "tail boom",
@@ -176,6 +264,49 @@ mod tests {
         c2.tip_speed_ms *= 2.0; // doubles omega → 4× centrifugal force
         let s2 = check_structure(&c2, &report_for(&c2), 40e6, 200e6);
         assert!((s2.blade_centrifugal_n / s1.blade_centrifugal_n - 4.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn report_includes_the_as_built_root_joint_checks() {
+        let c = DesignCandidate::model();
+        let r = report_for(&c);
+        let s = check_structure(&c, &r, 40e6, 200e6);
+        // The as-built metal load path is checked: epoxy bond, doubler net-section,
+        // and bolt bearing — not just an idealized bolt.
+        for p in ["root epoxy bond", "root doublers", "root bolt bearing"] {
+            assert!(
+                s.items.iter().any(|i| i.part == p),
+                "missing joint check: {p}"
+            );
+        }
+        // For the small model these all pass with margin.
+        assert!(
+            s.all_pass,
+            "model joint should pass, min MS {}",
+            s.min_margin
+        );
+    }
+
+    #[test]
+    fn a_small_blade_uses_the_fiber_loop_root_path() {
+        // A short-span blade fits a desktop continuous-fiber bed → the root carries
+        // F_cf as a fiber LOOP in tension, not bonded doublers.
+        let mut c = DesignCandidate::model();
+        c.radius_m = 0.25; // span ≈ 0.21 m ≤ 0.32 m desktop bed
+        let r = report_for(&c);
+        let s = check_structure(&c, &r, 40e6, 200e6);
+        assert!(
+            s.items.iter().any(|i| i.part == "root fiber loop"),
+            "small blade should use the fiber-loop root"
+        );
+        assert!(s.items.iter().any(|i| i.part == "root bushing bearing"));
+        // It must NOT report the bonded-doubler checks (different route).
+        assert!(!s.items.iter().any(|i| i.part == "root doublers"));
+        assert!(
+            s.all_pass,
+            "fiber-loop root should pass, min MS {}",
+            s.min_margin
+        );
     }
 
     #[test]

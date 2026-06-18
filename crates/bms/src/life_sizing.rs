@@ -51,19 +51,28 @@ pub fn size_for_life(
         storage_temp_c,
         soc_factor: 1.0,
     };
-    // Lower DoD ⇒ lower C-rate and lower effective throughput ⇒ less fade (monotone),
-    // so scan DoD from full down and take the FIRST (largest) depth that meets EOL.
-    let mut chosen: Option<f64> = None;
-    let mut d = 1.0;
-    while d >= 0.05 {
-        let c_rate = d / flight_time_h;
-        let fade = model.fade_over_life(n, d, c_rate, 25.0, cal);
-        if fade <= model.eol_fade {
-            chosen = Some(d);
-            break;
+    // Lower DoD ⇒ lower C-rate and lower throughput ⇒ less fade (monotone in DoD), so
+    // the largest DoD meeting EOL is the root of `fade(d)=eol`. Find it by BISECTION
+    // (the fade curve is monotone), which is far cheaper than a fine linear scan — this
+    // closure runs inside the design optimizer, so the cost compounds.
+    let fade_at = |d: f64| model.fade_over_life(n, d, d / flight_time_h, 25.0, cal);
+    let chosen: Option<f64> = if fade_at(1.0) <= model.eol_fade {
+        Some(1.0) // full DoD already lasts — no oversize needed
+    } else if fade_at(0.05) > model.eol_fade {
+        None // even a tiny DoD can't meet EOL (calendar fade alone exceeds it)
+    } else {
+        // Largest d in [0.05, 1.0] with fade(d) ≤ eol.
+        let (mut lo, mut hi) = (0.05_f64, 1.0_f64);
+        for _ in 0..40 {
+            let mid = 0.5 * (lo + hi);
+            if fade_at(mid) <= model.eol_fade {
+                lo = mid;
+            } else {
+                hi = mid;
+            }
         }
-        d -= 0.01;
-    }
+        Some(lo)
+    };
     let feasible = chosen.is_some();
     let dod = chosen.unwrap_or(0.05);
     let c_rate = dod / flight_time_h;

@@ -36,18 +36,38 @@
 //! * [`metrics`]   — [`evaluate`]: compose the cores into the report.
 //! * [`sweep`]     — [`sweep_radius`]: the disk-loading trade.
 
+pub mod blade_opt;
 pub mod candidate;
+pub mod envelope;
 pub mod metrics;
+pub mod mission_profile;
+pub mod optimize_design;
 pub mod recommend;
 pub mod report;
+pub mod sizing;
 pub mod sweep;
 pub mod upsizing;
+pub mod weight_closure;
 
+pub use blade_opt::{BladeEval, BladeProblem, induced_cp, inflow_cv};
 pub use candidate::DesignCandidate;
+pub use envelope::{
+    EnvelopeLimits, FlightEnvelope, advancing_tip_vne, analyze_envelope, isa_density_altitude_m,
+    max_level_speed, retreating_stall_mu,
+};
 pub use metrics::evaluate;
-pub use recommend::{DesignSpace, Recommendation, ScoredCandidate, recommend};
+pub use mission_profile::{AircraftPower, Mission, Segment};
+pub use optimize_design::{DesignBounds, DesignConstraints, OptimizedDesign, optimize_design};
+pub use recommend::{
+    DesignSpace, EnvelopeConstraint, Recommendation, ScoredCandidate, candidate_envelope,
+    candidate_power, recommend,
+};
 pub use report::DesignReport;
+pub use sizing::{LifeRequirement, SizedCandidate, SizingPolicy};
 pub use sweep::{SweepPoint, sweep_radius};
 pub use upsizing::{
     UpsizeParams, UpsizeResult, hover_power_per_kg, required_pack_fraction, size_for_daily_life,
+};
+pub use weight_closure::{
+    BatteryDemand, ClosureResult, FixedDiskLoading, FixedRotor, WeightClosure,
 };

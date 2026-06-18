@@ -11,14 +11,45 @@
 //! Section properties are taken from the real geometry: a thin tube for the boom,
 //! and the NACA 0012 flapwise inertia integrated from the section for the blade.
 
+use crate::blade::blade_from_design;
+use crate::materials::{E_AL, E_MOLDED_CARBON, E_ONYX_FIBERGLASS, E_SLS_PA_CF, SIGMA_ALLOW_AL};
 use helisim_design::{DesignCandidate, DesignReport};
 use helisim_fea::{Bc, NodalLoad, uniform_beam};
 use std::f64::consts::PI;
 
-/// Young's modulus of 6061-T6 aluminium, Pa.
-const E_AL: f64 = 69.0e9;
-/// Representative blade Young's modulus (glass/carbon laminate), Pa.
-const E_BLADE: f64 = 30.0e9;
+/// Print infill (gyroid) relative density used in the build steps (≥40%).
+const INFILL_FRAC: f64 = 0.40;
+/// Number of solid perimeter walls and the slicer line width, m (4 walls × 0.45 mm).
+const N_WALLS: f64 = 4.0;
+const LINE_WIDTH_M: f64 = 0.000_45;
+
+/// Effective flexural modulus of the AS-BUILT blade section, Pa, from the print route
+/// material and the print solidity. The printed section is a solid perimeter SHELL
+/// (full material modulus) wrapped around a gyroid CORE at the infill relative density
+/// `ρ`; the core's bending modulus follows the Gibson–Ashby cellular-solid law
+/// `E*/Es = ρ²`. So `E_eff = E_mat·[f_wall + (1−f_wall)·ρ²]`, where `f_wall` is the
+/// solid-shell area fraction (`n_walls·line_width·perimeter / section_area`, capped at
+/// 1 — a small chord is nearly all wall, so infill barely matters; a big chord is
+/// mostly hollow core, so it matters a lot). Returns `(E_mat, E_eff, f_wall)`.
+pub(crate) fn as_built_blade_modulus(c: &DesignCandidate) -> (f64, f64, f64) {
+    let b = blade_from_design(c, 0.0);
+    // Molded blades are a solid laminate (no infill); printed blades use the route E.
+    let e_mat = if !b.printed {
+        E_MOLDED_CARBON
+    } else if b.service_print {
+        E_SLS_PA_CF // SLS PA-CF nylon — no continuous fiber
+    } else {
+        E_ONYX_FIBERGLASS // desktop Markforged Onyx + continuous fiberglass
+    };
+    if !b.printed {
+        return (e_mat, e_mat, 1.0);
+    }
+    let perimeter = 2.04 * c.chord_m; // NACA0012 surface length ≈ 2.04·chord
+    let area = crate::naca_section::section_area(c.chord_m); // FULL section the print fills
+    let f_wall = (N_WALLS * LINE_WIDTH_M * perimeter / area).min(1.0);
+    let knockdown = f_wall + (1.0 - f_wall) * INFILL_FRAC * INFILL_FRAC;
+    (e_mat, e_mat * knockdown, f_wall)
+}
 
 /// One part's FEA result with its closed-form cross-check.
 #[derive(Clone, Debug)]
@@ -42,6 +73,12 @@ pub struct FeaPart {
 pub struct FeaReport {
     pub boom: FeaPart,
     pub blade: FeaPart,
+    /// Blade material modulus used (route-dependent), GPa.
+    pub blade_material_e_gpa: f64,
+    /// AS-BUILT effective flexural modulus after the print infill knockdown, GPa.
+    pub blade_effective_e_gpa: f64,
+    /// Solid-shell area fraction of the printed section (1.0 = effectively solid).
+    pub blade_wall_fraction: f64,
 }
 
 /// Tube second moment of area `I = π(D⁴−d⁴)/64`, m⁴.
@@ -69,7 +106,16 @@ pub fn run_fea(c: &DesignCandidate, report: &DesignReport) -> FeaReport {
     // --- tail boom: cantilever, tip load = tail thrust ---
     let boom_len = 1.15 * c.radius_m;
     let tail_thrust = torque / boom_len;
-    let od = crate::sizing::boom_od_for_bending(torque, crate::materials::SIGMA_ALLOW_AL);
+    let target_hz = crate::sizing::BOOM_TARGET_PER_REV * omega / (2.0 * PI);
+    let od = crate::sizing::boom_governing_od(
+        torque,
+        boom_len,
+        E_AL,
+        crate::materials::RHO_AL,
+        SIGMA_ALLOW_AL,
+        0.02,
+        target_hz,
+    );
     let wall = 0.1 * od;
     let i_boom = tube_inertia(od, wall);
     let z_boom = i_boom / (od / 2.0);
@@ -102,7 +148,10 @@ pub fn run_fea(c: &DesignCandidate, report: &DesignReport) -> FeaReport {
     let i_blade = naca0012_flap_inertia(c.chord_m);
     let z_blade = i_blade / (0.06 * c.chord_m);
     let n_el = 12;
-    let mut bbeam = uniform_beam(span, n_el, E_BLADE * i_blade, z_blade);
+    // AS-BUILT modulus: the print route's material + the gyroid-infill knockdown,
+    // NOT a solid 30 GPa laminate. This is what makes the deflection honest.
+    let (e_mat, e_eff, f_wall) = as_built_blade_modulus(c);
+    let mut bbeam = uniform_beam(span, n_el, e_eff * i_blade, z_blade);
     let dist = bbeam.uniform_load_vector(q);
     let bsol = bbeam.solve(&[], Some(&dist), &[Bc::Clamped(0)]).unwrap();
     let cf_blade = (q * span * span / 2.0) / z_blade; // uniform-load root stress
@@ -129,7 +178,13 @@ pub fn run_fea(c: &DesignCandidate, report: &DesignReport) -> FeaReport {
         routes_agree: (bsol.max_stress_pa - cf_blade).abs() / cf_blade < 0.05,
     };
 
-    FeaReport { boom, blade }
+    FeaReport {
+        boom,
+        blade,
+        blade_material_e_gpa: e_mat / 1e9,
+        blade_effective_e_gpa: e_eff / 1e9,
+        blade_wall_fraction: f_wall,
+    }
 }
 
 #[cfg(test)]
@@ -176,6 +231,39 @@ mod tests {
         let fea = run_fea(&c, &r);
         assert!(fea.boom.tip_deflection_m >= 0.0 && fea.boom.tip_deflection_m.is_finite());
         assert!(fea.blade.tip_deflection_m >= 0.0 && fea.blade.tip_deflection_m.is_finite());
+    }
+
+    #[test]
+    fn as_built_modulus_reflects_print_route_and_infill_not_solid_laminate() {
+        let (c, r) = cr();
+        let fea = run_fea(&c, &r);
+        // The blade is printed, so the effective modulus is NOT the 30 GPa solid
+        // laminate — it is the route material (≤22 GPa) times the infill knockdown.
+        assert!(
+            fea.blade_material_e_gpa <= 22.0 + 1e-9,
+            "printed blade uses ≤22 GPa, got {}",
+            fea.blade_material_e_gpa
+        );
+        assert!(fea.blade_effective_e_gpa <= fea.blade_material_e_gpa + 1e-9);
+        assert!(fea.blade_wall_fraction > 0.0 && fea.blade_wall_fraction <= 1.0);
+
+        // A WIDE chord (still a printed-size span) is mostly hollow core, so the
+        // gyroid infill knockdown bites: the effective modulus drops well below the
+        // material modulus. (Keep the span printable so it's not routed to molded.)
+        let mut big = c;
+        big.chord_m = 0.18; // wide chord
+        big.radius_m = 0.7;
+        big.root_cutout = 0.2; // span ≈ 0.56 m → still 3D-printed (service)
+        let fb = run_fea(
+            &big,
+            &evaluate(&big, &LinearAirfoil::naca0012(), &Config::default()),
+        );
+        assert!(
+            fb.blade_wall_fraction < 0.6,
+            "a wide chord is mostly hollow (wall frac {})",
+            fb.blade_wall_fraction
+        );
+        assert!(fb.blade_effective_e_gpa < 0.7 * fb.blade_material_e_gpa);
     }
 
     #[test]
