@@ -16,6 +16,14 @@ pub fn solve3(mut a: [[f64; 3]; 3], mut b: [f64; 3]) -> [f64; 3] {
         a.swap(col, piv);
         b.swap(col, piv);
 
+        // NOTE: no singular-pivot guard here, deliberately. `solve3` is called
+        // inside the quasi-static rotor solve within the time-marching loop, and
+        // the across-the-seam divergence tests (5k/5l) intentionally march an
+        // unstable case until the state overflows — at which point this matrix
+        // degenerates and the solve returns NaN/Inf. Divergence is detected
+        // downstream via `is_finite()` checks, so a panic here would break that
+        // validated contract. In the well-conditioned (physical) regime the
+        // matrix is never singular.
         let d = a[col][col];
         for r in 0..3 {
             if r != col {

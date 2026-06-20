@@ -76,6 +76,56 @@ pub fn cylinder_z(r: f64, len: f64, n: usize) -> Vec<Tri> {
     tris
 }
 
+/// A closed cylinder whose centreline runs from `a` to `b`.
+pub fn cylinder_between(a: Vec3, b: Vec3, r: f64, n: usize) -> Vec<Tri> {
+    let axis = Vec3::new(b.x - a.x, b.y - a.y, b.z - a.z);
+    let len = (axis.x * axis.x + axis.y * axis.y + axis.z * axis.z).sqrt();
+    if len <= 1e-9 {
+        return Vec::new();
+    }
+    let w = Vec3::new(axis.x / len, axis.y / len, axis.z / len);
+    let refv = if w.z.abs() < 0.9 {
+        Vec3::new(0.0, 0.0, 1.0)
+    } else {
+        Vec3::new(0.0, 1.0, 0.0)
+    };
+    let mut u = Vec3::new(
+        refv.y * w.z - refv.z * w.y,
+        refv.z * w.x - refv.x * w.z,
+        refv.x * w.y - refv.y * w.x,
+    );
+    let ul = (u.x * u.x + u.y * u.y + u.z * u.z).sqrt().max(1e-9);
+    u = Vec3::new(u.x / ul, u.y / ul, u.z / ul);
+    let v = Vec3::new(
+        w.y * u.z - w.z * u.y,
+        w.z * u.x - w.x * u.z,
+        w.x * u.y - w.y * u.x,
+    );
+    let point = |base: Vec3, theta: f64| {
+        Vec3::new(
+            base.x + r * (u.x * theta.cos() + v.x * theta.sin()),
+            base.y + r * (u.y * theta.cos() + v.y * theta.sin()),
+            base.z + r * (u.z * theta.cos() + v.z * theta.sin()),
+        )
+    };
+    let mut bot = Vec::with_capacity(n);
+    let mut top = Vec::with_capacity(n);
+    for i in 0..n {
+        let t = 2.0 * PI * i as f64 / n as f64;
+        bot.push(point(a, t));
+        top.push(point(b, t));
+    }
+    let mut tris = Vec::with_capacity(4 * n);
+    for i in 0..n {
+        let j = (i + 1) % n;
+        tris.push(Tri(bot[i], bot[j], top[j]));
+        tris.push(Tri(bot[i], top[j], top[i]));
+        tris.push(Tri(a, bot[i], bot[j]));
+        tris.push(Tri(b, top[j], top[i]));
+    }
+    tris
+}
+
 /// An ellipsoid (semi-axes `a,b,c` mm) as a lat-long mesh — the fuselage pod.
 /// Pole rows are fan-triangulated (no degenerate triangles), so the surface is a
 /// clean closed 2-manifold suitable for a B-rep solid.
@@ -109,6 +159,105 @@ pub fn ellipsoid(a: f64, b: f64, c: f64, n_lat: usize, n_long: usize) -> Vec<Tri
         }
     }
     tris
+}
+
+/// Axis-aligned box centred at the origin, dimensions in mm.
+pub fn box_tris(lx: f64, ly: f64, lz: f64) -> Vec<Tri> {
+    let (x, y, z) = (lx * 0.5, ly * 0.5, lz * 0.5);
+    let v = [
+        Vec3::new(-x, -y, -z),
+        Vec3::new(x, -y, -z),
+        Vec3::new(x, y, -z),
+        Vec3::new(-x, y, -z),
+        Vec3::new(-x, -y, z),
+        Vec3::new(x, -y, z),
+        Vec3::new(x, y, z),
+        Vec3::new(-x, y, z),
+    ];
+    let faces = [
+        [0, 3, 2, 1],
+        [4, 5, 6, 7],
+        [0, 1, 5, 4],
+        [2, 3, 7, 6],
+        [1, 2, 6, 5],
+        [0, 4, 7, 3],
+    ];
+    let mut t = Vec::with_capacity(12);
+    for f in faces {
+        t.push(Tri(v[f[0]], v[f[1]], v[f[2]]));
+        t.push(Tri(v[f[0]], v[f[2]], v[f[3]]));
+    }
+    t
+}
+
+/// Smooth lifting-body fuselage/canopy, body axis +x, z up. Unlike the older
+/// ellipsoid preview, this mesh has a fuller nose, tapered tail cone, and flatter
+/// lower shell. It is used by both STEP/STL export and the studio UI.
+pub fn fuselage_shell(length: f64, width: f64, height: f64, nx: usize, nr: usize) -> Vec<Tri> {
+    let ring = |i: usize| -> Vec<Vec3> {
+        let u = i as f64 / nx as f64;
+        let x = (u - 0.50) * length;
+        let tail_taper = (0.25 + 0.75 * u.powf(0.45)).min(1.0);
+        let nose_taper = (1.0 - 0.72 * (u.max(0.62) - 0.62) / 0.38).max(0.16);
+        let fullness = (PI * u).sin().powf(0.38) * tail_taper * nose_taper;
+        let wy = width * 0.5 * fullness;
+        let hz = height * 0.5 * fullness * (0.86 + 0.14 * u);
+        (0..nr)
+            .map(|j| {
+                let a = 2.0 * PI * j as f64 / nr as f64;
+                let y = wy * a.cos();
+                let mut z = hz * a.sin();
+                if z < 0.0 {
+                    z *= 0.72;
+                }
+                Vec3::new(x, y, z)
+            })
+            .collect()
+    };
+
+    let tail = Vec3::new(-0.50 * length, 0.0, 0.0);
+    let nose = Vec3::new(0.50 * length, 0.0, 0.0);
+    let mut tris = Vec::new();
+    let mut prev = ring(1);
+    for j in 0..nr {
+        tris.push(Tri(tail, prev[j], prev[(j + 1) % nr]));
+    }
+    for i in 2..nx {
+        let cur = ring(i);
+        for j in 0..nr {
+            let k = (j + 1) % nr;
+            tris.push(Tri(prev[j], prev[k], cur[k]));
+            tris.push(Tri(prev[j], cur[k], cur[j]));
+        }
+        prev = cur;
+    }
+    for j in 0..nr {
+        tris.push(Tri(nose, prev[(j + 1) % nr], prev[j]));
+    }
+    tris
+}
+
+/// Thin triangular tail surface, local chord along +x, height +z, thickness y.
+pub fn triangular_fin(chord: f64, height: f64, thickness: f64) -> Vec<Tri> {
+    let y = thickness * 0.5;
+    let v = [
+        Vec3::new(0.0, -y, 0.0),
+        Vec3::new(chord, -y, 0.0),
+        Vec3::new(chord * 0.18, -y, height),
+        Vec3::new(0.0, y, 0.0),
+        Vec3::new(chord, y, 0.0),
+        Vec3::new(chord * 0.18, y, height),
+    ];
+    vec![
+        Tri(v[0], v[2], v[1]),
+        Tri(v[3], v[4], v[5]),
+        Tri(v[0], v[1], v[4]),
+        Tri(v[0], v[4], v[3]),
+        Tri(v[1], v[2], v[5]),
+        Tri(v[1], v[5], v[4]),
+        Tri(v[2], v[0], v[3]),
+        Tri(v[2], v[3], v[5]),
+    ]
 }
 
 /// The lofted blade as triangles in its own frame (span along +z, mm).

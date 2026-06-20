@@ -101,20 +101,25 @@ pub fn build_package_lofted(
     ];
 
     let assembly_steps = vec![
-        "1. Bolt the powertrain tray + motor to the airframe core.".to_string(),
-        "2. Install the mast in its bearings and couple it to the motor/gearbox.".to_string(),
-        "3. Slide the swashplate onto the mast; mount the servos and link them (120° CCPM)."
+        "1. Remove the canopy/access cover; bolt the powertrain tray to the internal bulkheads, then mount the motor, ESC and avionics on that tray."
             .to_string(),
-        "4. Fit the hub to the mast top; connect pitch links from the swashplate to the grips."
+        "2. Install the mast through the upper/lower mast bearings from above and couple it to the motor/gearbox below."
             .to_string(),
-        "5. Bolt the blades into the grips; set zero pitch and track the blades.".to_string(),
-        "6. Fit the tail boom + tail rotor; set the anti-torque control.".to_string(),
-        "7. Install the battery on the tray; set the CG on the rotor shaft axis.".to_string(),
-        "8. Bench-test all controls for direction and travel; balance + track the rotor."
+        "3. Slide the swashplate down over the mast; mount the servos around the mast and link them (120° CCPM)."
             .to_string(),
-        "9. Tethered spin-up; check vibration and control response before free flight.".to_string(),
-        "10. SAFETY: verify the power-loss response (instant collective drop / governor) — the \
-             rotor-decay window is short at model scale."
+        "4. Fit the hub to the mast top; align the blade grips and connect pitch links from the swashplate to the grip horns."
+            .to_string(),
+        "5. Ream each printed blade-root pilot hole, bond the steel bushing/doublers, then bolt the cured blade roots into the grips; set zero pitch and track the blades."
+            .to_string(),
+        "6. Insert and fasten the tail boom into the aft fuselage hardpoint; attach the tail surfaces and tail rotor, then set the anti-torque control."
+            .to_string(),
+        "7. Slide the battery onto the tray through the canopy opening; strap it down and set the CG on the rotor shaft axis."
+            .to_string(),
+        "8. Bench-test all controls for direction and travel: collective raises/lowers the swashplate, cyclic tilts it, and the blade grips follow."
+            .to_string(),
+        "9. Tethered spin-up on the landing gear; check vibration, blade tracking, tail response and shutdown behavior before free flight."
+            .to_string(),
+        "10. SAFETY: verify the power-loss response: immediately lower collective / governor demand so the rotor is unloaded as RPM decays."
             .to_string(),
     ];
 

@@ -19,13 +19,18 @@ pub mod forward_cli;
 pub mod hover_cli;
 pub mod inflow_cli;
 pub mod lateral_cli;
+pub mod mass_properties;
 pub mod mission_cli;
 pub mod report;
 pub mod sas_cli;
 pub mod sim_cli;
+pub mod studio_scene;
 pub mod study;
 pub mod synthesize_cli;
 pub mod trim_cli;
+pub mod ui_cli;
+pub mod ui_export;
+pub mod ui_server;
 
 use helisim_bemt::{Config, solve_hover};
 use helisim_rotor::Operating;
@@ -57,6 +62,7 @@ pub fn dispatch(mode: &str) {
         "design" => design_cli::run(),
         "synthesize" | "optimize" => synthesize_cli::run(),
         "build" => build_cli::run(),
+        "ui" | "studio" => ui_cli::run(),
         "final-report" | "report" => final_report_cli::run(),
         "harrington" => harrington_sweep(&cfg),
         "spanwise" => {

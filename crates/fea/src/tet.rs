@@ -74,7 +74,10 @@ impl TetMesh {
         for i in 0..4 {
             let mut rhs = [0.0; 4];
             rhs[i] = 1.0;
-            let coef = solve(&m, &rhs, 4).unwrap_or(vec![0.0; 4]);
+            // A singular nodal matrix means a degenerate (zero-volume, coplanar)
+            // tetrahedron; fail loudly rather than silently zero the gradients.
+            let coef = solve(&m, &rhs, 4)
+                .unwrap_or_else(|| panic!("Tet::b_matrix: degenerate tetrahedron {tet:?}"));
             grad[i] = (coef[1], coef[2], coef[3]);
         }
 

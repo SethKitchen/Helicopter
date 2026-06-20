@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>HELISIM · Studio</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js",
+      "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- ambient backdrop -->
+  <div class="bg-grad"></div>
+  <div class="bg-glow"></div>
+
+  <!-- top bar -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">◆</span>
+      <span class="word">HELISIM</span>
+      <span class="sub">STUDIO</span>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="model">Model</button>
+      <button class="tab" data-tab="fea">FEA</button>
+      <button class="tab" data-tab="cfd">CFD</button>
+      <button class="tab" data-tab="assembly">Assembly</button>
+      <button class="tab" data-tab="balance">Balance</button>
+      <button class="tab" data-tab="flight">Flight</button>
+      <button class="tab" data-tab="optimize">Optimality</button>
+    </nav>
+    <div class="design-id" id="design-id">— · —</div>
+  </header>
+
+  <!-- 3D stage -->
+  <main class="stage">
+    <canvas id="view"></canvas>
+
+    <!-- loading veil -->
+    <div class="veil" id="veil">
+      <div class="veil-mark">◆</div>
+      <div class="veil-text">initializing studio…</div>
+    </div>
+
+    <!-- left: parts list -->
+    <aside class="panel parts" id="parts-panel">
+      <div class="panel-head">Components</div>
+      <ul class="parts-list" id="parts-list"></ul>
+      <div class="panel-foot">
+        <label class="toggle">
+          <input type="checkbox" id="explode" />
+          <span>Exploded view</span>
+        </label>
+        <button class="ghost" id="reset-view">Reset view</button>
+      </div>
+    </aside>
+
+    <!-- right: inspector -->
+    <aside class="panel inspector" id="inspector">
+      <div class="panel-head" id="insp-title">Design overview</div>
+      <div class="insp-body" id="insp-body"></div>
+    </aside>
+
+    <!-- bottom: design HUD -->
+    <div class="hud" id="hud"></div>
+
+    <!-- module placeholder (FEA/CFD/Flight/Optimality before they go live) -->
+    <div class="module-veil hidden" id="module-veil">
+      <div class="mv-inner">
+        <div class="mv-title" id="mv-title"></div>
+        <div class="mv-text" id="mv-text"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="statusbar">
+    <span id="status">ready</span>
+    <span class="hint">drag to orbit · scroll to zoom · click a part to inspect</span>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

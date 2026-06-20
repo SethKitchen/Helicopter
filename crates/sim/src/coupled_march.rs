@@ -129,6 +129,12 @@ pub(crate) fn solve_lin(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Vec<f64> {
         }
         a.swap(col, piv);
         b.swap(col, piv);
+        // A near-zero pivot means the linearized system is singular; fail loudly
+        // rather than divide by ~0 and propagate silent NaN into the equilibrium.
+        assert!(
+            a[col][col].abs() >= 1e-14,
+            "solve_lin: singular matrix (zero pivot in column {col})"
+        );
         let pivot = a[col].clone(); // fixed during the elimination below
         for r in (col + 1)..n {
             let f = a[r][col] / pivot[col];

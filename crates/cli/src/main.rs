@@ -19,12 +19,18 @@
 //!   helisim hover           velocity/position hold: timescale separation + hands-off hover capstone
 //!   helisim mission         end-to-end electric hover: power → C-rate → endurance
 //!   helisim bms             battery + BMS benchmark: 4-cell trade + protection/SoC/balancing
+//!                           (alias: battery)
 //!   helisim battery-build   exact pack+BMS shopping list (qty, prices, links) + build steps
 //!   helisim charging        charge the pack: 120 V mains + solar, CC/CV time/energy/limits
 //!   helisim charge-build    10-yr-life pack (mass-propagated) + 1:1 charging equipment BOM
 //!   helisim cfd             viscous 2-D Navier-Stokes: Ghia cavity + Taylor-Green + cylinder
 //!   helisim design          model-scale sizing study: priority vector + disk-loading trade
+//!   helisim synthesize      design synthesis: blade-shape opt + weight closure + envelope
+//!                           (alias: optimize)
 //!   helisim build           recommend a design → full part list, assembly, STL/DXF export
+//!   helisim ui [dir] [port]  launch the 3D design studio in your browser (alias: studio)
+//!   helisim final-report    capstone: full synthesis→build chain → FINAL_REPORT.md + STEP/STL/DXF
+//!                           (alias: report)
 //!   (safety track) autorotation power-off + acoustics noise feed the design study
 
 fn main() {

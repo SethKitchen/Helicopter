@@ -1,8 +1,8 @@
 //! Fuselage / canopy pod — houses the pack, motor and (for a manned craft) the
 //! occupants, and carries the boom and skids.
 //!
-//! Modelled as an ellipsoidal pod sized to enclose the powertrain tray with a
-//! margin; the canopy is the upper half of the same shell. Exact internal layout
+//! Modelled as a smooth lifting-body pod sized to enclose the powertrain tray with
+//! a margin; the canopy is the upper half of the same shell. Exact internal layout
 //! is the builder's, but the envelope and its geometry come from the design scale.
 
 use crate::part::{BuildPart, Source};
@@ -50,7 +50,7 @@ impl BuildPart for FuselageSpec {
     fn build_steps(&self) -> Vec<String> {
         vec![
             format!(
-                "1. Make a plug/mould for a {:.0} × {:.0} × {:.0} mm ellipsoidal pod.",
+                "1. Make a plug/mould for the exported {:.0} × {:.0} × {:.0} mm smooth tapered pod.",
                 self.length_m * 1000.0,
                 self.width_m * 1000.0,
                 self.height_m * 1000.0
